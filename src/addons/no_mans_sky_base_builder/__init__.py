@@ -3,7 +3,7 @@ bl_info = {
     "name": "No Mans Sky Base Builder",
     "description": "A tool to assist with base building in No Mans Sky",
     "author": "DjMonkey",
-    "version": (2, 1, 4),
+    "version": (2, 1, 5),
     "blender": (4, 0, 0),
     "location": "3D View > Tools",
     "warning": "",  # used for warning icon and text in addons panel
@@ -140,6 +140,13 @@ class NMSSettings(PropertyGroup):
     string_address: StringProperty(
         name="Galactic Address",
         description="The galactic address.",
+        default="",
+        maxlen=1024,
+    )
+
+    string_userdata: StringProperty(
+        name="User Data",
+        description="User Data - important for corvette bases.",
         default="",
         maxlen=1024,
     )
@@ -303,6 +310,8 @@ class NMSSettings(PropertyGroup):
         # Start bringing the data in.
         if "GalacticAddress" in nms_data:
             self.string_address = str(nms_data["GalacticAddress"])
+        if "UserData" in nms_data:
+            self.string_userdata = str(nms_data["UserData"])
         if "BaseType" in nms_data:
             self.string_base_type = str(nms_data["BaseType"]["PersistentBaseTypes"])
         if "Position" in nms_data:
@@ -375,7 +384,7 @@ class NMSSettings(PropertyGroup):
             "GalacticAddress": python_utils.prefer_int(self.string_address),
             "Position": [self.float_pos_x, self.float_pos_y, self.float_pos_z],
             "Forward": [self.float_ori_x, self.float_ori_y, self.float_ori_z],
-            "UserData": 0,
+            "UserData": python_utils.prefer_int(self.string_userdata),
             "LastUpdateTimestamp": python_utils.prefer_int(self.string_last_ts),
             "RID": "",
             "Owner": {
@@ -496,6 +505,7 @@ class NMSSettings(PropertyGroup):
         blend_utils.remove_object("Camera")
 
         self.string_address = ""
+        self.string_userdata = ""
         self.string_base = ""
         self.string_lid = ""
         self.string_ts = ""
@@ -831,6 +841,7 @@ class NMS_PT_base_prop_panel(Panel):
         properties_column = properties_box.column(align=True)
         properties_column.prop(nms_tool, "string_base")
         properties_column.prop(nms_tool, "string_address")
+        properties_column.prop(nms_tool, "string_userdata")
 
 
 # Snap Panel ---

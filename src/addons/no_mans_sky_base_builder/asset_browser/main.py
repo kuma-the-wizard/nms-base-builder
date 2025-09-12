@@ -9,9 +9,9 @@ from functools import partial
 import yaml
 
 try:
-  from PySide6 import QtCore, QtGui, QtWidgets
+    from PySide6 import QtCore, QtGui, QtWidgets
 except ImportError:
-  from PySide2 import QtCore, QtGui, QtWidgets
+    from PySide2 import QtCore, QtGui, QtWidgets
 
 import asset_browser.icons.icons
 import yaml
@@ -40,9 +40,9 @@ class AssetBrowser(QtWidgets.QMainWindow):
         super(AssetBrowser, self).__init__(*args, **kwargs)
         self.setWindowTitle("No Man's Sky Base Builder :: Asset Browser")
         self.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
-        app_id = u"djmonkey.NMSBB.AssetBrowser.1"  # arbitrary string
+        app_id = "djmonkey.NMSBB.AssetBrowser.1"  # arbitrary string
         # FIXME: do this in some platform-agnostic way if possible
-        if hasattr(ctypes, 'windll'):
+        if hasattr(ctypes, "windll"):
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
         self.setWindowTitle("No Man's Sky Blender Builder - Asset Browser")
         self.setWindowIcon(QtGui.QIcon(APP_ICON))
@@ -125,48 +125,48 @@ class AssetBrowser(QtWidgets.QMainWindow):
             browser_data = yaml.safe_load(stream)
 
         # Add Categories
-        for category_data in browser_data:
-            for category, sub_category_data in category_data.items():
-                scroll_frame = QtWidgets.QScrollArea(self)
-                scroll_frame.setWidgetResizable(True)
-                frame = QtWidgets.QFrame(scroll_frame)
-                scroll_frame.setWidget(frame)
-                layout = QtWidgets.QVBoxLayout(frame)
-                layout.setAlignment(QtCore.Qt.AlignTop)
-                self.tab_widget.addTab(scroll_frame, category)
-                if not sub_category_data:
+        for category_title, category_data in browser_data.items():
+
+            # Main Category
+            scroll_frame = QtWidgets.QScrollArea(self)
+            scroll_frame.setWidgetResizable(True)
+            frame = QtWidgets.QFrame(scroll_frame)
+            scroll_frame.setWidget(frame)
+            layout = QtWidgets.QVBoxLayout(frame)
+            layout.setAlignment(QtCore.Qt.AlignTop)
+            self.tab_widget.addTab(scroll_frame, category_title)
+            if not category_data:
+                continue
+
+            # Sub Categories
+            for sub_category_title, items in category_data.items():
+                title_label = CollapsableFrame(label=sub_category_title, parent=frame)
+                layout.addWidget(title_label)
+                if not items:
                     continue
-                for data in sub_category_data:
-                    for sub_category_title, items in data.items():
-                        title_label = CollapsableFrame(
-                            label=sub_category_title, parent=frame
+                for item in items:
+                    if isinstance(item, str):
+                        # Add to tab.
+                        item_widget = Item(
+                            item_id=item,
+                            label=NICE_NAME_DATA.get(item, item),
+                            parent=title_label,
                         )
-                        layout.addWidget(title_label)
-                        if not items:
-                            continue
-                        for item in items:
-                            if isinstance(item, str):
-                                # Add to tab.
-                                item_widget = Item(
-                                    item_id=item,
-                                    label=NICE_NAME_DATA.get(item, item),
-                                    parent=title_label,
-                                )
-                                title_label.addWidget(item_widget)
-                                item_widget.clicked.connect(
-                                    partial(self.send_part_command_to_blender, item)
-                                )
-                                # Add to search frame.
-                                search_item_widget = Item(
-                                    item_id=item,
-                                    label=NICE_NAME_DATA.get(item, item),
-                                    parent=title_label,
-                                )
-                                self.search_frame_layout.addWidget(search_item_widget)
-                                search_item_widget.clicked.connect(
-                                    partial(self.send_part_command_to_blender, item)
-                                )
-                                self.__search_buttons.append(search_item_widget)
+                        title_label.addWidget(item_widget)
+                        item_widget.clicked.connect(
+                            partial(self.send_part_command_to_blender, item)
+                        )
+                        # Add to search frame.
+                        search_item_widget = Item(
+                            item_id=item,
+                            label=NICE_NAME_DATA.get(item, item),
+                            parent=title_label,
+                        )
+                        self.search_frame_layout.addWidget(search_item_widget)
+                        search_item_widget.clicked.connect(
+                            partial(self.send_part_command_to_blender, item)
+                        )
+                        self.__search_buttons.append(search_item_widget)
 
         # Add Presets.
         scroll_frame = QtWidgets.QScrollArea(self)
@@ -207,10 +207,14 @@ class AssetBrowser(QtWidgets.QMainWindow):
 
         # Add un-categorized presets.
         presets = sorted(os.listdir(PRESET_PATH))
-        presets = [item for item in presets if os.path.isfile(os.path.join(PRESET_PATH, item))]
+        presets = [
+            item for item in presets if os.path.isfile(os.path.join(PRESET_PATH, item))
+        ]
         if presets:
             preset_category_frame = CollapsableFrame(
-                label="Uncategorized Presets", layout="vertical", parent=self.presets_frame
+                label="Uncategorized Presets",
+                layout="vertical",
+                parent=self.presets_frame,
             )
             self.presets_layout.addWidget(preset_category_frame)
             for preset in presets:
@@ -222,13 +226,9 @@ class AssetBrowser(QtWidgets.QMainWindow):
             return
         nice_label = item_id.replace("_", " ").title()
         # Add preset
-        item_widget = Preset(
-            item_id=item_id, label=nice_label, parent=frame
-        )
+        item_widget = Preset(item_id=item_id, label=nice_label, parent=frame)
         frame.addWidget(item_widget)
-        item_widget.clicked.connect(
-            partial(self.send_part_command_to_blender, item_id)
-        )
+        item_widget.clicked.connect(partial(self.send_part_command_to_blender, item_id))
         item_widget.editClicked.connect(
             partial(self.send_edit_preset_command_to_blender, item_id)
         )

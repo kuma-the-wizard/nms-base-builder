@@ -1,3 +1,13 @@
+release 2.1.5
+-------------
+* Added all base parts up to Voyager update (6.0.0)
+
+
+release 2.1.4
+-------------
+* Added parts from Worlds Part II (Ruins, exotic plants, etc)
+
+
 release 2.1.3
 -------------
 * Added support for base parts added up to Worlds Part 1 Update.
