@@ -5,6 +5,7 @@ from copy import copy
 
 import bpy
 import mathutils
+
 import no_mans_sky_base_builder.utils.blend_utils as blend_utils
 import no_mans_sky_base_builder.utils.material as material
 import no_mans_sky_base_builder.utils.python as python_utils
@@ -16,7 +17,7 @@ class Part(object):
     DEFAULT_BELONGS_TO_PRESET = False
     FILE_PATH = os.path.dirname(os.path.realpath(__file__))
     SNAP_MATRIX_JSON = os.path.join(FILE_PATH, "resources", "snapping_info.json")
-    SNAP_PAIR_JSON = os.path.join(FILE_PATH,  "resources", "snapping_pairs.json")
+    SNAP_PAIR_JSON = os.path.join(FILE_PATH, "resources", "snapping_pairs.json")
 
     SNAP_MATRIX_DICTIONARY = python_utils.load_dictionary(SNAP_MATRIX_JSON)
     SNAP_PAIR_DICTIONARY = python_utils.load_dictionary(SNAP_PAIR_JSON)
@@ -24,12 +25,13 @@ class Part(object):
     SNAP_CACHE = {}
 
     def __init__(
-            self,
-            object_id=None,
-            bpy_object=None,
-            builder_object=None,
-            user_data=None,
-            build_rigs=False):
+        self,
+        object_id=None,
+        bpy_object=None,
+        builder_object=None,
+        user_data=None,
+        build_rigs=False,
+    ):
         """Part __init__
 
         Args:
@@ -167,14 +169,6 @@ class Part(object):
         self.__object["UserData"] = str(value)
 
     @property
-    def message(self):
-        return self.object.get("Message", "")
-
-    @message.setter
-    def message(self, value):
-        self.object["Message"] = str(value)
-
-    @property
     def belongs_to_preset(self):
         return self.__object["belongs_to_preset"]
 
@@ -222,7 +216,6 @@ class Part(object):
             for dr in drivers_data:
                 self.__object.driver_remove(dr.data_path, -1)
 
-
     def duplicate(self):
         """Duplicate the part and return it."""
         # Create new object as whole.
@@ -239,9 +232,7 @@ class Part(object):
             new_object.matrix_parent_inverse = mathutils.Matrix.Identity(4)
 
         # Convert to Base Builder Object.
-        new_object = self.builder.get_builder_object_from_bpy_object(
-            new_object
-        )
+        new_object = self.builder.get_builder_object_from_bpy_object(new_object)
         new_object.remove_constraints()
         return new_object
 
@@ -293,7 +284,9 @@ class Part(object):
             prev_objects_capture = [x.name for x in bpy.data.objects]
             bpy.ops.import_scene.fbx(filepath=obj_path)
             new_objects_capture = [x.name for x in bpy.data.objects]
-            new_objects = [x for x in new_objects_capture if x not in prev_objects_capture]
+            new_objects = [
+                x for x in new_objects_capture if x not in prev_objects_capture
+            ]
             item = bpy.data.objects[new_objects[0]]
             item.name = object_id
             # for convenience if saving obj/mtl files, delete any imported materials
@@ -319,20 +312,20 @@ class Part(object):
         # Get Matrix Data
         world_matrix = self.matrix_world
         # Bring the matrix from Blender Z-Up space into standard Y-up space.
-        z_compensate = mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'X')
+        z_compensate = mathutils.Matrix.Rotation(math.radians(-90.0), 4, "X")
         world_matrix_offset = z_compensate @ world_matrix
         # Retrieve Position, Up and At vectors.
         pos = world_matrix_offset.decompose()[0]
         up = [
             world_matrix_offset[0][1],
             world_matrix_offset[1][1],
-            world_matrix_offset[2][1]
+            world_matrix_offset[2][1],
         ]
         at = mathutils.Vector(
             (
                 world_matrix_offset[0][2],
                 world_matrix_offset[1][2],
-                world_matrix_offset[2][2]
+                world_matrix_offset[2][2],
             )
         )
         at = at.normalized()
@@ -343,7 +336,6 @@ class Part(object):
             "At": [at[0], at[1], at[2]],
             "Timestamp": int(self.time_stamp),
             "UserData": int(self.user_data),
-            "Message": self.message
         }
 
     # Class Methods ---
@@ -354,7 +346,9 @@ class Part(object):
         return part
 
     @classmethod
-    def deserialise_from_data(cls, data, builder_object, build_rigs=True, *args, **kwargs):
+    def deserialise_from_data(
+        cls, data, builder_object, build_rigs=True, *args, **kwargs
+    ):
         """Reconstruct the class using an a data.
 
         Data usually comes from NMS or the serialise method.
@@ -366,7 +360,7 @@ class Part(object):
             object_id=object_id,
             builder_object=builder_object,
             build_rigs=build_rigs,
-            user_data=user_data
+            user_data=user_data,
         )
         # Get location data.
         pos = data.get("Position", [0.0, 0.0, 0.0])
@@ -383,6 +377,67 @@ class Part(object):
         return part
 
     # Static Methods ---
+    @staticmethod
+    def get_mirror_part_id(object_id):
+        # Handle Compass
+        east_compass_ids = [
+            "NE",
+            "NE1",
+            "NE2",
+            "NE3",
+        ]
+        west_compass_ids = [
+            "NW",
+            "NW1",
+            "NW2",
+            "NW3",
+        ]
+        for idx, east_compass_id in enumerate(east_compass_ids):
+            if object_id.endswith(f"_{east_compass_id}"):
+                return (
+                    object_id[: -(len(east_compass_id) + 1)]
+                    + "_"
+                    + west_compass_ids[idx]
+                )
+        for idx, west_compass_id in enumerate(west_compass_ids):
+            if object_id.endswith(f"_{west_compass_id}"):
+                return (
+                    object_id[: -(len(west_compass_id) + 1)]
+                    + "_"
+                    + east_compass_ids[idx]
+                )
+
+        # Handle Winged
+        if object_id.endswith("_R"):
+            return object_id[:-2]
+        else:
+            return object_id + "_R"
+
+    @staticmethod
+    def get_flip_part_id(object_id):
+        # Handle flipped first.
+        if "_Y_" in object_id:
+            return object_id.replace("_Y_", "_")
+        # Then check for unflipped.
+        compass_ids = [
+            "N",
+            "E",
+            "W",
+            "S",
+            "NE",
+            "NE1",
+            "NE2",
+            "NE3",
+            "NW",
+            "NW1",
+            "NW2",
+            "NW3",
+        ]
+        for compass_id in compass_ids:
+            if object_id.endswith(f"_{compass_id}"):
+                return object_id[: -(len(compass_id) + 1)] + "_Y_" + compass_id
+        return None
+
     @staticmethod
     def create_matrix_from_vectors(pos, up, at):
         """Create a world space matrix given by an Up and At vector.
@@ -408,15 +463,15 @@ class Part(object):
         # Construct a world matrix for the item.
         mat = mathutils.Matrix(
             [
-                [right_vector[0], up_vector[0] , at_vector[0],  pos[0]],
-                [right_vector[1], up_vector[1] , at_vector[1],  pos[1]],
-                [right_vector[2], up_vector[2] , at_vector[2],  pos[2]],
-                [0.0,             0.0,            0.0,        1.0        ]
+                [right_vector[0], up_vector[0], at_vector[0], pos[0]],
+                [right_vector[1], up_vector[1], at_vector[1], pos[1]],
+                [right_vector[2], up_vector[2], at_vector[2], pos[2]],
+                [0.0, 0.0, 0.0, 1.0],
             ]
         )
         # Create a rotation matrix that turns the whole thing 90 degrees at the origin.
         # This is to compensate blender's Z up axis.
-        mat_rot = mathutils.Matrix.Rotation(math.radians(90.0), 4, 'X')
+        mat_rot = mathutils.Matrix.Rotation(math.radians(90.0), 4, "X")
         mat = mat_rot @ mat
         return mat
 
@@ -468,12 +523,13 @@ class Part(object):
                 return snapping_dictionary[source_group]
 
     def snap_to(
-            self,
-            target,
-            next_target=False,
-            prev_target=False,
-            next_source=False,
-            prev_source=False):
+        self,
+        target,
+        next_target=False,
+        prev_target=False,
+        next_source=False,
+        prev_source=False,
+    ):
         """Snap this item to the specified builder object.
 
         Args:
@@ -485,7 +541,7 @@ class Part(object):
         """
         # For preset targets, just snap them together.
         if hasattr(target, "control"):
-            mat_rot = mathutils.Matrix.Rotation(math.radians(90.0), 4, 'X')
+            mat_rot = mathutils.Matrix.Rotation(math.radians(90.0), 4, "X")
             use_matrix = copy(target.matrix_world) @ mat_rot
             self.matrix_world = use_matrix
             self.select()
@@ -524,10 +580,7 @@ class Part(object):
         if target_local_matrix_datas:
             # Get the default target.
             default_target_key = target_pairing_options[0]
-            target_key = target_item_snap_reference.get(
-                "target",
-                default_target_key
-            )
+            target_key = target_item_snap_reference.get("target", default_target_key)
 
             # If the previous key is not in the available options
             # revert to default.
@@ -536,16 +589,12 @@ class Part(object):
 
             if next_target:
                 target_key = python_utils.get_adjacent_dict_key(
-                    target_pairing_options,
-                    target_key,
-                    step="next"
+                    target_pairing_options, target_key, step="next"
                 )
 
             if prev_target:
                 target_key = python_utils.get_adjacent_dict_key(
-                    target_pairing_options,
-                    target_key,
-                    step="prev"
+                    target_pairing_options, target_key, step="prev"
                 )
 
         # Get the per item reference.
@@ -570,8 +619,7 @@ class Part(object):
                 )
             else:
                 source_key = source_item_snap_reference.get(
-                    "source",
-                    default_source_key
+                    "source", default_source_key
                 )
 
             # If the previous key is not in the available options
@@ -581,16 +629,12 @@ class Part(object):
 
             if next_source:
                 source_key = python_utils.get_adjacent_dict_key(
-                    source_pairing_options,
-                    source_key,
-                    step="next"
+                    source_pairing_options, source_key, step="next"
                 )
 
             if prev_source:
                 source_key = python_utils.get_adjacent_dict_key(
-                    source_pairing_options,
-                    source_key,
-                    step="prev"
+                    source_pairing_options, source_key, step="prev"
                 )
 
         # If no keys were found, don't snap.
@@ -628,11 +672,7 @@ class Part(object):
 
         # Rotate by 180 around Y at the origin.
         origin_matrix = snap_matrix_inv @ snap_matrix
-        rotation_matrix = mathutils.Matrix.Rotation(
-            math.radians(180.0),
-            4,
-            "Y"
-        )
+        rotation_matrix = mathutils.Matrix.Rotation(math.radians(180.0), 4, "Y")
         origin_flipped_matrix = rotation_matrix @ origin_matrix
         flipped_snap_matrix = snap_matrix @ origin_flipped_matrix
 
@@ -646,15 +686,11 @@ class Part(object):
         self.matrix_world = target_location
         self.rotation = target_location.to_euler()
 
-
         # Find the opposite source key and set it.
         next_target_key = target_key
 
         # If we are working with the same objects.
-        next_target_key = source_local_matrix_datas[source_key].get(
-            "opposite",
-            None
-        )
+        next_target_key = source_local_matrix_datas[source_key].get("opposite", None)
 
         # Update source item refernece.
         source_item_snap_reference["source"] = source_key
@@ -669,11 +705,7 @@ class Part(object):
 
         return True
 
-    def get_closest_snap_points(
-            self,
-            target,
-            source_filter=None,
-            target_filter=None):
+    def get_closest_snap_points(self, target, source_filter=None, target_filter=None):
         """Get the closest snap points of two objects.
 
         Args:
@@ -743,9 +775,12 @@ class Part(object):
         """
         source_matrices = self.get_snap_points()
         if filter is not None:
-            source_matrices = { k: v for k, v in source_matrices.items() if filter in k }
+            source_matrices = {k: v for k, v in source_matrices.items() if filter in k}
 
-        source_points = [self.matrix_world @ mathutils.Matrix(info["matrix"]) for k, info in source_matrices.items()]
+        source_points = [
+            self.matrix_world @ mathutils.Matrix(info["matrix"])
+            for k, info in source_matrices.items()
+        ]
 
         result = []
         if not source_points:
@@ -780,4 +815,3 @@ class Part(object):
                     break
 
         return result
-

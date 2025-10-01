@@ -1,4 +1,5 @@
 """Convenient methods to perform common blender related tasks."""
+
 import math
 
 import addon_utils
@@ -10,6 +11,7 @@ def load_plugin(plugin_name):
     is_enabled, _ = addon_utils.check(plugin_name)
     if not is_enabled:
         addon_utils.enable(plugin_name)
+
 
 def add_to_scene(item, collection_name="Collection"):
     """Add an item to the main blender collection.
@@ -36,29 +38,31 @@ def add_to_scene(item, collection_name="Collection"):
 
 def get_item_by_name(item_name):
     """Get a Blender object by specifying the name of the object.
-    
+
     Args:
         item_name (str): The name of the item.
-        
+
     Returns:
-        bpy_types.Object: The Blender object.    
+        bpy_types.Object: The Blender object.
     """
     return bpy.data.objects[item_name]
 
+
 def item_exists_by_name(item_name):
     """Check for a Blender object by specifying the name of the object.
-    
+
     Args:
         item_name (str): The name of the item.
-        
+
     Returns:
-        bool: True iff object exists.    
+        bool: True iff object exists.
     """
     return item_name in bpy.data.objects
 
+
 def remove_object(name):
     """Remove an item from the scene by specifying it's name.
-    
+
     Args:
         name (str): The name of the object to remove.
     """
@@ -71,7 +75,7 @@ def remove_object(name):
 def scene_refresh():
     """Force the dependency graph to update.
 
-    This is sometimes required when adding and removing constraints on 
+    This is sometimes required when adding and removing constraints on
     certain objects.
     """
     layer = bpy.context.view_layer
@@ -102,7 +106,7 @@ def select(selection, add=False):
     """
     # Deselect all.
     if not add:
-        bpy.ops.object.select_all(action='DESELECT')
+        bpy.ops.object.select_all(action="DESELECT")
         set_active_item(None)
 
     # Ensure List.
@@ -119,7 +123,7 @@ def select(selection, add=False):
 
 def get_current_selection():
     """Get the current selected item.
-    
+
     Returns:
         bpy_types.Object: The selected item.
     """
@@ -129,7 +133,7 @@ def get_current_selection():
 
 def get_distance_between(matrix1, matrix2):
     """Get the distance between two matrices.
-    
+
     Args:
         matrix1: First matrix input.
         matrix2: Second matrix input.
@@ -140,19 +144,21 @@ def get_distance_between(matrix1, matrix2):
     translate1 = matrix1.decompose()[0]
     translate2 = matrix2.decompose()[0]
     return math.sqrt(
-        (translate2.x - translate1.x)**2 + (translate2.y - translate1.y)**2  + (translate2.z - translate1.z)**2
+        (translate2.x - translate1.x) ** 2
+        + (translate2.y - translate1.y) ** 2
+        + (translate2.z - translate1.z) ** 2
     )
 
 
 def delete(bpy_object):
     """Remove the item and everything below it."""
     # Deselect all
-    bpy.ops.object.select_all(action='DESELECT')
-    
+    bpy.ops.object.select_all(action="DESELECT")
+
     # Parent items to control.
     for part in bpy_object.children:
         part.hide_select = False
         part.select_set(True)
-    
+
     bpy_object.select_set(True)
-    bpy.ops.object.delete() 
+    bpy.ops.object.delete()

@@ -2,18 +2,19 @@ import json
 import os
 
 try:
-  from PySide6 import QtCore, QtGui, QtWidgets
+    from PySide6 import QtCore, QtGui, QtWidgets
 except ImportError:
-  from PySide2 import QtCore, QtGui, QtWidgets
+    from PySide2 import QtCore, QtGui, QtWidgets
 
 import asset_browser.icons.icons
 
-THUMB_SIZE = 55
+THUMB_SIZE = 48
 ITEM_SIZE = 80
 FONT_SIZE = 7
 
 FILE_DIR = os.path.dirname(os.path.realpath(__file__))
 ICON_PATH = os.path.join(FILE_DIR, "icons")
+
 
 class Thumb(QtWidgets.QLabel):
     def __init__(self, part_id=None, *args, **kwargs):
@@ -22,11 +23,17 @@ class Thumb(QtWidgets.QLabel):
         icon_path = ":{}".format(part_id)
         if QtCore.QFile.exists(icon_path):
             pixmap = QtGui.QPixmap(icon_path)
-            scaled = pixmap.scaled(THUMB_SIZE, THUMB_SIZE, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            scaled = pixmap.scaled(
+                THUMB_SIZE,
+                THUMB_SIZE,
+                QtCore.Qt.KeepAspectRatio,
+                QtCore.Qt.SmoothTransformation,
+            )
             self.setPixmap(scaled)
         self.setMinimumSize(QtCore.QSize(THUMB_SIZE, THUMB_SIZE))
         self.setMaximumSize(QtCore.QSize(THUMB_SIZE, THUMB_SIZE))
         self.setAlignment(QtCore.Qt.AlignCenter)
+
 
 class Item(QtWidgets.QFrame):
 
@@ -61,7 +68,6 @@ class Item(QtWidgets.QFrame):
         self.main_layout.addWidget(self.thumb, QtCore.Qt.AlignCenter)
         self.main_layout.addWidget(self.label_widget, QtCore.Qt.AlignCenter)
 
-
     def mousePressEvent(self, event):
         self.clicked.emit()
 
@@ -87,10 +93,12 @@ class Preset(QtWidgets.QFrame):
 
     def _build_ui(self):
         self.label_button = QtWidgets.QPushButton(self.label, parent=self)
-        self.label_button.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.label_button.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed
+        )
         font = QtGui.QFont("Decorative", 10)
         self.label_button.setFont(font)
-        self.edit_button = QtWidgets.QPushButton("Edit" , parent=self)
+        self.edit_button = QtWidgets.QPushButton("Edit", parent=self)
 
     def _layout(self):
         self.main_layout.addWidget(self.label_button)

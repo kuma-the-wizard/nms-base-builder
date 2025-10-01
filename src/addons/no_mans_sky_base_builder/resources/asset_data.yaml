@@ -200,6 +200,7 @@ Builder Structures:
   - B_WALLB_WIN1
   - B_WALLB_WIN2
   - B_WALLB_WIN3
+  - B_WALLDIAGONAL
   - B_WALLM
   - B_WALLM_DIAGONA
   - B_WALLM_H
@@ -226,16 +227,14 @@ Builder Structures:
   - B_WALL_WINDOW
 Corvette:
   Access and Docking:
-  - BIGGSCONNECTOR
   - B_ALK_A
   - B_ALK_B
+  - B_WNG_B
+  - B_WNG_B_R
   - B_ALK_C
-  - B_ALK_D
   - B_ALK_Z_A
   - B_ALK_Z_B
   - B_ALK_Z_C
-  - B_ALK_Z_D
-  - B_LAN_B
   - B_LND_A
   - B_LND_B
   Cockpits and Habitation Modules:
@@ -252,22 +251,18 @@ Corvette:
   - B_SHL_A
   - B_SHL_B
   - B_SHL_C
-  - B_SHL_D
   - B_TUR_A
   - B_TUR_B
   - B_TUR_C
-  - B_TUR_D
-  - B_TUR_E
-  Exterior Decoration:
+  - B_DECO_I
+  Hull Attachments:
   - B_DECO_A
   - B_DECO_B
   - B_DECO_C
   - B_DECO_D
-  - B_DECO_E
   - B_DECO_F
   - B_DECO_G
   - B_DECO_H
-  - B_DECO_I
   - B_DECO_J
   - B_DECO_K
   - B_DECO_L
@@ -278,16 +273,12 @@ Corvette:
   - B_DECO_P
   Hull Connectors:
   - B_CON2_0
-  - B_CON2_1
-  - B_CON2_2
-  - B_CON2_3
   - B_CON_10
   - B_CON_11
   - B_CON_12
   - B_CON_13
   - B_CON_14
   - B_CON_15
-  - B_CON_4
   - B_CON_5
   - B_CON_6
   - B_CON_7
@@ -679,15 +670,12 @@ Corvette:
   - B_STR_S_Y_S
   - B_STR_S_Y_W
   Internal Configuration:
-  - B_DOOR0
   - B_STAIRS0
   Reactors:
   - B_GEN_0
   - B_GEN_1
   - B_GEN_2
   - B_GEN_3
-  - B_GEN_4
-  - B_GEN_5
   Storage:
   - B_WALL_CARG0
   - B_WALL_CARG1
@@ -704,6 +692,16 @@ Corvette:
   - B_TRU_B
   - B_TRU_C
   - B_TRU_D
+  - B_WNG_A
+  - B_WNG_A_R
+  - B_WNG_D
+  - B_WNG_D_R
+  - B_WNG_F
+  - B_WNG_F_R
+  - B_WNG_H
+  - B_WNG_H_R
+  - B_WNG_L
+  - B_WNG_L_R
   Utility Modules:
   - B_WALL_BUNK0
   - B_WALL_KITC0
@@ -711,38 +709,21 @@ Corvette:
   - B_WALL_PLAN0
   - B_WALL_TECH0
   - B_WALL_TECH1
-  - B_WALL_TOIL0
-  Walls, Doors and Windows:
-  - B_WALLDIAGONAL
   Windows:
   - B_WALL_WIND0
   - B_WALL_WIND1
   - B_WALL_WIND2
   Wings:
-  - B_WNG_A
-  - B_WNG_A_R
-  - B_WNG_B
-  - B_WNG_B_R
-  - B_WNG_C
-  - B_WNG_C_R
-  - B_WNG_D
-  - B_WNG_D_R
   - B_WNG_E
   - B_WNG_E_R
-  - B_WNG_F
-  - B_WNG_F_R
   - B_WNG_G
   - B_WNG_G_R
-  - B_WNG_H
-  - B_WNG_H_R
   - B_WNG_I
   - B_WNG_I_R
   - B_WNG_J
   - B_WNG_J_R
   - B_WNG_K
   - B_WNG_K_R
-  - B_WNG_L
-  - B_WNG_L_R
   - B_WNG_M
   - B_WNG_M_R
   - B_WNG_N
@@ -1117,7 +1098,7 @@ Exotic Decorations:
   - BLD_BUGHEAD4
   - BLD_BUGHEAD5
 Fossils:
-  Fossils:
+  Fossil Displays:
   - FOS_BI
   - FOS_BIRD
   - FOS_BIRD_DIS
@@ -1140,6 +1121,150 @@ Fossils:
   - FOS_TAIL_MNT
   - FOS_WORM
   - FOS_WORM_DIS
+  Fossil Parts:
+  - FOS_BI_BODY_AA
+  - FOS_BI_BODY_AB
+  - FOS_BI_BODY_AC
+  - FOS_BI_BODY_AD
+  - FOS_BI_BODY_AE
+  - FOS_BI_BODY_AN
+  - FOS_BI_BODY_BA
+  - FOS_BI_BODY_BB
+  - FOS_BI_BODY_BC
+  - FOS_BI_BODY_BD
+  - FOS_BI_BODY_BE
+  - FOS_BI_BODY_BN
+  - FOS_BI_TAIL_AA
+  - FOS_BI_TAIL_AN
+  - FOS_BI_TAIL_BA
+  - FOS_BI_TAIL_BN
+  - FOS_BI_TAIL_CA
+  - FOS_BI_TAIL_CN
+  - FOS_BI_TAIL_DA
+  - FOS_BI_TAIL_DN
+  - FOS_BI_TAIL_E
+  - FOS_BI_TAIL_F
+  - FOS_BI_TAIL_G
+  - FOS_HEAD_AA
+  - FOS_HEAD_AB
+  - FOS_HEAD_AC
+  - FOS_HEAD_AD
+  - FOS_HEAD_AN
+  - FOS_HEAD_BA
+  - FOS_HEAD_BB
+  - FOS_HEAD_BC
+  - FOS_HEAD_BD
+  - FOS_HEAD_BE
+  - FOS_HEAD_BF
+  - FOS_HEAD_BG
+  - FOS_HEAD_BH
+  - FOS_HEAD_BI
+  - FOS_HEAD_BJ
+  - FOS_HEAD_BN
+  - FOS_HEAD_CA
+  - FOS_HEAD_CB
+  - FOS_HEAD_CC
+  - FOS_HEAD_CD
+  - FOS_HEAD_CE
+  - FOS_HEAD_CF
+  - FOS_HEAD_CG
+  - FOS_HEAD_CH
+  - FOS_HEAD_CI
+  - FOS_HEAD_CJ
+  - FOS_HEAD_CN
+  - FOS_HEAD_DA
+  - FOS_HEAD_DB
+  - FOS_HEAD_DC
+  - FOS_HEAD_DD
+  - FOS_HEAD_DE
+  - FOS_HEAD_DF
+  - FOS_HEAD_DG
+  - FOS_HEAD_DH
+  - FOS_HEAD_DI
+  - FOS_HEAD_DJ
+  - FOS_HEAD_DN
+  - FOS_HEAD_EA
+  - FOS_HEAD_EB
+  - FOS_HEAD_EC
+  - FOS_HEAD_ED
+  - FOS_HEAD_EE
+  - FOS_HEAD_EF
+  - FOS_HEAD_EG
+  - FOS_HEAD_EH
+  - FOS_HEAD_EI
+  - FOS_HEAD_EJ
+  - FOS_HEAD_EN
+  - FOS_HEAD_FA
+  - FOS_HEAD_FB
+  - FOS_HEAD_FC
+  - FOS_HEAD_FD
+  - FOS_HEAD_FE
+  - FOS_HEAD_FF
+  - FOS_HEAD_FG
+  - FOS_HEAD_FH
+  - FOS_HEAD_FI
+  - FOS_HEAD_FJ
+  - FOS_HEAD_FK
+  - FOS_HEAD_FL
+  - FOS_HEAD_FM
+  - FOS_HEAD_FN
+  - FOS_HEAD_GA
+  - FOS_HEAD_GB
+  - FOS_HEAD_GC
+  - FOS_HEAD_GD
+  - FOS_HEAD_GE
+  - FOS_HEAD_GF
+  - FOS_HEAD_GN
+  - FOS_HEAD_HA
+  - FOS_HEAD_HB
+  - FOS_HEAD_HC
+  - FOS_HEAD_HD
+  - FOS_HEAD_HE
+  - FOS_HEAD_HF
+  - FOS_HEAD_HG
+  - FOS_HEAD_HN
+  - FOS_HEAD_IA
+  - FOS_HEAD_IB
+  - FOS_HEAD_IC
+  - FOS_HEAD_ID
+  - FOS_HEAD_IE
+  - FOS_HEAD_IF
+  - FOS_HEAD_IG
+  - FOS_HEAD_IN
+  - FOS_HEAD_JA
+  - FOS_HEAD_JB
+  - FOS_HEAD_JC
+  - FOS_HEAD_JD
+  - FOS_HEAD_JE
+  - FOS_HEAD_JF
+  - FOS_HEAD_JG
+  - FOS_HEAD_JH
+  - FOS_HEAD_JI
+  - FOS_HEAD_JJ
+  - FOS_HEAD_JN
+  - FOS_HEAD_KA
+  - FOS_HEAD_KB
+  - FOS_HEAD_KC
+  - FOS_HEAD_KD
+  - FOS_HEAD_KE
+  - FOS_HEAD_KF
+  - FOS_HEAD_KG
+  - FOS_HEAD_KH
+  - FOS_HEAD_KI
+  - FOS_HEAD_KJ
+  - FOS_HEAD_KK
+  - FOS_HEAD_KL
+  - FOS_HEAD_KN
+  - FOS_LIMBS_A
+  - FOS_LIMBS_B
+  - FOS_LIMBS_C
+  - FOS_LIMBS_D
+  - FOS_LIMBS_E
+  - FOS_LIMBS_F
+  - FOS_LIMBS_G
+  - FOS_LIMBS_H
+  - FOS_LIMBS_I
+  - FOS_LIMBS_J
 Furnishings:
   Decorative Technology:
   - BASE_NEXUS1
@@ -1250,7 +1375,6 @@ Furnishings:
   - S_TOWER_B_FA
   - S_TOWER_C
   - S_TOWER_FA
-  settlement:
   - SET_B_MONU
   - SET_B_MONU_FA
   - SET_CLASS_A
@@ -1728,10 +1852,21 @@ Wall Art:
   - EXPD_POSTER18B
   - EXPD_POSTER18C
   - EXPD_POSTER19A
+  - EXPD_POSTER19A
   - EXPD_POSTER19B
+  - EXPD_POSTER19B
+  - EXPD_POSTER19C
   - EXPD_POSTER19C
   - S_POSTER0
   - S_POSTER1
+  - S_POSTER2
+  - S_POSTER3
+  - S_POSTER4
+  - S_POSTER5
+  - S_POSTER6
+  - S_POSTER7
+  - S_POSTER8
+  - S_POSTER9
   - S_POSTER10
   - S_POSTER11
   - S_POSTER12
@@ -1742,7 +1877,6 @@ Wall Art:
   - S_POSTER17
   - S_POSTER18
   - S_POSTER19
-  - S_POSTER2
   - S_POSTER20
   - S_POSTER21
   - S_POSTER22
@@ -1753,12 +1887,5 @@ Wall Art:
   - S_POSTER27
   - S_POSTER28
   - S_POSTER29
-  - S_POSTER3
   - S_POSTER30
   - S_POSTER31
-  - S_POSTER4
-  - S_POSTER5
-  - S_POSTER6
-  - S_POSTER7
-  - S_POSTER8
-  - S_POSTER9
