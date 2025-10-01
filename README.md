@@ -40,8 +40,9 @@ A plugin for Blender to build bases in No Mans Sky.<br />
 
 * Latest Base Builder Release
     * https://github.com/djmonkeyuk/nms-base-builder/releases
-* No Mans Sky Save Editor
-    * https://nomansskymods.com/mods/no-mans-sky-save-editor
+* A No Mans Sky Save Editor
+    * GoatFungus - https://github.com/goatfungus/NMSSaveEditor
+    * NomNom - https://github.com/zencq/NomNom 
 * Blender
     * https://www.blender.org
 * The Latest Python 3 version.
