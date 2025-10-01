@@ -98,22 +98,22 @@ Casual users may ignore this section. These Python dependencies are installed au
 The tool is designed towards supporting the vanilla game as much as possible, however
 any additional base parts introduced by mods will display as cubes but will still be able to import/export to the game.
 
-You can introduce your own OBJ's by adding them to your user directory folder. The layout for this should be...
+You can introduce your own FBX's by adding them to your user directory folder. The layout for this should be...
 
 * %USERPROFILE%\NoMansSkyBaseBuilder\
   * mods
     * mod_name
       * models
         * category
-          * MOD_WALLA.obj
-          * MOD_WALLB.obj
+          * MOD_WALLA.fbx
+          * MOD_WALLB.fbx
         * category_b
-          * MOD_FLOORA.obj
-          * MOD_FLOORB.obj
+          * MOD_FLOORA.fbx
+          * MOD_FLOORB.fbx
 
 The names of categories is up to the user.
 
-The obj file name should reflect the name of the part in-game.
+The fbx file name should reflect the name of the part in-game.
 
 <a name="credits"></a>
 

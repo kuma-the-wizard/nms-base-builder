@@ -3,7 +3,7 @@ bl_info = {
     "name": "No Mans Sky Base Builder",
     "description": "A tool to assist with base building in No Mans Sky",
     "author": "DjMonkey",
-    "version": (2, 1, 4),
+    "version": (6, 0, 0),
     "blender": (4, 0, 0),
     "location": "3D View > Tools",
     "warning": "",  # used for warning icon and text in addons panel
@@ -21,13 +21,6 @@ import bpy
 import bpy.ops
 import bpy.utils
 import bpy.utils.previews
-import no_mans_sky_base_builder.builder as builder
-import no_mans_sky_base_builder.part_overrides.line as line
-import no_mans_sky_base_builder.preset as preset
-import no_mans_sky_base_builder.utils.blend_utils as blend_utils
-import no_mans_sky_base_builder.utils.curve as curve
-import no_mans_sky_base_builder.utils.material as _material
-import no_mans_sky_base_builder.utils.python as python_utils
 from bpy.props import (
     BoolProperty,
     EnumProperty,
@@ -38,6 +31,15 @@ from bpy.props import (
 )
 from bpy.types import Panel, PropertyGroup
 
+import no_mans_sky_base_builder.builder as builder
+import no_mans_sky_base_builder.part as part
+import no_mans_sky_base_builder.part_overrides.line as line
+import no_mans_sky_base_builder.preset as preset
+import no_mans_sky_base_builder.utils.blend_utils as blend_utils
+import no_mans_sky_base_builder.utils.curve as curve
+import no_mans_sky_base_builder.utils.material as _material
+import no_mans_sky_base_builder.utils.python as python_utils
+
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
 PRESET_PATH = os.path.join(USER_PATH, "presets")
@@ -47,6 +49,8 @@ BUILDER = builder.Builder()
 GHOSTED_JSON = os.path.join(FILE_PATH, "resources", "ghosted.json")
 ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
 GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
+NICE_JSON = os.path.join(FILE_PATH, "resources", "nice_names.json")
+nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
 
 
 # Setting Support Methods ---
@@ -140,6 +144,13 @@ class NMSSettings(PropertyGroup):
     string_address: StringProperty(
         name="Galactic Address",
         description="The galactic address.",
+        default="",
+        maxlen=1024,
+    )
+
+    string_userdata: StringProperty(
+        name="User Data",
+        description="User Data - important for corvette bases.",
         default="",
         maxlen=1024,
     )
@@ -303,6 +314,8 @@ class NMSSettings(PropertyGroup):
         # Start bringing the data in.
         if "GalacticAddress" in nms_data:
             self.string_address = str(nms_data["GalacticAddress"])
+        if "UserData" in nms_data:
+            self.string_userdata = str(nms_data["UserData"])
         if "BaseType" in nms_data:
             self.string_base_type = str(nms_data["BaseType"]["PersistentBaseTypes"])
         if "Position" in nms_data:
@@ -375,7 +388,7 @@ class NMSSettings(PropertyGroup):
             "GalacticAddress": python_utils.prefer_int(self.string_address),
             "Position": [self.float_pos_x, self.float_pos_y, self.float_pos_z],
             "Forward": [self.float_ori_x, self.float_ori_y, self.float_ori_z],
-            "UserData": 0,
+            "UserData": python_utils.prefer_int(self.string_userdata),
             "LastUpdateTimestamp": python_utils.prefer_int(self.string_last_ts),
             "RID": "",
             "Owner": {
@@ -496,6 +509,7 @@ class NMSSettings(PropertyGroup):
         blend_utils.remove_object("Camera")
 
         self.string_address = ""
+        self.string_userdata = ""
         self.string_base = ""
         self.string_lid = ""
         self.string_ts = ""
@@ -559,7 +573,7 @@ class NMSSettings(PropertyGroup):
         # Set Shading.
         if self.room_vis_switch in [0, 1, 2]:
             bpy.context.space_data.shading.type = "SOLID"
-            bpy.context.scene.render.engine = "BLENDER_EEVEE"
+            bpy.context.scene.render.engine = "BLENDER_EEVEE_NEXT"
 
         # Set Hide
         hidden = True
@@ -685,6 +699,72 @@ class NMSSettings(PropertyGroup):
         curve.duplicate_along_curve(
             BUILDER, dup_object, curve_object, distance_percentage
         )
+
+    def mirror(self):
+        """Mirror the object along X axis (if possible)."""
+        # Store selection.
+        selected_objects = bpy.context.selected_objects
+
+        # Validate
+        if not selected_objects:
+            ShowMessageBox(
+                message="Make sure you have an item selected.", title="Mirror"
+            )
+            return
+
+        # Get Selected item.
+        target = blend_utils.get_current_selection()
+
+        if "ObjectID" not in target and "PresetID" not in target:
+            message = "This item can not be mirrored. Only certain parts can be mirrored, like Corvette hull plating. "
+            ShowMessageBox(message=message, title="Mirror")
+            return
+
+        # Part
+        if "ObjectID" in target:
+            object_id = target["ObjectID"]
+            mirror_id = part.Part.get_mirror_part_id(object_id)
+            if mirror_id not in nice_name_dictionary.keys():
+                ShowMessageBox(
+                    message="This part cannot be mirrored. Please try again on a compatible part. (Usually Corvette related)",
+                    title="Mirror",
+                )
+                return {"FINISHED"}
+            # Build Item.
+            new_item = BUILDER.mirror_part(target)
+            new_item.select()
+
+    def flip(self):
+        """Mirror the object along X axis (if possible)."""
+        # Store selection.
+        selected_objects = bpy.context.selected_objects
+
+        # Validate
+        if not selected_objects:
+            ShowMessageBox(message="Make sure you have an item selected.", title="Flip")
+            return
+
+        # Get Selected item.
+        target = blend_utils.get_current_selection()
+
+        if "ObjectID" not in target and "PresetID" not in target:
+            message = "This part cannot be flipped. Please try again on a compatible part. (Usually Corvette related)"
+            ShowMessageBox(message=message, title="Flip")
+            return
+
+        # Part
+        if "ObjectID" in target:
+            object_id = target["ObjectID"]
+            mirror_id = part.Part.get_flip_part_id(object_id)
+            if mirror_id not in nice_name_dictionary.keys():
+                ShowMessageBox(
+                    message="This part cannot be flipped. Please try again on a compatible part. (Usually Corvette related)",
+                    title="Flip",
+                )
+                return {"FINISHED"}
+            # Build Item.
+            new_item = BUILDER.flip_part(target)
+            new_item.select()
 
     def apply_colour(self, colour_index=0, material=None):
         """Gives an item a new colour."""
@@ -831,6 +911,7 @@ class NMS_PT_base_prop_panel(Panel):
         properties_column = properties_box.column(align=True)
         properties_column.prop(nms_tool, "string_base")
         properties_column.prop(nms_tool, "string_address")
+        properties_column.prop(nms_tool, "string_userdata")
 
 
 # Snap Panel ---
@@ -906,6 +987,13 @@ class NMS_PT_snap_panel(Panel):
         snap_source_next = source_row.operator(
             "object.nms_snap", icon="TRIA_RIGHT", text="Next"
         )
+
+        # Corvette Mirror Tools
+        mirror_box = snap_column.box()
+        mirror_col = mirror_box.row(align=True)
+        mirror_col.label(text="Mirroring")
+        mirror_op = mirror_col.operator("object.nms_mirror", icon="ARROW_LEFTRIGHT")
+        flip_op = mirror_col.operator("object.nms_flip", icon="DECORATE_OVERRIDE")
 
         # Set Snap Operator assignments.
         # Default
@@ -1039,7 +1127,7 @@ class NMS_PT_build_panel(Panel):
         row.operator("object.nms_get_more_presets", icon="WORLD_DATA")
         row.operator("object.nms_open_preset_folder", icon="FILE_FOLDER")
         layout.prop(nms_tool, "enum_switch", expand=True)
-        part_list = layout.template_list(
+        layout.template_list(
             "NMS_UL_actions_list",
             "compact",
             context.scene,
@@ -1071,6 +1159,9 @@ class NMS_UL_actions_list(bpy.types.UIList):
                         text=BUILDER.get_nice_name(part),
                     )
                     operator.part_id = part
+                    operator.tooltip = (
+                        f"Name: {BUILDER.get_nice_name(part)}\nID: ({part})"
+                    )
 
             # Draw Presets
             if item.item_type == "presets":
@@ -1090,6 +1181,7 @@ class NMS_UL_actions_list(bpy.types.UIList):
                     operator.part_id = item.description
                     edit_operator.part_id = item.description
                     delete_operator.part_id = item.description
+                    operator.tooltip = "Place this preset in the scene."
 
 
 class PartCollection(bpy.types.PropertyGroup):
@@ -1306,7 +1398,7 @@ class LoadFancyUI(bpy.types.Operator):
 
 
 class PresetsMenu(bpy.types.Menu):
-    bl_idname = "object.nms_get_more_presets_menu"
+    bl_idname = "OBJECT_MT_nms_get_more_presets_menu"
     bl_label = "Get More Presets..."
 
     def draw(self, context):
@@ -1389,6 +1481,11 @@ class ListBuildOperator(bpy.types.Operator):
     bl_label = "Simple Object Operator"
     bl_options = {"UNDO", "REGISTER"}
     part_id: StringProperty()
+    tooltip: StringProperty()
+
+    @classmethod
+    def description(cls, context, operator):
+        return operator.tooltip
 
     def execute(self, context):
         # Get Selection
@@ -1462,6 +1559,8 @@ class ListDeleteOperator(bpy.types.Operator):
 
 # Tool Operators ---
 class Duplicate(bpy.types.Operator):
+    """Duplicate the selected part."""
+
     bl_idname = "object.nms_duplicate"
     bl_label = "Duplicate"
     bl_options = {"UNDO", "REGISTER"}
@@ -1474,6 +1573,8 @@ class Duplicate(bpy.types.Operator):
 
 
 class Delete(bpy.types.Operator):
+    """Remove the selected part from the scene."""
+
     bl_idname = "object.nms_delete"
     bl_label = "Delete"
     bl_options = {"UNDO", "REGISTER"}
@@ -1486,6 +1587,8 @@ class Delete(bpy.types.Operator):
 
 
 class DuplicateAlongCurve(bpy.types.Operator):
+    """Duplicate the selected part along a Blender curve."""
+
     bl_idname = "object.nms_duplicate_along_curve"
     bl_label = "Duplicate Along Curve"
     bl_options = {"UNDO", "REGISTER"}
@@ -1504,7 +1607,37 @@ class DuplicateAlongCurve(bpy.types.Operator):
         return wm.invoke_props_dialog(self)
 
 
+class Mirror(bpy.types.Operator):
+    """Mirror the object along the X axis (Only available on certain Corvette pieces)"""
+
+    bl_idname = "object.nms_mirror"
+    bl_label = "Mirror"
+    bl_options = {"UNDO", "REGISTER"}
+
+    def execute(self, context):
+        scene = context.scene
+        nms_tool = scene.nms_base_tool
+        nms_tool.mirror()
+        return {"FINISHED"}
+
+
+class Flip(bpy.types.Operator):
+    """Flip the object along the Y axis (Only available on certain Corvette pieces)"""
+
+    bl_idname = "object.nms_flip"
+    bl_label = "Flip"
+    bl_options = {"UNDO", "REGISTER"}
+
+    def execute(self, context):
+        scene = context.scene
+        nms_tool = scene.nms_base_tool
+        nms_tool.flip()
+        return {"FINISHED"}
+
+
 class ApplyColour(bpy.types.Operator):
+    """Apply this colour to the selected part."""
+
     bl_idname = "object.nms_apply_colour"
     bl_label = "Apply Colour"
     bl_options = {"UNDO", "REGISTER"}
@@ -1519,6 +1652,8 @@ class ApplyColour(bpy.types.Operator):
 
 
 class ApplyDefaultColour(bpy.types.Operator):
+    """Revert the colour back to default on selected part."""
+
     bl_idname = "object.nms_apply_default_colour"
     bl_label = "Apply Default Colour"
     bl_options = {"UNDO", "REGISTER"}
@@ -1532,6 +1667,8 @@ class ApplyDefaultColour(bpy.types.Operator):
 
 
 class Snap(bpy.types.Operator):
+    """Snap the selected object to another selected object."""
+
     bl_idname = "object.nms_snap"
     bl_label = "Snap"
     bl_options = {"UNDO", "REGISTER"}
@@ -1556,6 +1693,8 @@ class Snap(bpy.types.Operator):
 
 # Logic Operators ---
 class Point(bpy.types.Operator):
+    """Create a new point controller used to create logic cables.\nSelect this twice to create a cables between 2 points."""
+
     bl_idname = "object.nms_point"
     bl_label = "New Point"
     bl_options = {"UNDO", "REGISTER"}
@@ -1585,6 +1724,8 @@ class Point(bpy.types.Operator):
 
 
 class Connect(bpy.types.Operator):
+    """Form a cable between 2 objects that have cable connections."""
+
     bl_idname = "object.nms_connect"
     bl_label = "Connect"
     bl_options = {"UNDO", "REGISTER"}
@@ -1645,6 +1786,8 @@ class Connect(bpy.types.Operator):
 
 
 class Divide(bpy.types.Operator):
+    """Divide a selected cable into 2 cables."""
+
     bl_idname = "object.nms_divide"
     bl_label = "Divide"
     bl_options = {"UNDO", "REGISTER"}
@@ -1674,6 +1817,8 @@ class Divide(bpy.types.Operator):
 
 
 class Split(bpy.types.Operator):
+    """Divide a selected cable into 2 cables with a gap between them."""
+
     bl_idname = "object.nms_split"
     bl_label = "Split"
 
@@ -1702,6 +1847,8 @@ class Split(bpy.types.Operator):
 
 
 class SelectConnected(bpy.types.Operator):
+    """Select all objects that are connected to the selected cable."""
+
     bl_idname = "object.nms_select_connected"
     bl_label = "Select Connected"
     bl_options = {"UNDO", "REGISTER"}
@@ -1721,6 +1868,8 @@ class SelectConnected(bpy.types.Operator):
 
 
 class SelectFloating(bpy.types.Operator):
+    """Select free-floating cable points."""
+
     bl_idname = "object.nms_select_floating"
     bl_label = "Select Floating"
     bl_options = {"UNDO", "REGISTER"}
@@ -1750,6 +1899,8 @@ class SelectFloating(bpy.types.Operator):
 
 
 class LogicButton(bpy.types.Operator):
+    """Add a Logic Button to the scene."""
+
     bl_idname = "object.nms_logic_button"
     bl_label = "BTN"
     bl_options = {"UNDO", "REGISTER"}
@@ -1770,6 +1921,8 @@ class LogicButton(bpy.types.Operator):
 
 
 class LogicWallSwitch(bpy.types.Operator):
+    """Add a Logic Switch to the scene."""
+
     bl_idname = "object.nms_logic_wall_switch"
     bl_label = "SWITCH"
     bl_options = {"UNDO", "REGISTER"}
@@ -1788,6 +1941,8 @@ class LogicWallSwitch(bpy.types.Operator):
 
 
 class LogicProxSwitch(bpy.types.Operator):
+    """Add a Logic Proximity Sensor to the scene."""
+
     bl_idname = "object.nms_logic_prox_switch"
     bl_label = "PROX"
     bl_options = {"UNDO", "REGISTER"}
@@ -1806,6 +1961,8 @@ class LogicProxSwitch(bpy.types.Operator):
 
 
 class LogicInvSwitch(bpy.types.Operator):
+    """Add a Logic Inverter to the scene."""
+
     bl_idname = "object.nms_logic_inv_switch"
     bl_label = "INV"
     bl_options = {"UNDO", "REGISTER"}
@@ -1824,6 +1981,8 @@ class LogicInvSwitch(bpy.types.Operator):
 
 
 class LogicAutoSwitch(bpy.types.Operator):
+    """Add a Logic Auto to the scene."""
+
     bl_idname = "object.nms_logic_auto_switch"
     bl_label = "AUTO"
     bl_options = {"UNDO", "REGISTER"}
@@ -1842,6 +2001,8 @@ class LogicAutoSwitch(bpy.types.Operator):
 
 
 class LogicFloorSwitch(bpy.types.Operator):
+    """Add a Logic Floor Switch to the scene."""
+
     bl_idname = "object.nms_logic_floor_switch"
     bl_label = "FLOOR"
     bl_options = {"UNDO", "REGISTER"}
@@ -1860,6 +2021,8 @@ class LogicFloorSwitch(bpy.types.Operator):
 
 
 class LogicBeatSwitch(bpy.types.Operator):
+    """Add a Logic ByteBeat switch to the scene."""
+
     bl_idname = "object.nms_logic_beat_switch"
     bl_label = "BEAT"
     bl_options = {"UNDO", "REGISTER"}
@@ -1904,6 +2067,8 @@ classes = (
     Duplicate,
     DuplicateAlongCurve,
     Delete,
+    Mirror,
+    Flip,
     SaveAsPreset,
     LoadFancyUI,
     GetMorePresets,

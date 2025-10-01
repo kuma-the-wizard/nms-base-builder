@@ -1,1 +1,0 @@
-"blender.exe" -b -P ./blender_generate_objs.py

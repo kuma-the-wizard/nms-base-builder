@@ -1,3 +1,18 @@
+release 6.0.0
+-------------
+* Added parts for Corvette pieces
+* Added parts for Fossil pieces
+* Added other missing parts from recent updates.
+* Added a mirror and flip button which can be used on certain corvette pieces.
+* Improved support for message fields.
+* UserData value is now retained during import and export, which should make Corvette workflows nicer.
+
+
+release 2.1.4
+-------------
+* Added parts from Worlds Part II (Ruins, exotic plants, etc)
+
+
 release 2.1.3
 -------------
 * Added support for base parts added up to Worlds Part 1 Update.

@@ -1,4 +1,5 @@
 """The builder contains all top level scene methods for managing NMS parts."""
+
 # import cProfile
 import importlib
 import json
@@ -6,18 +7,18 @@ import math
 import os
 import time
 from collections import defaultdict
+from copy import copy
 
 import bpy
+
 import no_mans_sky_base_builder.part as part
-import no_mans_sky_base_builder.part_overrides.air_lock_connector as air_lock_connector
-import no_mans_sky_base_builder.part_overrides.base_flag as base_flag
-import no_mans_sky_base_builder.part_overrides.bridge_connector as bridge_connector
-import no_mans_sky_base_builder.part_overrides.bytebeat as bytebeat
-import no_mans_sky_base_builder.part_overrides.bytebeatswitch as bytebeatswitch
-import no_mans_sky_base_builder.part_overrides.freighter_core as freighter_core
+import no_mans_sky_base_builder.part_overrides.bone as bone
+import no_mans_sky_base_builder.part_overrides.bone_replacer as bone_replacer
 import no_mans_sky_base_builder.part_overrides.line as line
-import no_mans_sky_base_builder.part_overrides.messagemodule as messagemodule
+import no_mans_sky_base_builder.part_overrides.locked as locked
+import no_mans_sky_base_builder.part_overrides.message as message
 import no_mans_sky_base_builder.part_overrides.power_control as power_control
+import no_mans_sky_base_builder.part_overrides.turret as turret
 import no_mans_sky_base_builder.part_overrides.u_bytebeatline as u_bytebeatline
 import no_mans_sky_base_builder.part_overrides.u_pipeline as u_pipeline
 import no_mans_sky_base_builder.part_overrides.u_portalline as u_portalline
@@ -33,6 +34,7 @@ class Builder(object):
     USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
     FILE_PATH = os.path.dirname(os.path.realpath(__file__))
     MODEL_PATH = os.path.join(FILE_PATH, "models")
+    FOSSIL_PARTS_PATH = os.path.join(FILE_PATH, "models", "fossil_parts")
     NICE_JSON = os.path.join(FILE_PATH, "resources", "nice_names.json")
     MODS_PATH = os.path.join(USER_PATH, "mods")
     PRESET_PATH = os.path.join(USER_PATH, "presets")
@@ -40,19 +42,56 @@ class Builder(object):
     # Load in nice name information.
     nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
 
-    override_classes  = {
-        "BASE_FLAG": base_flag.BASE_FLAG,
-        "MESSAGEMODULE": messagemodule.MESSAGEMODULE,
-        "U_POWERLINE": u_powerline.U_POWERLINE,
-        "U_PIPELINE": u_pipeline.U_PIPELINE,
-        "U_PORTALLINE": u_portalline.U_PORTALLINE,
-        "POWER_CONTROL": power_control.POWER_CONTROL,
-        "FREIGHTER_CORE": freighter_core.FREIGHTER_CORE,
-        "BRIDGECONNECTOR": bridge_connector.BRIDGECONNECTOR,
-        "AIRLCKCONNECTOR": air_lock_connector.AIRLCKCONNECTOR,
-        "BYTEBEAT": bytebeat.BYTEBEAT,
-        "BYTEBEATSWITCH": bytebeatswitch.BYTEBEATSWITCH,
-        "U_BYTEBEATLINE": u_bytebeatline.U_BYTEBEATLINE
+    override_classes = {
+        bone_replacer.BONE_REPLACER: [
+            "FOS_HEAD",
+            "FOS_SKULL",
+            "FOS_LIMBS",
+            "FOS_TAIL",
+            "FOS_BODY",
+        ],
+        bone.BONE: [
+            os.path.splitext(filename)[0] for filename in os.listdir(FOSSIL_PARTS_PATH)
+        ],
+        turret.TURRET: ["B_TUR_A", "B_TUR_B", "B_TUR_C", "B_TUR_D", "B_TUR_E"],
+        u_powerline.U_POWERLINE: ["U_POWERLINE"],
+        u_pipeline.U_PIPELINE: ["U_PIPELINE"],
+        u_portalline.U_PORTALLINE: ["U_PORTALLINE"],
+        u_bytebeatline.U_BYTEBEATLINE: ["U_BYTEBEATLINE"],
+        power_control.POWER_CONTROL: ["POWER_CONTROL"],
+        locked.LOCKED: [
+            "BASE_FLAG",
+            "BRIDGECONNECTOR",
+            "AIRLCKCONNECTOR",
+            "FREIGHTER_CORE",
+        ],
+        message.MESSAGE: [
+            "MESSAGEMODULE",
+            "BYTEBEAT",
+            "BYTEBEATSWITCH",
+            "FOS_BI",
+            "FOS_BIRD",
+            "FOS_BIRD_DIS",
+            "FOS_BI_DIS",
+            "FOS_BODY",
+            "FOS_BODY_DISP",
+            "FOS_BODY_MNT",
+            "FOS_GRUN",
+            "FOS_GRUN_DIS",
+            "FOS_LIMBS",
+            "FOS_LIMBS_DISP",
+            "FOS_LIMBS_MNT",
+            "FOS_QUAD",
+            "FOS_QUAD_DIS",
+            "FOS_SKULL",
+            "FOS_SKULL_DISP",
+            "FOS_SKULL_MNT",
+            "FOS_TAIL",
+            "FOS_TAIL_DISP",
+            "FOS_TAIL_MNT",
+            "FOS_WORM",
+            "FOS_WORM_DIS",
+        ],
     }
 
     def __init__(self):
@@ -72,16 +111,12 @@ class Builder(object):
             for mod_folder in mod_folders:
                 full_mod_path = os.path.join(self.MODS_PATH, mod_folder)
                 if "models" in os.listdir(full_mod_path):
-                    full_model_path = os.path.join(
-                        self.MODS_PATH,
-                        mod_folder,
-                        "models"
-                    )
+                    full_model_path = os.path.join(self.MODS_PATH, mod_folder, "models")
                     self.available_packs.append((mod_folder, full_model_path))
 
         # Find Parts and build a reference dictionary.
         self.part_reference = {}
-        for (pack_name, pack_folder) in self.available_packs:
+        for pack_name, pack_folder in self.available_packs:
             for category in self.get_categories(pack=pack_name):
                 parts = self.get_objs_from_category(category, pack=pack_name)
                 for part in parts:
@@ -94,7 +129,7 @@ class Builder(object):
                     self.part_reference[unique_id] = {
                         "category": category,
                         "full_path": part_path,
-                        "pack": pack_name
+                        "pack": pack_name,
                     }
 
     def clear_caches(self):
@@ -124,14 +159,17 @@ class Builder(object):
 
     @classmethod
     def get_part_class(cls, object_id):
-        return cls.override_classes.get(object_id, part.Part)
+        for class_ref, part_list in cls.override_classes.items():
+            if object_id in part_list:
+                print("USING ::", class_ref)
+                return class_ref
+        return part.Part
 
     def get_builder_object_from_bpy_object(self, bpy_object):
         # Handle Presets.
         if "PresetID" in bpy_object:
             return preset.Preset.deserialise_from_object(
-                bpy_object=bpy_object,
-                builder_object=self
+                bpy_object=bpy_object, builder_object=self
             )
 
         # Handle Parts.
@@ -146,8 +184,7 @@ class Builder(object):
 
         use_class = self.get_part_class(object_id)
         return use_class.deserialise_from_object(
-            bpy_object=bpy_object,
-            builder_object=self
+            bpy_object=bpy_object, builder_object=self
         )
 
     def find_preset_by_id(self, preset_id):
@@ -160,13 +197,14 @@ class Builder(object):
         if preset_name in bpy.data.objects:
             bpy_object = bpy.data.objects[preset_name]
             return preset.Preset.deserialise_from_object(
-                bpy_object=bpy_object,
-                builder_object=self
+                bpy_object=bpy_object, builder_object=self
             )
         # If all fails, return None.
         return None
 
-    def get_all_parts(self, exclude_presets=False, skip_object_type=None, include_lines=False):
+    def get_all_parts(
+        self, exclude_presets=False, skip_object_type=None, include_lines=False
+    ):
         """Get all NMS parts in the scene.
 
         Args:
@@ -178,18 +216,27 @@ class Builder(object):
 
         # Get all individual NMS parts.
         flat_parts = [part for part in bpy.data.objects if "ObjectID" in part]
-        flat_parts = [part for part in flat_parts if part["ObjectID"] not in skip_object_type]
+        flat_parts = [
+            part for part in flat_parts if part["ObjectID"] not in skip_object_type
+        ]
 
         # Include line conatrol points?
         if include_lines:
-            flat_parts.extend([part for part in bpy.data.objects if "SnapID" in part and not "ObjectID" in part])
+            flat_parts.extend(
+                [
+                    part
+                    for part in bpy.data.objects
+                    if "SnapID" in part and not "ObjectID" in part
+                ]
+            )
 
         # If exclude presets is on, just return the top level objects.
         if exclude_presets:
-            flat_parts = [part for part in flat_parts if part["belongs_to_preset"] == False]
+            flat_parts = [
+                part for part in flat_parts if part["belongs_to_preset"] == False
+            ]
         flat_parts = sorted(flat_parts, key=Builder.by_order)
         return flat_parts
-
 
     def get_all_presets(self):
         """Get all Builder preset items in the scene."""
@@ -202,7 +249,7 @@ class Builder(object):
             object_id=object_id,
             builder_object=self,
             user_data=user_data,
-            build_rigs=build_rigs
+            build_rigs=build_rigs,
         )
         return item
 
@@ -210,6 +257,36 @@ class Builder(object):
         """Add an item based on it's preset ID."""
         item = preset.Preset(preset_id=preset_id, builder_object=self)
         return item
+
+    def mirror_part(self, part_object):
+        object_id = part_object["ObjectID"]
+        user_data = part_object["UserData"]
+        new_object_id = part.Part.get_mirror_part_id(object_id)
+        # Add new part
+        new_item = self.add_part(new_object_id)
+        use_matrix = copy(part_object.matrix_world)
+        new_item.matrix_world = use_matrix
+        # Copy material
+        new_item.user_data = user_data
+        new_item.object.active_material = part_object.active_material.copy()
+        # Remove old part.
+        blend_utils.delete(part_object)
+        return new_item
+
+    def flip_part(self, part_object):
+        object_id = part_object["ObjectID"]
+        user_data = part_object["UserData"]
+        new_object_id = part.Part.get_flip_part_id(object_id)
+        # Add new part
+        new_item = self.add_part(new_object_id)
+        use_matrix = copy(part_object.matrix_world)
+        new_item.matrix_world = use_matrix
+        # Copy material
+        new_item.user_data = user_data
+        new_item.object.active_material = part_object.active_material.copy()
+        # Remove old part.
+        blend_utils.delete(part_object)
+        return new_item
 
     # Serialising ---
     def serialise(self, get_presets=False, add_timestamp=False):
@@ -244,8 +321,7 @@ class Builder(object):
             preset_list = []
             for _preset in self.get_all_presets():
                 preset_obj = preset.Preset.deserialise_from_object(
-                    _preset,
-                    builder_object=self
+                    _preset, builder_object=self
                 )
                 preset_list.append(preset_obj.serialise())
             data["Presets"] = preset_list
@@ -295,7 +371,6 @@ class Builder(object):
         """
         return bpy_object.get("order", 0)
 
-
     # Category Methods ---
     def get_categories(self, pack=None):
         """Get the list of categories.
@@ -319,7 +394,8 @@ class Builder(object):
             list: List of folders underneath preset path.
         """
         return [
-            item for item in os.listdir(preset.Preset.PRESET_PATH)
+            item
+            for item in os.listdir(preset.Preset.PRESET_PATH)
             if os.path.isdir(os.path.join(preset.Preset.PRESET_PATH, item))
         ]
 
@@ -337,7 +413,9 @@ class Builder(object):
             category (str): The name of the category.
         """
         presets = []
-        for preset_file in os.listdir(os.path.join(preset.Preset.PRESET_PATH, category)):
+        for preset_file in os.listdir(
+            os.path.join(preset.Preset.PRESET_PATH, category)
+        ):
             if preset_file.endswith(".json"):
                 presets.append(os.path.splitext(preset_file)[0])
         return presets
@@ -355,9 +433,7 @@ class Builder(object):
         # Get the associated model path.
         search_path = self.get_model_path_from_pack(pack)
         category_path = os.path.join(search_path, category)
-        all_objs = [
-            part for part in os.listdir(category_path) if part.endswith(".fbx")
-        ]
+        all_objs = [part for part in os.listdir(category_path) if part.endswith(".fbx")]
         file_names = sorted(all_objs)
         return file_names
 
@@ -447,7 +523,12 @@ class Builder(object):
             # Create a key that will group the controls based on their location.
             # I am rounding the decimal point to 4 as the accuracy means items
             # in the same location have slightly different values.
-            key = ",".join([str(round(loc, 3)) for loc in power_control.matrix_world.decompose()[0]])
+            key = ",".join(
+                [
+                    str(round(loc, 3))
+                    for loc in power_control.matrix_world.decompose()[0]
+                ]
+            )
             # Append the control to the key.
             power_control_reference[key].append(power_control)
 
@@ -467,15 +548,9 @@ class Builder(object):
 
                 # Assign new controls.
                 if control == prev_start_control:
-                    power_line_obj.build_rig(
-                        unique_control,
-                        prev_end_control
-                    )
+                    power_line_obj.build_rig(unique_control, prev_end_control)
                 else:
-                    power_line_obj.build_rig(
-                        prev_start_control,
-                        unique_control
-                    )
+                    power_line_obj.build_rig(prev_start_control, unique_control)
 
                 # Hide away control.
                 blend_utils.remove_object(control.name)
