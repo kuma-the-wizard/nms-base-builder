@@ -237,6 +237,7 @@ Corvette:
   - B_ALK_Z_C
   - B_LND_A
   - B_LND_B
+  - B_LND_C
   Cockpits and Habitation Modules:
   - B_COK_A
   - B_COK_B
@@ -251,9 +252,13 @@ Corvette:
   - B_SHL_A
   - B_SHL_B
   - B_SHL_C
+  - B_SHL_E
   - B_TUR_A
   - B_TUR_B
   - B_TUR_C
+  - B_TUR_D
+  - B_TUR_E
+  - B_TUR_F
   - B_DECO_I
   Hull Attachments:
   - B_DECO_A
@@ -271,8 +276,16 @@ Corvette:
   - B_DECO_N_1
   - B_DECO_O
   - B_DECO_P
+  - B_DECO_Q_0
+  - B_DECO_Q_1
+  - B_DECO_R
+  - B_DECO_S
+  - B_DECO_T
   Hull Connectors:
   - B_CON2_0
+  - B_CON2_1
+  - B_CON2_2
+  - B_CON2_3
   - B_CON_10
   - B_CON_11
   - B_CON_12
@@ -669,6 +682,86 @@ Corvette:
   - B_STR_S_Y_N
   - B_STR_S_Y_S
   - B_STR_S_Y_W
+  - B_STR_T_NETB
+  - B_STR_T_NETB1
+  - B_STR_T_NETB2
+  - B_STR_T_NETB3
+  - B_STR_T_NWTB
+  - B_STR_T_NWTB1
+  - B_STR_T_NWTB2
+  - B_STR_T_NWTB3
+  - B_STR_U_NETB
+  - B_STR_U_NETB1
+  - B_STR_U_NETB2
+  - B_STR_U_NETB3
+  - B_STR_U_NWTB
+  - B_STR_U_NWTB1
+  - B_STR_U_NWTB2
+  - B_STR_U_NWTB3
+  - B_STR_V_NETB
+  - B_STR_V_NETB1
+  - B_STR_V_NETB2
+  - B_STR_V_NETB3
+  - B_STR_V_NWTB
+  - B_STR_V_NWTB1
+  - B_STR_V_NWTB2
+  - B_STR_V_NWTB3
+  - B_STR_W_NETB
+  - B_STR_W_NETB1
+  - B_STR_W_NETB2
+  - B_STR_W_NETB3
+  - B_STR_W_NWTB
+  - B_STR_W_NWTB1
+  - B_STR_W_NWTB2
+  - B_STR_W_NWTB3
+  - B_STR_X_NETB
+  - B_STR_X_NETB1
+  - B_STR_X_NETB2
+  - B_STR_X_NETB3
+  - B_STR_X_NWTB
+  - B_STR_X_NWTB1
+  - B_STR_X_NWTB2
+  - B_STR_X_NWTB3
+  - B_STR_Y_NETB
+  - B_STR_Y_NETB1
+  - B_STR_Y_NETB2
+  - B_STR_Y_NETB3
+  - B_STR_Y_NWTB
+  - B_STR_Y_NWTB1
+  - B_STR_Y_NWTB2
+  - B_STR_Y_NWTB3
+  - B_STR_Z_NETB
+  - B_STR_Z_NETB1
+  - B_STR_Z_NETB2
+  - B_STR_Z_NETB3
+  - B_STR_Z_NWTB
+  - B_STR_Z_NWTB1
+  - B_STR_Z_NWTB2
+  - B_STR_Z_NWTB3
+  - B_STR_AA_E
+  - B_STR_AA_N
+  - B_STR_AA_NE
+  - B_STR_AA_NE1
+  - B_STR_AA_NE2
+  - B_STR_AA_NE3
+  - B_STR_AA_NW
+  - B_STR_AA_NW1
+  - B_STR_AA_NW2
+  - B_STR_AA_NW3
+  - B_STR_AA_S
+  - B_STR_AA_W
+  - B_STR_AA_Y_E
+  - B_STR_AA_Y_N
+  - B_STR_AA_Y_NE
+  - B_STR_AA_Y_NE1
+  - B_STR_AA_Y_NE2
+  - B_STR_AA_Y_NE3
+  - B_STR_AA_Y_NW
+  - B_STR_AA_Y_NW1
+  - B_STR_AA_Y_NW2
+  - B_STR_AA_Y_NW3
+  - B_STR_AA_Y_S
+  - B_STR_AA_Y_W
   Internal Configuration:
   - B_STAIRS0
   Reactors:
@@ -692,8 +785,16 @@ Corvette:
   - B_TRU_B
   - B_TRU_C
   - B_TRU_D
+  - B_TRU_E
+  - B_TRU_F
+  - B_TRU_G
+  - B_TRU_H
   - B_WNG_A
   - B_WNG_A_R
+  - B_WNG_B
+  - B_WNG_B_R
+  - B_WNG_C
+  - B_WNG_C_R
   - B_WNG_D
   - B_WNG_D_R
   - B_WNG_F
@@ -734,6 +835,16 @@ Corvette:
   - B_WNG_O_1_R
   - B_WNG_O_2
   - B_WNG_O_2_R
+  - B_WNG_P
+  - B_WNG_P_B
+  - B_WNG_P_R
+  - B_WNG_P_T
+  - B_WNG_Q
+  - B_WNG_Q_R
+  - B_WNG_R
+  - B_WNG_R_B
+  - B_WNG_R_R
+  - B_WNG_R_T
 Decoration:
   Construction Parts:
   - BLD_BUI_HAND
@@ -970,6 +1081,9 @@ Exotic Decorations:
   - BASE_HOTPLANT01
   - BASE_HOTPLANT02
   - BASE_HOTPLANT03
+  - BASE_HOTPLANT04
+  - BASE_HOTPLANT05
+  - BASE_HOTPLANT06
   - BASE_HOUDINI1
   - BASE_HOUDINI2
   - BASE_HOUDINI3
@@ -979,6 +1093,7 @@ Exotic Decorations:
   - BASE_JUNGLE01
   - BASE_JUNGLE02
   - BASE_JUNGLE03
+  - BASE_JUNGLE04
   - BASE_LAVA1
   - BASE_LAVA2
   - BASE_LAVA3
@@ -1003,12 +1118,14 @@ Exotic Decorations:
   - BASE_SUBZPLANT6
   - BASE_SUBZPLANT7
   - BASE_SUBZPLANT8
+  - BASE_SUBZPLANT9
   - BASE_SWAMP1
   - BASE_SWAMP2
   - BASE_SWAMP3
   - BASE_TOXPLANT01
   - BASE_TOXPLANT02
   - BASE_TOXPLANT03
+  - BASE_TOXPLANT04
   - BASE_TREE01
   - BASE_TREE02
   - BASE_TREE03
@@ -1018,6 +1135,8 @@ Exotic Decorations:
   - BASE_WPLANT4
   - BASE_WPLANT5
   - BASE_WPLANT6
+  - BASE_WPLANT7
+  - BASE_WPLANT8
   - BLD_CRYS_DRONE
   - BLD_CRYS_SENT0
   - BLD_CRYS_SENT1
@@ -1800,6 +1919,7 @@ Wall Art:
   - EXPD_DECAL17
   - EXPD_DECAL18
   - EXPD_DECAL19
+  - EXPD_DECAL20
   - SPEC_DECAL01
   - SPEC_DECAL02
   - SPEC_DECAL03
@@ -1852,11 +1972,11 @@ Wall Art:
   - EXPD_POSTER18B
   - EXPD_POSTER18C
   - EXPD_POSTER19A
-  - EXPD_POSTER19A
-  - EXPD_POSTER19B
   - EXPD_POSTER19B
   - EXPD_POSTER19C
-  - EXPD_POSTER19C
+  - EXPD_POSTER20A
+  - EXPD_POSTER20B
+  - EXPD_POSTER20C
   - S_POSTER0
   - S_POSTER1
   - S_POSTER2
