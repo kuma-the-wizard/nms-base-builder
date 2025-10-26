@@ -6,6 +6,8 @@ try:
 except ImportError:
     from PySide2 import QtCore, QtGui, QtWidgets
 
+from functools import partial
+
 import asset_browser.icons.icons
 
 THUMB_SIZE = 48
@@ -38,11 +40,13 @@ class Thumb(QtWidgets.QLabel):
 class Item(QtWidgets.QFrame):
 
     clicked = QtCore.Signal()
+    varClicked = QtCore.Signal(str)
 
-    def __init__(self, item_id=None, label=None, *args, **kwargs):
+    def __init__(self, item_id=None, label=None, variants=None, *args, **kwargs):
         super(Item, self).__init__(*args, **kwargs)
         self.label = label or ""
         self.item_id = item_id or ""
+        self.variants = variants or []
         self.setToolTip(self.item_id)
         self.setMinimumSize(QtCore.QSize(ITEM_SIZE, ITEM_SIZE))
         self.setMaximumSize(QtCore.QSize(ITEM_SIZE, ITEM_SIZE))
@@ -52,6 +56,7 @@ class Item(QtWidgets.QFrame):
 
         self._build_ui()
         self._layout()
+        self._setup()
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
     def _build_ui(self):
@@ -63,13 +68,43 @@ class Item(QtWidgets.QFrame):
         self.label_widget.setFont(font)
         self.label_widget.setMinimumWidth(THUMB_SIZE)
         self.label_widget.setMaximumWidth(THUMB_SIZE)
+        self.variants_button = QtWidgets.QPushButton("v", self)
+        self.variants_button.setContentsMargins(0, 0, 0, 0)
+        var_but_width = 23
+        self.variants_button.setGeometry(
+            ITEM_SIZE - var_but_width - 2, 2, var_but_width, 23
+        )
+        self.variants_button.setVisible(False)
 
     def _layout(self):
         self.main_layout.addWidget(self.thumb, QtCore.Qt.AlignCenter)
         self.main_layout.addWidget(self.label_widget, QtCore.Qt.AlignCenter)
 
+    def _setup(self):
+        self.variants_button.clicked.connect(self.open_context_menu)
+
+    def open_context_menu(self):
+        variants_menu = QtWidgets.QMenu(self.variants_button)
+        action = variants_menu.addAction(self.label)
+        action.triggered.connect(partial(self.add_part, self.item_id))
+        for variant_id, variant_label in self.variants:
+            action = variants_menu.addAction(variant_label)
+            action.triggered.connect(partial(self.add_part, variant_id))
+        variants_menu.exec(QtGui.QCursor.pos())
+
     def mousePressEvent(self, event):
         self.clicked.emit()
+
+    def add_variant(self, variant_id, variant_label):
+        self.variants.append((variant_id, variant_label))
+        self.refresh_variants()
+
+    def refresh_variants(self):
+        if self.variants:
+            self.variants_button.setVisible(True)
+
+    def add_part(self, part_id):
+        self.varClicked.emit(part_id)
 
 
 class Preset(QtWidgets.QFrame):

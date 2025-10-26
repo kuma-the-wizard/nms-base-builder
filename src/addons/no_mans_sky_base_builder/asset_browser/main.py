@@ -14,12 +14,12 @@ except ImportError:
     from PySide2 import QtCore, QtGui, QtWidgets
 
 import yaml
-from PySide6 import QtCore, QtGui, QtWidgets
 
 import asset_browser.icons.icons
 from asset_browser.collapsable_frame import CollapsableFrame
 from asset_browser.flow_layout import FlowLayout
 from asset_browser.item import Item, Preset
+from asset_browser.utils import contexts, parts_definition
 
 FILE_DIR = os.path.dirname(os.path.realpath(__file__))
 SEND_SNIPPET = os.path.join(FILE_DIR, "build_part_snippet.txt")
@@ -47,8 +47,9 @@ class AssetBrowser(QtWidgets.QMainWindow):
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
         self.setWindowTitle("No Man's Sky Blender Builder - Asset Browser")
         self.setWindowIcon(QtGui.QIcon(APP_ICON))
-        self.__search_buttons = []
-        self.__preset_search_buttons = []
+        self.__item_widgets = {}
+        self.__search_buttons = {}
+        self.__preset_search_buttons = {}
         self._build_ui()
         self._layout_ui()
         self._setup_ui()
@@ -104,27 +105,25 @@ class AssetBrowser(QtWidgets.QMainWindow):
         self.search_tab_widget.addTab(self.search_presets_scroll, "Presets")
 
     def refresh_search(self):
-        search = self.search_lineedit.text()
-        if search:
-            self.tab_widget.setVisible(False)
-            self.search_scroll.setVisible(True)
-            for array in [self.__search_buttons, self.__preset_search_buttons]:
-                for button in array:
-                    if (
-                        search.lower() in button.item_id.lower()
-                        or search.lower() in button.label.lower()
-                    ):
-                        button.setVisible(True)
-                    else:
-                        button.setVisible(False)
-        else:
-            self.tab_widget.setVisible(True)
-            self.search_scroll.setVisible(False)
+        with contexts.block_render(self):
+            with contexts.WaitCursor():
+                search = self.search_lineedit.text().lower()
+                if not search or len(search) <= 2:
+                    self.tab_widget.setVisible(True)
+                    self.search_scroll.setVisible(False)
+                    return
+                self.tab_widget.setVisible(False)
+                self.search_scroll.setVisible(True)
+                for data_pack in [self.__search_buttons, self.__preset_search_buttons]:
+                    for button_data in data_pack.values():
+                        match = (
+                            search in button_data["search_id"]
+                            or search in button_data["search_label"]
+                        )
+                        button_data["widget"].setVisible(match)
 
     def generate_contents(self):
-        with open(BROWSER_LAYOUT_FILE, "r") as stream:
-            browser_data = yaml.safe_load(stream)
-
+        browser_data = parts_definition.get_part_definition()
         # Add Categories
         for category_title, category_data in browser_data.items():
 
@@ -145,29 +144,65 @@ class AssetBrowser(QtWidgets.QMainWindow):
                 layout.addWidget(title_label)
                 if not items:
                     continue
-                for item in items:
-                    if isinstance(item, str):
-                        # Add to tab.
-                        item_widget = Item(
-                            item_id=item,
-                            label=NICE_NAME_DATA.get(item, item),
-                            parent=title_label,
-                        )
-                        title_label.addWidget(item_widget)
-                        item_widget.clicked.connect(
-                            partial(self.send_part_command_to_blender, item)
-                        )
-                        # Add to search frame.
-                        search_item_widget = Item(
-                            item_id=item,
-                            label=NICE_NAME_DATA.get(item, item),
-                            parent=title_label,
-                        )
-                        self.search_frame_layout.addWidget(search_item_widget)
-                        search_item_widget.clicked.connect(
-                            partial(self.send_part_command_to_blender, item)
-                        )
-                        self.__search_buttons.append(search_item_widget)
+                for item_data in items:
+                    item = item_data["id"]
+                    show_in_drawer = item_data["showInDrawer"]
+                    if show_in_drawer == "True":
+                        if isinstance(item, str):
+                            # Add to tab.
+                            nice_name = NICE_NAME_DATA.get(item, item)
+                            item_widget = Item(
+                                item_id=item,
+                                label=nice_name,
+                                parent=title_label,
+                            )
+                            title_label.addWidget(item_widget)
+                            item_widget.clicked.connect(
+                                partial(self.send_part_command_to_blender, item)
+                            )
+                            item_widget.varClicked.connect(
+                                self.send_part_command_to_blender
+                            )
+
+                            # Add to search frame.
+                            search_item_widget = Item(
+                                item_id=item,
+                                label=nice_name,
+                                parent=title_label,
+                            )
+                            self.search_frame_layout.addWidget(search_item_widget)
+                            search_item_widget.clicked.connect(
+                                partial(self.send_part_command_to_blender, item)
+                            )
+                            search_item_widget.varClicked.connect(
+                                self.send_part_command_to_blender
+                            )
+                            self.__search_buttons[item] = {
+                                "widget": search_item_widget,
+                                "search_id": item.lower(),
+                                "search_label": nice_name.lower(),
+                            }
+                            self.__item_widgets[item] = [
+                                item_widget,
+                                search_item_widget,
+                            ]
+
+        # Add Variants
+        for category_title, category_data in browser_data.items():
+            if not category_data:
+                continue
+            # Sub Categories
+            for sub_category_title, items in category_data.items():
+                for item_data in items:
+                    item = item_data["id"]
+                    nice_name = NICE_NAME_DATA.get(item, item)
+                    variant_of = item_data["variantOf"]
+                    if variant_of != "None":
+                        variant_key = variant_of[1:]
+                        if variant_key in self.__item_widgets:
+                            widgets = self.__item_widgets[variant_key]
+                            for widget in widgets:
+                                widget.add_variant(item, nice_name)
 
         # Add Presets.
         scroll_frame = QtWidgets.QScrollArea(self)
@@ -180,7 +215,8 @@ class AssetBrowser(QtWidgets.QMainWindow):
         self.generate_presets()
 
     def clear_presets(self):
-        for widget in self.__preset_search_buttons:
+        for preset_id, preset_data in self.__preset_search_buttons.items():
+            widget = preset_data["widget"]
             widget.parent().layout().removeWidget(widget)
             widget.deleteLater()
         for _ in range(self.presets_layout.count()):
@@ -189,10 +225,10 @@ class AssetBrowser(QtWidgets.QMainWindow):
             if widget and isinstance(widget, CollapsableFrame):
                 self.presets_layout.removeWidget(widget)
                 widget.deleteLater()
-        self.__preset_search_buttons = []
+        self.__preset_search_buttons = {}
 
     def generate_presets(self):
-        self.__preset_search_buttons = []
+        self.__preset_search_buttons = {}
         # Add Categories.
         categories = sorted(os.listdir(PRESET_PATH))
         for category in categories:
@@ -244,7 +280,11 @@ class AssetBrowser(QtWidgets.QMainWindow):
         search_item_widget.editClicked.connect(
             partial(self.send_edit_preset_command_to_blender, item_id)
         )
-        self.__preset_search_buttons.append(search_item_widget)
+        self.__preset_search_buttons[item_id] = {
+            "widget": search_item_widget,
+            "search_id": item_id,
+            "search_label": nice_label,
+        }
 
     def _layout_ui(self):
         self.setCentralWidget(self.main_widget)

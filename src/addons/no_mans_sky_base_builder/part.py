@@ -385,12 +385,20 @@ class Part(object):
             "NE1",
             "NE2",
             "NE3",
+            "NETB",
+            "NETB1",
+            "NETB2",
+            "NETB3",
         ]
         west_compass_ids = [
             "NW",
             "NW1",
             "NW2",
             "NW3",
+            "NWTB",
+            "NWTB1",
+            "NWTB2",
+            "NWTB3",
         ]
         for idx, east_compass_id in enumerate(east_compass_ids):
             if object_id.endswith(f"_{east_compass_id}"):
@@ -432,6 +440,14 @@ class Part(object):
             "NW1",
             "NW2",
             "NW3",
+            "NETB",
+            "NETB1",
+            "NETB2",
+            "NETB3",
+            "NWTB",
+            "NWTB1",
+            "NWTB2",
+            "NWTB3",
         ]
         for compass_id in compass_ids:
             if object_id.endswith(f"_{compass_id}"):
