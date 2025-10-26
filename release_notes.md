@@ -1,5 +1,20 @@
+release 6.1.1
+-------------
+
+* Improved the search responsiveness on the Asset Browser.
+* Part variant’s have been removed from the Asset Browser and are now accessed from a sub-menu from the “parent” part in the Asset Browser.
+* Added the “Mirror Across X Axis” tool.
+
+
+release 6.1.0
+-------------
+
+* Added parts from 6.1 BREACH update.
+
+
 release 6.0.0
 -------------
+
 * Added parts for Corvette pieces
 * Added parts for Fossil pieces
 * Added other missing parts from recent updates.
@@ -10,11 +25,13 @@ release 6.0.0
 
 release 2.1.4
 -------------
+
 * Added parts from Worlds Part II (Ruins, exotic plants, etc)
 
 
 release 2.1.3
 -------------
+
 * Added support for base parts added up to Worlds Part 1 Update.
 * Adjusted hallway and walkway freighter models.
 * Added some Linux compatibility thanks to dsalt on GitHub.

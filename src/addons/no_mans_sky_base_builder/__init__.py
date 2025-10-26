@@ -3,7 +3,7 @@ bl_info = {
     "name": "No Mans Sky Base Builder",
     "description": "A tool to assist with base building in No Mans Sky",
     "author": "DjMonkey",
-    "version": (6, 1, 0),
+    "version": (6, 1, 1),
     "blender": (4, 0, 0),
     "location": "3D View > Tools",
     "warning": "",  # used for warning icon and text in addons panel
@@ -700,7 +700,7 @@ class NMSSettings(PropertyGroup):
             BUILDER, dup_object, curve_object, distance_percentage
         )
 
-    def mirror(self):
+    def mirror(self, across_x=False):
         """Mirror the object along X axis (if possible)."""
         # Store selection.
         selected_objects = bpy.context.selected_objects
@@ -713,58 +713,57 @@ class NMSSettings(PropertyGroup):
             return
 
         # Get Selected item.
-        target = blend_utils.get_current_selection()
+        new_items = []
+        for target in selected_objects:
+            # Part
+            if "ObjectID" in target:
+                object_id = target["ObjectID"]
+                mirror_id = part.Part.get_mirror_part_id(object_id)
+                new_item = target
+                if mirror_id in nice_name_dictionary.keys():
+                    # Build Item.
+                    new_item = BUILDER.mirror_part(target)
+                else:
+                    new_item.rotation_euler.y *= -1
+                    new_item.rotation_euler.z *= -1
 
-        if "ObjectID" not in target and "PresetID" not in target:
-            message = "This item can not be mirrored. Only certain parts can be mirrored, like Corvette hull plating. "
-            ShowMessageBox(message=message, title="Mirror")
-            return
-
-        # Part
-        if "ObjectID" in target:
-            object_id = target["ObjectID"]
-            mirror_id = part.Part.get_mirror_part_id(object_id)
-            if mirror_id not in nice_name_dictionary.keys():
-                ShowMessageBox(
-                    message="This part cannot be mirrored. Please try again on a compatible part. (Usually Corvette related)",
-                    title="Mirror",
-                )
-                return {"FINISHED"}
-            # Build Item.
-            new_item = BUILDER.mirror_part(target)
-            new_item.select()
+                if across_x:
+                    new_item.location.x = -new_item.location.x
+                if hasattr(new_item, "object"):
+                    new_items.append(new_item.object)
+                else:
+                    new_items.append(new_item)
+        blend_utils.select(new_items)
+        return {"FINISHED"}
 
     def flip(self):
         """Mirror the object along X axis (if possible)."""
         # Store selection.
         selected_objects = bpy.context.selected_objects
-
+        new_items = []
         # Validate
         if not selected_objects:
             ShowMessageBox(message="Make sure you have an item selected.", title="Flip")
             return
 
         # Get Selected item.
-        target = blend_utils.get_current_selection()
+        for target in selected_objects:
+            # Part
+            if "ObjectID" in target:
+                object_id = target["ObjectID"]
+                mirror_id = part.Part.get_flip_part_id(object_id)
+                new_item = target
+                if mirror_id in nice_name_dictionary.keys():
+                    # Build Item.
+                    new_item = BUILDER.flip_part(target)
+                    new_items.append(new_item)
 
-        if "ObjectID" not in target and "PresetID" not in target:
-            message = "This part cannot be flipped. Please try again on a compatible part. (Usually Corvette related)"
-            ShowMessageBox(message=message, title="Flip")
-            return
+                if hasattr(new_item, "object"):
+                    new_items.append(new_item.object)
+                else:
+                    new_items.append(new_item)
 
-        # Part
-        if "ObjectID" in target:
-            object_id = target["ObjectID"]
-            mirror_id = part.Part.get_flip_part_id(object_id)
-            if mirror_id not in nice_name_dictionary.keys():
-                ShowMessageBox(
-                    message="This part cannot be flipped. Please try again on a compatible part. (Usually Corvette related)",
-                    title="Flip",
-                )
-                return {"FINISHED"}
-            # Build Item.
-            new_item = BUILDER.flip_part(target)
-            new_item.select()
+        blend_utils.select(new_items)
 
     def apply_colour(self, colour_index=0, material=None):
         """Gives an item a new colour."""
@@ -936,6 +935,13 @@ class NMS_PT_snap_panel(Panel):
         split = layout.split(factor=0.5)
         tools_column, snap_column = (split.column(), split.column())
 
+        # Create Part Count Box.
+        part_box = tools_column.box()
+        splitter = part_box.split(factor=0.7)
+        splitter.label(text="Part Count:")
+        part_count = len([obj for obj in bpy.data.objects if "ObjectID" in obj])
+        splitter.label(text="{}".format(part_count))
+
         tools_box = tools_column.box()
         tools_col = tools_box.column(align=True)
 
@@ -956,13 +962,6 @@ class NMS_PT_snap_panel(Panel):
         )
         tools_col.label(text="Delete")
         tools_col.operator("object.nms_delete", icon="CANCEL")
-
-        # Create Part Count Box.
-        part_box = snap_column.box()
-        splitter = part_box.split(factor=0.7)
-        splitter.label(text="Part Count:")
-        part_count = len([obj for obj in bpy.data.objects if "ObjectID" in obj])
-        splitter.label(text="{}".format(part_count))
 
         # Create Snapping box.
         snap_box = snap_column.box()
@@ -990,9 +989,12 @@ class NMS_PT_snap_panel(Panel):
 
         # Corvette Mirror Tools
         mirror_box = snap_column.box()
-        mirror_col = mirror_box.row(align=True)
+        mirror_col = mirror_box.column(align=True)
         mirror_col.label(text="Mirroring")
         mirror_op = mirror_col.operator("object.nms_mirror", icon="ARROW_LEFTRIGHT")
+        mirror_op_x = mirror_col.operator(
+            "object.nms_mirror_across_x", icon="ARROW_LEFTRIGHT"
+        )
         flip_op = mirror_col.operator("object.nms_flip", icon="DECORATE_OVERRIDE")
 
         # Set Snap Operator assignments.
@@ -1608,7 +1610,7 @@ class DuplicateAlongCurve(bpy.types.Operator):
 
 
 class Mirror(bpy.types.Operator):
-    """Mirror the object along the X axis (Only available on certain Corvette pieces)"""
+    """Mirror the object local to itself."""
 
     bl_idname = "object.nms_mirror"
     bl_label = "Mirror"
@@ -1618,6 +1620,20 @@ class Mirror(bpy.types.Operator):
         scene = context.scene
         nms_tool = scene.nms_base_tool
         nms_tool.mirror()
+        return {"FINISHED"}
+
+
+class MirrorAcrossX(bpy.types.Operator):
+    """Mirror the object along the X axis."""
+
+    bl_idname = "object.nms_mirror_across_x"
+    bl_label = "Mirror Across X Axis"
+    bl_options = {"UNDO", "REGISTER"}
+
+    def execute(self, context):
+        scene = context.scene
+        nms_tool = scene.nms_base_tool
+        nms_tool.mirror(across_x=True)
         return {"FINISHED"}
 
 
@@ -2068,6 +2084,7 @@ classes = (
     DuplicateAlongCurve,
     Delete,
     Mirror,
+    MirrorAcrossX,
     Flip,
     SaveAsPreset,
     LoadFancyUI,
