@@ -6,9 +6,8 @@ from copy import copy
 import bpy
 import mathutils
 
-import no_mans_sky_base_builder.utils.blend_utils as blend_utils
-import no_mans_sky_base_builder.utils.material as material
-import no_mans_sky_base_builder.utils.python as python_utils
+from .utils import blend_utils, material
+from .utils import python as python_utils
 
 
 class Part(object):

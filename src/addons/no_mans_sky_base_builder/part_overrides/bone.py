@@ -1,6 +1,6 @@
 from copy import copy
 
-import no_mans_sky_base_builder.part as part
+from .. import part
 
 
 class BONE(part.Part):

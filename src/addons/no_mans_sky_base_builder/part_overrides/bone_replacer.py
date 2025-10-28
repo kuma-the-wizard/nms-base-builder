@@ -1,7 +1,7 @@
 from copy import copy
 
-import no_mans_sky_base_builder.part as part
-import no_mans_sky_base_builder.utils.blend_utils as blend_utils
+from .. import part
+from ..utils import blend_utils
 
 
 class BONE_REPLACER(part.Part):

@@ -1,3 +1,14 @@
+release 6.1.2
+-------------
+
+* Ported add-on structure to newer Blender extension structure.
+* Removed YAML as a dependency for the Asset Browser
+* Fixed an issue where Corvette Y_NE parts were not appearing in the asset browser.
+* Collapsed L/R corvette connector pieces into one item with the variants sub-window in the part drawer.
+* Fixed naming and listing issues of variants for some of the Atlas Corvette parts.
+* Fixed an issue where the Asset Browser could not load on systems of certain language settings.
+
+
 release 6.1.1
 -------------
 

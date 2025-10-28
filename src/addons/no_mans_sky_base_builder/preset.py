@@ -5,9 +5,10 @@ from copy import copy
 
 import bpy
 import mathutils
-import no_mans_sky_base_builder.utils.material as material
-import no_mans_sky_base_builder.part as part
-import no_mans_sky_base_builder.utils.blend_utils as blend_utils
+
+from . import part
+from .utils import blend_utils, material
+
 
 class Preset(object):
 
@@ -15,15 +16,16 @@ class Preset(object):
     PRESET_PATH = os.path.join(USER_PATH, "presets")
 
     def __init__(
-            self,
-            preset_id=None,
-            bpy_object=None,
-            builder_object=None,
-            create_control=True,
-            apply_shader=True,
-            build_rigs=False):
+        self,
+        preset_id=None,
+        bpy_object=None,
+        builder_object=None,
+        create_control=True,
+        apply_shader=True,
+        build_rigs=False,
+    ):
         """Part __init__
-        
+
         Args:
             preset_id (str): The preset ID we wish to create.
             bpy_object (bpy.data.object): An existing part we can reconstruct
@@ -40,7 +42,7 @@ class Preset(object):
         self.__create_control = create_control
         self.__apply_shader = apply_shader
         self.build_rigs = build_rigs
-       
+
         # Decide whether or not to retrieve from the scene
         # or create a new one.
         if bpy_object:
@@ -85,7 +87,9 @@ class Preset(object):
                 sub_presets = os.listdir(full_path)
                 for sub_preset in sub_presets:
                     full_sub_preset_path = os.path.join(full_path, sub_preset)
-                    if os.path.isfile(full_sub_preset_path) and sub_preset.endswith(".json"):
+                    if os.path.isfile(full_sub_preset_path) and sub_preset.endswith(
+                        ".json"
+                    ):
                         preset_name = os.path.splitext(sub_preset)[0]
                         all_presets[preset_name] = full_sub_preset_path
             # Handle root presets.
@@ -141,7 +145,7 @@ class Preset(object):
     @staticmethod
     def delete_preset(preset_id):
         """Remove preset."""
-        json_file = preset_id+".json"
+        json_file = preset_id + ".json"
         preset_paths = Preset.get_presets()
         full_path = preset_paths.get(preset_id, None)
         if full_path and os.path.isfile(full_path):
@@ -156,7 +160,7 @@ class Preset(object):
         # Copy the children.
         new_children = [child.copy() for child in self.__control.children]
 
-        # Parent each child under 
+        # Parent each child under
         for old_child, new_child in zip(self.__control.children, new_children):
             new_child.parent = new_item
 
@@ -166,8 +170,7 @@ class Preset(object):
 
         # Remove the constraints.
         new_preset_object = Preset.deserialise_from_object(
-            bpy_object=new_item,
-            builder_object=self.builder
+            bpy_object=new_item, builder_object=self.builder
         )
         new_preset_object.remove_constraints()
         return new_preset_object
@@ -181,12 +184,12 @@ class Preset(object):
         anim_data = self.__control.animation_data
         if anim_data:
             drivers_data = anim_data.drivers
-            for dr in drivers_data:  
+            for dr in drivers_data:
                 self.__control.driver_remove(dr.data_path, -1)
 
     def parent(self, bpy_object):
         """Parent this to another blender object.
-        
+
         Whilst maintaining the offset.
         """
         self.__control.parent = bpy_object
@@ -194,7 +197,7 @@ class Preset(object):
 
     def retrieve_preset_from_id(self, preset_id):
         """Given an ID. Find the best way to create a new one.
-        
+
         As loading OBJ can be resource and time intensive. We can figure ways
         of caching and duplicating existing items via th Builder class.
 
@@ -207,7 +210,7 @@ class Preset(object):
         existing_object = self.builder.find_preset_by_id(preset_id)
         if existing_object:
             return existing_object.duplicate().control
-        
+
         # Generate Preset from json data.
         parts = self.generate_preset(build_rigs=self.build_rigs)
         if self.__create_control:
@@ -230,14 +233,14 @@ class Preset(object):
                 compensate_normal = False
             # Reconstruct objects.
             for part_data in data.get("Objects", []):
-                object_id = part_data["ObjectID"].replace("^","")
+                object_id = part_data["ObjectID"].replace("^", "")
                 user_data = part_data["UserData"]
                 use_class = self.builder.get_part_class(object_id)
                 preset_part = use_class.deserialise_from_data(
                     part_data,
                     self.builder,
                     build_rigs=build_rigs,
-                    compensate_normal=compensate_normal
+                    compensate_normal=compensate_normal,
                 )
                 parts.append(preset_part)
         return parts
@@ -247,7 +250,7 @@ class Preset(object):
 
         This will override the children to be locked and flagged to
         belong to a preset.
-        
+
         Args:
             preset_items (list): The blender objects that make up the preset.
         """
@@ -258,12 +261,19 @@ class Preset(object):
         lowest_y = min([part.location[1] for part in preset_items])
         highest_z = max([part.location[2] for part in preset_items])
         lowest_z = min([part.location[2] for part in preset_items])
-        radius = max([abs(lowest_x), highest_x, abs(lowest_y), highest_y, abs(lowest_z), highest_z])
+        radius = max(
+            [
+                abs(lowest_x),
+                highest_x,
+                abs(lowest_y),
+                highest_y,
+                abs(lowest_z),
+                highest_z,
+            ]
+        )
 
         # Create circle.
-        curve_object = self.create_shape(
-            lowest_x, highest_x, lowest_y, highest_y
-        )
+        curve_object = self.create_shape(lowest_x, highest_x, lowest_y, highest_y)
         curve_object.name = self.preset_id
         curve_object.show_name = True
         curve_object["PresetID"] = self.preset_id
@@ -273,7 +283,7 @@ class Preset(object):
             part.hide_select = True
             part.belongs_to_preset = True
             material.assign_preset_material(part.object)
-        
+
         return curve_object
 
     @staticmethod
@@ -290,35 +300,35 @@ class Preset(object):
         y_mid = (high_y + low_y) * 0.5
         # Build coordinate list.
         coords_list = [
-            [x_mid,     low_y,  0],
-            [high_x,    low_y,  0],
-            [high_x,    y_mid,  0],
-            [high_x,    high_y, 0],
-            [x_mid,     high_y, 0],
-            [low_x,     high_y, 0],
-            [low_x,     y_mid,  0],
-            [low_x,     low_y,  0],
-            [x_mid,     low_y,  0],
-            [high_x,    low_y,  0],
-            [ high_x,    y_mid,  0]
+            [x_mid, low_y, 0],
+            [high_x, low_y, 0],
+            [high_x, y_mid, 0],
+            [high_x, high_y, 0],
+            [x_mid, high_y, 0],
+            [low_x, high_y, 0],
+            [low_x, y_mid, 0],
+            [low_x, low_y, 0],
+            [x_mid, low_y, 0],
+            [high_x, low_y, 0],
+            [high_x, y_mid, 0],
         ]
 
         # make a new curve
-        crv = bpy.data.curves.new('crv', 'CURVE')
-        crv.dimensions = '3D'
+        crv = bpy.data.curves.new("crv", "CURVE")
+        crv.dimensions = "3D"
 
         # make a new spline in that curve
-        spline = crv.splines.new(type='NURBS')
+        spline = crv.splines.new(type="NURBS")
 
         # a spline point for each point
-        spline.points.add(len(coords_list)-1) # theres already one point by default
+        spline.points.add(len(coords_list) - 1)  # theres already one point by default
 
         # assign the point coordinates to the spline points
         for p, new_co in zip(spline.points, coords_list):
-            p.co = (new_co + [1.0]) # (add nurbs weight)
+            p.co = new_co + [1.0]  # (add nurbs weight)
 
         # make a new object with the curve
-        obj = bpy.data.objects.new('object_name', crv)
+        obj = bpy.data.objects.new("object_name", crv)
         blend_utils.add_to_scene(obj)
         return obj
 
@@ -332,26 +342,26 @@ class Preset(object):
         # Get Matrix Data
         world_matrix = self.matrix_world
         # Bring the matrix from Blender Z-Up soace into standard Y-up space.
-        z_compensate = mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'X')
+        z_compensate = mathutils.Matrix.Rotation(math.radians(-90.0), 4, "X")
         world_matrix_offset = z_compensate @ world_matrix
         # Retrieve Position, Up and At vectors.
         pos = world_matrix_offset.decompose()[0]
         up = [
             world_matrix_offset[0][1],
             world_matrix_offset[1][1],
-            world_matrix_offset[2][1]
+            world_matrix_offset[2][1],
         ]
         at = [
             world_matrix_offset[0][2],
             world_matrix_offset[1][2],
-            world_matrix_offset[2][2]
+            world_matrix_offset[2][2],
         ]
 
         return {
             "PresetID": self.preset_id_format,
             "Position": [pos[0], pos[1], pos[2]],
             "Up": [up[0], up[1], up[2]],
-            "At": [at[0], at[1], at[2]]
+            "At": [at[0], at[1], at[2]],
         }
 
     @staticmethod
@@ -359,7 +369,7 @@ class Preset(object):
         """Return NMS compatible dictionary.
 
         Args:
-            get_presets (bool): This will generate data for presets. And 
+            get_presets (bool): This will generate data for presets. And
                 exclude parts generated from presets.
         Returns:
             dict: Dictionary of base information.
@@ -371,8 +381,7 @@ class Preset(object):
             object_id = item["ObjectID"]
             use_class = self.builder_object.get_part_class(object_id)
             item_obj = use_class.deserialise_from_object(
-                item,
-                builder_object=self.builder_object
+                item, builder_object=self.builder_object
             )
             object_list.append(item_obj.serialise())
 
@@ -389,7 +398,7 @@ class Preset(object):
     @classmethod
     def deserialise_from_data(cls, data, builder_object, *args, **kwargs):
         """Reconstruct the class using an a data.
-        
+
         Data usually comes from NMS or the serialise method.
         """
         # Some old preset tests were using Object ID as a tag. So we can
@@ -410,7 +419,7 @@ class Preset(object):
     @staticmethod
     def create_matrix_from_vectors(pos, up, at):
         """Create a world space matrix given by an Up and At vector.
-        
+
         Args:
             pos (list): 3 element list/vector representing the x,y,z position.
             up (list): 3 element list/vector representing the up vector.
@@ -420,29 +429,28 @@ class Preset(object):
         up_vector = mathutils.Vector(up)
         at_vector = mathutils.Vector(at)
         right_vector = at_vector.cross(up_vector)
-        
+
         # Make sure the right vector magnitude is an average of the other two.
         right_vector.normalize()
         right_vector *= -1
 
-        average = ((up_vector.length + at_vector.length) / 2)
+        average = (up_vector.length + at_vector.length) / 2
         right_vector.length = right_vector.length * average
-        
+
         # Construct a world matrix for the item.
         mat = mathutils.Matrix(
             [
-                [right_vector[0], up_vector[0] , at_vector[0],  pos[0]],
-                [right_vector[1], up_vector[1] , at_vector[1],  pos[1]],
-                [right_vector[2], up_vector[2] , at_vector[2],  pos[2]],
-                [0.0,             0.0,            0.0,        1.0        ]
+                [right_vector[0], up_vector[0], at_vector[0], pos[0]],
+                [right_vector[1], up_vector[1], at_vector[1], pos[1]],
+                [right_vector[2], up_vector[2], at_vector[2], pos[2]],
+                [0.0, 0.0, 0.0, 1.0],
             ]
         )
         # Create a rotation matrix that turns the whole thing 90 degrees at the origin.
         # This is to compensate blender's Z up axis.
-        mat_rot = mathutils.Matrix.Rotation(math.radians(90.0), 4, 'X')
+        mat_rot = mathutils.Matrix.Rotation(math.radians(90.0), 4, "X")
         mat = mat_rot @ mat
         return mat
-
 
     def snap_to(self, target, *args, **kwargs):
         """Just move the preset to the target.
@@ -454,6 +462,6 @@ class Preset(object):
         if hasattr(target, "object"):
             object_id = target.object.get("ObjectID", None)
             if object_id:
-                mat_rot = mathutils.Matrix.Rotation(math.radians(-90.0), 4, 'X')
+                mat_rot = mathutils.Matrix.Rotation(math.radians(-90.0), 4, "X")
                 use_matrix = use_matrix @ mat_rot
         self.matrix_world = use_matrix

@@ -1,17 +1,3 @@
-# Header Info ---
-bl_info = {
-    "name": "No Mans Sky Base Builder",
-    "description": "A tool to assist with base building in No Mans Sky",
-    "author": "DjMonkey",
-    "version": (6, 1, 1),
-    "blender": (4, 0, 0),
-    "location": "3D View > Tools",
-    "warning": "",  # used for warning icon and text in addons panel
-    "wiki_url": "https://www.nexusmods.com/nomanssky/mods/984",
-    "tracker_url": "",
-    "category": "Game Engine",
-}
-import imp
 import json
 import os
 import subprocess
@@ -31,14 +17,20 @@ from bpy.props import (
 )
 from bpy.types import Panel, PropertyGroup
 
-import no_mans_sky_base_builder.builder as builder
-import no_mans_sky_base_builder.part as part
-import no_mans_sky_base_builder.part_overrides.line as line
-import no_mans_sky_base_builder.preset as preset
-import no_mans_sky_base_builder.utils.blend_utils as blend_utils
-import no_mans_sky_base_builder.utils.curve as curve
-import no_mans_sky_base_builder.utils.material as _material
-import no_mans_sky_base_builder.utils.python as python_utils
+from . import builder, part, preset
+from .part_overrides import line
+from .utils import blend_utils, curve
+from .utils import material as _material
+from .utils import python as python_utils
+
+# from .. import part
+# from .part_overrides import line
+# import no_mans_sky_base_builder.preset as preset
+# from .utils import blend_utils
+# import no_mans_sky_base_builder.utils.curve as curve
+# import no_mans_sky_base_builder.utils.material as _material
+# from .utils import python as python_utils
+
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")

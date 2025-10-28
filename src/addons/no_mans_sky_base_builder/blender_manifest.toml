@@ -1,0 +1,41 @@
+schema_version = "1.0.0"
+
+# Example of manifest file for a Blender extension
+# Change the values according to your extension
+id = "no_mans_sky_base_builder"
+version = "6.1.2"
+name = "No Man's Sky Base Builder"
+tagline = "This is another extension"
+maintainer = "DjMonkey <@djmonkeyuk>"
+# Supported types: "add-on", "theme"
+type = "add-on"
+
+# # Optional: link to documentation, support, source files, etc
+website = "https://www.nexusmods.com/nomanssky/mods/984"
+
+# # Optional: tag list defined by Blender and server, see:
+# # https://docs.blender.org/manual/en/dev/advanced/extensions/tags.html
+tags = ["Game Engine", "Sequencer"]
+
+blender_version_min = "4.2.0"
+# # Optional: Blender version that the extension does not support, earlier versions are supported.
+# # This can be omitted and defined later on the extensions platform if an issue is found.
+# blender_version_max = "5.1.0"
+
+# License conforming to https://spdx.org/licenses/ (use "SPDX: prefix)
+# https://docs.blender.org/manual/en/dev/advanced/extensions/licenses.html
+license = [
+  "SPDX:GPL-3.0-or-later",
+]
+
+
+# # Optional: advanced build settings.
+# # https://docs.blender.org/manual/en/dev/advanced/extensions/command_line_arguments.html#command-line-args-extension-build
+# [build]
+# # These are the default build excluded patterns.
+# # You only need to edit them if you want different options.
+paths_exclude_pattern = [
+   "__pycache__/",
+   "/.git/",
+   "/*.zip",
+ ]

@@ -31,6 +31,7 @@ STYLESHEET_FILE = os.path.join(FILE_DIR, "core.css")
 APP_ICON = os.path.join(FILE_DIR, "logo.png")
 USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
 PRESET_PATH = os.path.join(USER_PATH, "presets")
+COMMAND_FILE = os.path.join(FILE_DIR, "send_command.py")
 
 with open(NICE_NAMES_FILE, "r") as stream:
     NICE_NAME_DATA = json.load(stream)
@@ -147,10 +148,10 @@ class AssetBrowser(QtWidgets.QMainWindow):
                 for item_data in items:
                     item = item_data["id"]
                     show_in_drawer = item_data["showInDrawer"]
+                    nice_name = item_data["nice_name"]
                     if show_in_drawer == "True":
                         if isinstance(item, str):
                             # Add to tab.
-                            nice_name = NICE_NAME_DATA.get(item, item)
                             item_widget = Item(
                                 item_id=item,
                                 label=nice_name,
@@ -195,7 +196,7 @@ class AssetBrowser(QtWidgets.QMainWindow):
             for sub_category_title, items in category_data.items():
                 for item_data in items:
                     item = item_data["id"]
-                    nice_name = NICE_NAME_DATA.get(item, item)
+                    nice_name = item_data["nice_name"]
                     variant_of = item_data["variantOf"]
                     if variant_of != "None":
                         variant_key = variant_of[1:]
@@ -319,11 +320,21 @@ class AssetBrowser(QtWidgets.QMainWindow):
             self.setStyleSheet(stream.read())
 
     def send_part_command_to_blender(self, item_id):
-        PYTHON_FILE = os.path.join(tempfile.gettempdir(), "command_script.py")
+        PYTHON_FILE = (
+            COMMAND_FILE  # os.path.join(tempfile.gettempdir(), "command_script.py")
+        )
+        print(PYTHON_FILE)
 
         script_contents = ""
         with open(SEND_SNIPPET, "r") as stream:
             script_contents = stream.read()
+
+        script_contents = script_contents.replace(
+            "%PATH%",
+            os.path.realpath(
+                os.path.join(os.path.dirname(__file__), "..", "..")
+            ).replace("\\", "/"),
+        )
 
         with open(PYTHON_FILE, "w") as stream:
             stream.write(script_contents.format(item_id))
@@ -338,6 +349,13 @@ class AssetBrowser(QtWidgets.QMainWindow):
         script_contents = ""
         with open(EDIT_PRESET_SNIPPET, "r") as stream:
             script_contents = stream.read()
+
+        script_contents = script_contents.replace(
+            "%PATH%",
+            os.path.realpath(
+                os.path.join(os.path.dirname(__file__), "..", "..")
+            ).replace("\\", "/"),
+        )
 
         with open(PYTHON_FILE, "w") as stream:
             stream.write(script_contents.format(item_id))
