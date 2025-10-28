@@ -23,14 +23,6 @@ from .utils import blend_utils, curve
 from .utils import material as _material
 from .utils import python as python_utils
 
-# from .. import part
-# from .part_overrides import line
-# import no_mans_sky_base_builder.preset as preset
-# from .utils import blend_utils
-# import no_mans_sky_base_builder.utils.curve as curve
-# import no_mans_sky_base_builder.utils.material as _material
-# from .utils import python as python_utils
-
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")

@@ -13,9 +13,8 @@ try:
 except ImportError:
     from PySide2 import QtCore, QtGui, QtWidgets
 
-import yaml
-
 import asset_browser.icons.icons
+import yaml
 from asset_browser.collapsable_frame import CollapsableFrame
 from asset_browser.flow_layout import FlowLayout
 from asset_browser.item import Item, Preset
@@ -320,10 +319,7 @@ class AssetBrowser(QtWidgets.QMainWindow):
             self.setStyleSheet(stream.read())
 
     def send_part_command_to_blender(self, item_id):
-        PYTHON_FILE = (
-            COMMAND_FILE  # os.path.join(tempfile.gettempdir(), "command_script.py")
-        )
-        print(PYTHON_FILE)
+        PYTHON_FILE = COMMAND_FILE
 
         script_contents = ""
         with open(SEND_SNIPPET, "r") as stream:

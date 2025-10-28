@@ -5,7 +5,7 @@ schema_version = "1.0.0"
 id = "no_mans_sky_base_builder"
 version = "6.1.2"
 name = "No Man's Sky Base Builder"
-tagline = "This is another extension"
+tagline = "A tool to assist with base building in No Mans Sky"
 maintainer = "DjMonkey <@djmonkeyuk>"
 # Supported types: "add-on", "theme"
 type = "add-on"
@@ -15,7 +15,7 @@ website = "https://www.nexusmods.com/nomanssky/mods/984"
 
 # # Optional: tag list defined by Blender and server, see:
 # # https://docs.blender.org/manual/en/dev/advanced/extensions/tags.html
-tags = ["Game Engine", "Sequencer"]
+tags = ["Game Engine"]
 
 blender_version_min = "4.2.0"
 # # Optional: Blender version that the extension does not support, earlier versions are supported.
