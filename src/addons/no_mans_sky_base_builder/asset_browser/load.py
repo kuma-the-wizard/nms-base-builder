@@ -34,7 +34,7 @@ except:
 
         print("PySide2 found (fallback).")
     except:
-        install_package("PySide6")
+        install_package("PySide2")
 
 # Load the Asset Browser
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
