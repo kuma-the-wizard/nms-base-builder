@@ -7,7 +7,6 @@ RESOURCES_DIR = os.path.realpath(
 )
 PART_DEFINITION = os.path.join(RESOURCES_DIR, "DT_PartDefinition.csv")
 
-
 headings = [
     "---",
     "ObjectModel",
@@ -26,7 +25,7 @@ headings = [
 
 def read_rows():
     existing_rows = {}
-    with open(PART_DEFINITION) as csv_file:
+    with open(PART_DEFINITION, "r", encoding="utf-16") as csv_file:
         csv_reader = csv.reader((x.replace("\0", "") for x in csv_file), delimiter=",")
         for idx, row in enumerate(csv_reader):
             if (not row) or (idx == 0):
@@ -60,7 +59,12 @@ def get_parts_from_categories(category, sub_category):
     for item in ROWS.values():
         if item[2] == category and item[4] == sub_category:
             parts.append(
-                {"id": item[0][1:], "showInDrawer": item[8], "variantOf": item[9]}
+                {
+                    "id": item[0][1:],
+                    "showInDrawer": item[8],
+                    "variantOf": item[9],
+                    "nice_name": item[7],
+                }
             )
     return sorted(parts, key=lambda part: part["id"])
 
@@ -78,7 +82,3 @@ def get_part_definition():
                 data[category][sub_category].append(part)
 
     return data
-
-
-if "__main__" == __name__:
-    pprint(get_part_definition())

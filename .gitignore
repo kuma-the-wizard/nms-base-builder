@@ -1,12 +1,15 @@
 # Ignore NMS icons. Don't want to redistribute.
 src/addons/no_mans_sky_base_builder/asset_browser/icons/*.PNG
+src/addons/no_mans_sky_base_builder/asset_browser/send_command.py
 automation_tools/part_genetator/**/*.obj
 automation_tools/part_genetator/**/*.fbx
 automation_tools/part_genetator/OBJ_export/
 automation_tools/part_genetator/OBJ_export/*
 automation_tools/icon_generator/**/*.PNG
 automation_tools/nicename_generator/export/*
+
 no_mans_sky_base_builder.zip
+no_mans_sky_base_builder-*.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

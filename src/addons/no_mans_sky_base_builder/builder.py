@@ -11,21 +11,22 @@ from copy import copy
 
 import bpy
 
-import no_mans_sky_base_builder.part as part
-import no_mans_sky_base_builder.part_overrides.bone as bone
-import no_mans_sky_base_builder.part_overrides.bone_replacer as bone_replacer
-import no_mans_sky_base_builder.part_overrides.line as line
-import no_mans_sky_base_builder.part_overrides.locked as locked
-import no_mans_sky_base_builder.part_overrides.message as message
-import no_mans_sky_base_builder.part_overrides.power_control as power_control
-import no_mans_sky_base_builder.part_overrides.turret as turret
-import no_mans_sky_base_builder.part_overrides.u_bytebeatline as u_bytebeatline
-import no_mans_sky_base_builder.part_overrides.u_pipeline as u_pipeline
-import no_mans_sky_base_builder.part_overrides.u_portalline as u_portalline
-import no_mans_sky_base_builder.part_overrides.u_powerline as u_powerline
-import no_mans_sky_base_builder.preset as preset
-import no_mans_sky_base_builder.utils.blend_utils as blend_utils
-import no_mans_sky_base_builder.utils.python as python_utils
+from . import part, preset
+from .part_overrides import (
+    bone,
+    bone_replacer,
+    line,
+    locked,
+    message,
+    power_control,
+    turret,
+    u_bytebeatline,
+    u_pipeline,
+    u_portalline,
+    u_powerline,
+)
+from .utils import blend_utils
+from .utils import python as python_utils
 
 
 class Builder(object):

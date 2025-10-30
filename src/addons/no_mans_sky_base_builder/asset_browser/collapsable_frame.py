@@ -1,9 +1,6 @@
-try:
-  from PySide6 import QtCore, QtGui, QtWidgets
-except ImportError:
-  from PySide2 import QtCore, QtGui, QtWidgets
-
 from asset_browser.flow_layout import FlowLayout
+
+from .utils.qt import QtCore, QtGui, QtWidgets
 
 
 class CollapsableFrame(QtWidgets.QFrame):

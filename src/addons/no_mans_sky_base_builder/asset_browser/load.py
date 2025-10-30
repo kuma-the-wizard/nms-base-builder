@@ -6,33 +6,33 @@ import sys
 PYTHON_EXE_PATH = sys.executable
 PYTHON_DIR_PATH = os.path.dirname(PYTHON_EXE_PATH)
 
+
 def install_pip():
     command = [PYTHON_EXE_PATH, "-m", "ensurepip", "--upgrade"]
     subprocess.run(command)
+
 
 def install_package(package_name):
     command = [PYTHON_EXE_PATH, "-m", "pip", "install", package_name]
     subprocess.run(command)
 
+
 try:
     import pip
-    print ("Pip found.")
+
+    print("Pip found.")
 except:
     install_pip()
 
 try:
-    import yaml
-    print ("Yaml found.")
-except:
-    install_package("pyaml")
-
-try:
     import PySide6
-    print ("PySide6 found.")
+
+    print("PySide6 found.")
 except:
     try:
         import PySide2
-        print ("PySide2 found (fallback).")
+
+        print("PySide2 found (fallback).")
     except:
         install_package("PySide6")
 

@@ -1,4 +1,4 @@
-"""Although the control point is not a base part. 
+"""Although the control point is not a base part.
 
 It's convenient to inherit from Part to get all the snap methods.
 
@@ -7,7 +7,8 @@ then on the node itself, so that it doesn't get exported along with everything
 else when bringing it back into the game.
 
 """
-import no_mans_sky_base_builder.part as part
+
+from .. import part
 
 
 class POWER_CONTROL(part.Part):
@@ -19,7 +20,7 @@ class POWER_CONTROL(part.Part):
     @property
     def builder(self):
         return self.__builder_object
-        
+
     @property
     def object_id(self):
         return self.__object_id

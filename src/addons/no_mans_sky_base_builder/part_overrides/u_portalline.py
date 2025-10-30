@@ -1,5 +1,5 @@
-import no_mans_sky_base_builder.part_overrides.line as line
-import no_mans_sky_base_builder.utils.material as material
+from ..part_overrides import line
+from ..utils import material
 
 
 class U_PORTALLINE(line.Line):

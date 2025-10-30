@@ -1,3 +1,16 @@
+release 6.1.2
+-------------
+
+* Ported add-on structure to newer Blender extension structure.
+* Removed YAML as a Python dependency as it’s no longer used.
+* Fixed an issue where the corvette “_Y_NE” parts were not being listed in their respective variants panel in the Asset Browser.
+* Collapsed L/R corvette connector pieces into one item with the variants sub-window in the part drawer.
+* Fixed naming of variants for the Atlas Corvette parts.
+* Fixed visibility of NW parts for the Hardrame Diffuser Rim
+* Fixed visibility of Speedbird Dome Rime in the Asset Browser
+* Fixed an issue where the Asset Browser could not load on systems of certain language settings.
+
+
 release 6.1.1
 -------------
 

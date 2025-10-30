@@ -1,8 +1,10 @@
 """Convenient material related methods."""
+
 import os
 
 import bpy
-import no_mans_sky_base_builder.utils.python as python_utils
+
+from ..utils import python as python_utils
 
 # Get Colour Information.
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -12,6 +14,7 @@ material_reference = python_utils.load_dictionary(COLOURS_JSON)
 GHOSTED_JSON = os.path.join(FILE_PATH, "..", "resources", "ghosted.json")
 ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
 GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
+
 
 def validate_material(colour_name, colour_value):
     """Creates or returns a material based on its name.
@@ -64,6 +67,7 @@ def assign_power_material(item):
     material = validate_material("powerline_material", [0.0, 0.5, 1.0, 0.5])
     set_material(item, material)
 
+
 def assign_portal_material(item):
     """Assign teal material to object.
 
@@ -72,6 +76,7 @@ def assign_portal_material(item):
     """
     material = validate_material("portalline_material", [0.0, 1.0, 1.0, 0.5])
     set_material(item, material)
+
 
 def assign_pipe_material(item):
     """Assign grey material to object.
@@ -82,6 +87,7 @@ def assign_pipe_material(item):
     material = validate_material("pipeline_material", [0.3, 0.3, 0.3, 0.9])
     set_material(item, material)
 
+
 def assign_bytebeat_material(item):
     """Assign light purple material to object.
 
@@ -90,6 +96,7 @@ def assign_bytebeat_material(item):
     """
     material = validate_material("bytebeat_material", [0.8, 0.0, 0.8, 0.5])
     set_material(item, material)
+
 
 def assign_preset_material(item):
     """Assign gold material to object.
@@ -104,10 +111,7 @@ def assign_preset_material(item):
     if item_name in GHOSTED_ITEMS:
         material_name += "_transparent"
 
-    material = validate_material(
-        material_name,
-        [0.8, 0.300186, 0.178301, 1.0]
-    )
+    material = validate_material(material_name, [0.8, 0.300186, 0.178301, 1.0])
     set_material(item, material)
 
 

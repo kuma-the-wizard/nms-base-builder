@@ -1,9 +1,6 @@
 from contextlib import contextmanager
 
-try:
-    from PySide6 import QtCore, QtGui, QtWidgets
-except ImportError:
-    from PySide2 import QtCore, QtGui, QtWidgets
+from .qt import QtCore, QtGui, QtWidgets
 
 
 @contextmanager

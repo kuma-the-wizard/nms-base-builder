@@ -1,4 +1,4 @@
-import no_mans_sky_base_builder.part as part
+from .. import part
 
 
 class BASE_FLAG(part.Part):
@@ -10,4 +10,3 @@ class BASE_FLAG(part.Part):
             self.object.lock_location = [True, True, True]
             self.object.lock_rotation = [True, True, True]
             self.object.lock_scale = [True, True, True]
-

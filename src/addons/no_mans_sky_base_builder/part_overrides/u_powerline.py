@@ -1,4 +1,4 @@
-import no_mans_sky_base_builder.part_overrides.line as line
+from ..part_overrides import line
 
 
 class U_POWERLINE(line.Line):
