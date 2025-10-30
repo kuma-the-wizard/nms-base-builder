@@ -1,10 +1,7 @@
 #! /usr/bin/python2
 # -*- coding: utf-8 -*-
 
-try:
-  from PySide6 import QtCore, QtWidgets
-except ImportError:
-  from PySide2 import QtCore, QtWidgets
+from .utils.qt import QtCore, QtGui, QtWidgets
 
 
 class FlowLayout(QtWidgets.QLayout):
@@ -81,12 +78,14 @@ class FlowLayout(QtWidgets.QLayout):
             spaceX = self.spacing() + wid.style().layoutSpacing(
                 QtWidgets.QSizePolicy.PushButton,
                 QtWidgets.QSizePolicy.PushButton,
-                QtCore.Qt.Horizontal)
+                QtCore.Qt.Horizontal,
+            )
 
             spaceY = self.spacing() + wid.style().layoutSpacing(
                 QtWidgets.QSizePolicy.PushButton,
                 QtWidgets.QSizePolicy.PushButton,
-                QtCore.Qt.Vertical)
+                QtCore.Qt.Vertical,
+            )
 
             nextX = x + item.sizeHint().width() + spaceX
             if (nextX + 4) - spaceX > rect.right() and lineHeight > 0:
@@ -96,8 +95,7 @@ class FlowLayout(QtWidgets.QLayout):
                 lineHeight = 0
 
             if not testOnly:
-                item.setGeometry(
-                    QtCore.QRect(QtCore.QPoint(x, y), item.sizeHint()))
+                item.setGeometry(QtCore.QRect(QtCore.QPoint(x, y), item.sizeHint()))
 
             x = nextX
             lineHeight = max(lineHeight, item.sizeHint().height())

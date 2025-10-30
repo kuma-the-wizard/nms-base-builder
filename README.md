@@ -45,7 +45,7 @@ A plugin for Blender to build bases in No Mans Sky.<br />
     * NomNom - https://github.com/zencq/NomNom 
 * Blender
     * https://www.blender.org
-* The Latest Python 3 version.
+* Python 3.13
     * Install using Windows Store, or from https://www.python.org
 * bpy_externall addon. Installed and enabled in Blender.
     * https://github.com/djmonkeyuk/bpy_externall/tree/blender4-patch
