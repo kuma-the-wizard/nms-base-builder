@@ -23,7 +23,6 @@ from .utils import blend_utils, curve
 from .utils import material as _material
 from .utils import python as python_utils
 
-
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
 PRESET_PATH = os.path.join(USER_PATH, "presets")
@@ -1413,7 +1412,7 @@ class VisitDiscord(bpy.types.Operator):
 
     def execute(self, context):
         # Load web page.
-        webbrowser.open_new("https://discord.gg/Mmz3rpq4Px")
+        webbrowser.open_new("https://discord.gg/kpGVRKPn5W")
         return {"FINISHED"}
 
 
