@@ -1,3 +1,14 @@
+release 6.1.3
+-------------
+
+* It is no longer required to install Python in order to use the Asset Browser tool
+    * The tool now uses the Python installation that is part of Blender itself.
+    * Using the Asset Browser should now be a lot more stable to use for users setting things up for the first time.
+    * Existing users can remove their Python installation if they were only using it for this tool.
+    * There is still a small wait on the first-time load as things initialize.
+* Added a Guides button to the tool.
+
+
 release 6.1.2
 -------------
 
