@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import sys
 import webbrowser
 
 import bpy
@@ -868,8 +869,9 @@ class NMS_PT_file_buttons_panel(Panel):
         nms_row.operator("object.nms_export_nms_data", icon="COPYDOWN")
 
         second_column = layout.column(align=True)
-        community_row = second_column.row(align=True)
+        community_row = second_column.column(align=True)
         community_row.operator("object.nms_visit_community", icon="WORLD_DATA")
+        community_row.operator("object.nms_visit_guides", icon="WORLD_DATA")
 
 
 # Base Property Panel ---
@@ -1378,7 +1380,7 @@ class LoadFancyUI(bpy.types.Operator):
         # Load web page.
         bpy.ops.wm.bpy_externall_server(speed=0.15, mode="start")
         loader = os.path.join(ASSET_BROWSER_PATH, "load.py").replace("\\", "/")
-        subprocess.Popen(["python", loader])
+        subprocess.Popen([sys.executable, loader])
         return {"FINISHED"}
 
 
@@ -1413,6 +1415,20 @@ class VisitDiscord(bpy.types.Operator):
     def execute(self, context):
         # Load web page.
         webbrowser.open_new("https://discord.gg/kpGVRKPn5W")
+        return {"FINISHED"}
+
+
+class VisitGuides(bpy.types.Operator):
+    """Launch the community discord URL."""
+
+    bl_idname = "object.nms_visit_guides"
+    bl_label = "Visit the Online Guides."
+
+    def execute(self, context):
+        # Load web page.
+        webbrowser.open_new(
+            "https://djmonkey.uk/no-mans-sky-base-builder-blender/guides/"
+        )
         return {"FINISHED"}
 
 
@@ -2074,6 +2090,7 @@ classes = (
     GetMorePresets,
     PresetsMenu,
     VisitDiscord,
+    VisitGuides,
     VisitPrefabDiscord,
     VisitGitHubRepo,
     OpenPresetFolder,

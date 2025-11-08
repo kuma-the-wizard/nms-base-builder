@@ -40,15 +40,15 @@ A plugin for Blender to build bases in No Mans Sky.<br />
 
 * Latest Base Builder Release
     * https://github.com/djmonkeyuk/nms-base-builder/releases
-* A No Mans Sky Save Editor
-    * GoatFungus - https://github.com/goatfungus/NMSSaveEditor
-    * NomNom - https://github.com/zencq/NomNom 
-* Blender
-    * https://www.blender.org
-* Python 3.13
-    * Install using Windows Store, or from https://www.python.org
 * bpy_externall addon. Installed and enabled in Blender.
     * https://github.com/djmonkeyuk/bpy_externall/tree/blender4-patch
+* A No Mans Sky Save Editor, you have a few options:
+    * GoatFungus - https://github.com/goatfungus/NMSSaveEditor
+    * NomNom - https://github.com/zencq/NomNom 
+    * NMSBaseJsonEditor - https://www.nexusmods.com/nomanssky/mods/3849
+* Blender
+    * https://www.blender.org
+
 
 <br />
 
@@ -92,7 +92,6 @@ https://djmonkeyuk.github.io/nms-base-builder-presets/
 Casual users may ignore this section. These Python dependencies are installed automatically on exeuction of the Asset Browser UI.
 
 * PySide6
-* pyaml
 
 ## Mod Compatibility
 

@@ -1,3 +1,12 @@
+release 6.1.3
+-------------
+
+* It is no longer required to install Python. Launching the Asset Browser tool should be much more stable for new users.
+    * Existing users can remove Python if they were only using it for this tool.
+    * There is still a small wait on the first-time load as things initialize.
+* Added a Guides button to the tool.
+
+
 release 6.1.2
 -------------
 
