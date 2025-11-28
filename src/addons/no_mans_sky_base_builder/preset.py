@@ -34,7 +34,8 @@ class Preset(object):
                 scene.
         """
         # Turn off relationship lines.
-        bpy.context.space_data.overlay.show_relationship_lines = False
+        if hasattr(bpy.context.space_data, "overlay"):
+            bpy.context.space_data.overlay.show_relationship_lines = False
 
         # Assign private variables.
         self.__preset_id = preset_id

@@ -6,12 +6,13 @@ import tempfile
 import time
 from functools import partial
 
-import asset_browser.icons.icons
-from asset_browser.collapsable_frame import CollapsableFrame
-from asset_browser.flow_layout import FlowLayout
-from asset_browser.item import Item, Preset
-from asset_browser.utils import contexts, parts_definition
+import bpy
 
+from .collapsable_frame import CollapsableFrame
+from .flow_layout import FlowLayout
+from .icons import icons
+from .item import Item, Preset
+from .utils import contexts, parts_definition
 from .utils.qt import QtCore, QtGui, QtWidgets
 
 FILE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -24,7 +25,6 @@ STYLESHEET_FILE = os.path.join(FILE_DIR, "core.css")
 APP_ICON = os.path.join(FILE_DIR, "logo.png")
 USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
 PRESET_PATH = os.path.join(USER_PATH, "presets")
-COMMAND_FILE = os.path.join(FILE_DIR, "send_command.py")
 
 with open(NICE_NAMES_FILE, "r") as stream:
     NICE_NAME_DATA = json.load(stream)
@@ -34,7 +34,8 @@ class AssetBrowser(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
         super(AssetBrowser, self).__init__(*args, **kwargs)
         self.setWindowTitle("No Man's Sky Base Builder :: Asset Browser")
-        self.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
+        self.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint, True)
+        self.setWindowFlag(QtCore.Qt.Tool, True)  # helps on macOS & Linux
         app_id = "djmonkey.NMSBB.AssetBrowser.1"  # arbitrary string
         # FIXME: do this in some platform-agnostic way if possible
         if hasattr(ctypes, "windll"):
@@ -313,46 +314,63 @@ class AssetBrowser(QtWidgets.QMainWindow):
             self.setStyleSheet(stream.read())
 
     def send_part_command_to_blender(self, item_id):
-        PYTHON_FILE = COMMAND_FILE
+        import sys
 
-        script_contents = ""
-        with open(SEND_SNIPPET, "r") as stream:
-            script_contents = stream.read()
+        path = os.path.join(FILE_DIR, "..", "..").replace("\\", "/")
+        if path not in sys.path:
+            sys.path.insert(0, path)
 
-        script_contents = script_contents.replace(
-            "%PATH%",
-            os.path.realpath(
-                os.path.join(os.path.dirname(__file__), "..", "..")
-            ).replace("\\", "/"),
-        )
+        import no_mans_sky_base_builder
+        import no_mans_sky_base_builder.preset as preset
+        import no_mans_sky_base_builder.utils.blend_utils as blend_utils
 
-        with open(PYTHON_FILE, "w") as stream:
-            stream.write(script_contents.format(item_id))
+        BUILDER = no_mans_sky_base_builder.BUILDER
 
-        TEMP_PATH = os.path.join(tempfile.gettempdir(), "bpy_external.io")
-        with open(TEMP_PATH, "w") as stream:
-            stream.write(PYTHON_FILE)
+        selection = blend_utils.get_current_selection()
+
+        # Build item
+        if item_id in preset.Preset.get_presets():
+            new_item = BUILDER.add_preset(item_id)
+        else:
+            new_item = BUILDER.add_part(item_id)
+            if hasattr(new_item, "build_rig"):
+                new_item.build_rig()
+
+        # Make this item the selected.
+        new_item.select()
+
+        # If there was a previous selection, snap the new item to it.
+        if selection:
+            builder_selection = BUILDER.get_builder_object_from_bpy_object(selection)
+            if builder_selection:
+                new_item.snap_to(builder_selection)
 
     def send_edit_preset_command_to_blender(self, item_id):
-        PYTHON_FILE = os.path.join(tempfile.gettempdir(), "command_script.py")
+        import sys
 
-        script_contents = ""
-        with open(EDIT_PRESET_SNIPPET, "r") as stream:
-            script_contents = stream.read()
+        path = os.path.join(FILE_DIR, "..", "..").replace("\\", "/")
+        if path not in sys.path:
+            sys.path.insert(0, path)
 
-        script_contents = script_contents.replace(
-            "%PATH%",
-            os.path.realpath(
-                os.path.join(os.path.dirname(__file__), "..", "..")
-            ).replace("\\", "/"),
-        )
+        import bpy
+        import no_mans_sky_base_builder
+        import no_mans_sky_base_builder.preset as preset
+        import no_mans_sky_base_builder.utils.blend_utils as blend_utils
 
-        with open(PYTHON_FILE, "w") as stream:
-            stream.write(script_contents.format(item_id))
+        BUILDER = no_mans_sky_base_builder.BUILDER
 
-        TEMP_PATH = os.path.join(tempfile.gettempdir(), "bpy_external.io")
-        with open(TEMP_PATH, "w") as stream:
-            stream.write(PYTHON_FILE)
+        nms_tool = bpy.context.scene.nms_base_tool
+        if item_id in preset.Preset.get_presets():
+            nms_tool.new_file()
+            preset.Preset(
+                preset_id=item_id,
+                builder_object=BUILDER,
+                create_control=False,
+                apply_shader=False,
+                build_rigs=True,
+            )
+            BUILDER.build_rigs()
+            BUILDER.optimise_control_points()
 
     def sizeHint(self):
         return QtCore.QSize(1000, 1000)
@@ -377,9 +395,24 @@ class AssetBrowser(QtWidgets.QMainWindow):
         super(AssetBrowser, self).closeEvent(event)
 
 
+qt_app = None
+qt_window = None
+
+
+def qt_event_loop():
+    global qt_app
+    if qt_app is None:
+        return None
+    qt_app.processEvents()
+    return 0.01
+
+
 def load():
-    app = QtWidgets.QApplication(sys.argv)
-    app.setStyle("Fusion")
+    if not QtWidgets.QApplication.instance():
+        QtWidgets.QApplication(sys.argv)
+    else:
+        QtWidgets.QApplication.instance()
     window = AssetBrowser()
     window.show()
-    app.exit(app.exec_())
+    # Start Blender's timer-driven Qt loop
+    bpy.app.timers.register(qt_event_loop, persistent=True)
