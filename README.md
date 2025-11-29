@@ -118,7 +118,7 @@ Created and maintained by DjMonkey. You can reach out via various social media c
 
 * Discord: <a href="https://discord.gg/kpGVRKPn5W">https://discord.gg/kpGVRKPn5W</a>
 * Threads: <a href="https://www.threads.net/@djmonkeyuk" target="_blank">@djmonkeyuk</a>
-* Twitter/X: <a href="https://www.x.com/djmonkeyuk" target="_blank">@djmonkeyuk</a> or <a href="https://www.x.com/@charliebanks" target="_blank">@charliebanks</a>
+* Twitter/X: <a href="https://www.x.com/djmonkeyuk" target="_blank">@djmonkeyuk</a>
 * BlueSky: <a href="https://bsky.app/profile/djmonkeyuk.bsky.social" target="_blank">@djmonkeyuk.bsky.social</a>
 
 ## Play my Indie Game!
