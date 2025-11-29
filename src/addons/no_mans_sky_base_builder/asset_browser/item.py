@@ -136,6 +136,7 @@ class Preset(QtWidgets.QFrame):
         font = QtGui.QFont("Decorative", FONT_SIZE)
         self.label_button.setFont(font)
         self.edit_button = QtWidgets.QPushButton("Edit", parent=self)
+        self.edit_button.setObjectName("EditButton")
 
     def _layout(self):
         self.main_layout.addWidget(self.label_button)

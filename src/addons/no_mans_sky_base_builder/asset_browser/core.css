@@ -109,6 +109,22 @@ Preset QPushButton {
     border-radius: 0px;
     background-color: rgba(0, 0, 0, 0);
     font-size: 12px;
+    letter-spacing:0px;
+    
+}
+
+#EditButton {
+    background-color: rgb(0, 96, 206);
+    font-weight: bold;
+    border-radius: 4px;
+}
+
+#EditButton:hover {
+    background-color: rgb(41, 141, 255);
+}
+
+#EditButton:pressed {
+    background-color: rgb(31, 73, 121);
 }
 
 Preset QPushButton:hover {
