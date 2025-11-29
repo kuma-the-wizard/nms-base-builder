@@ -136,6 +136,7 @@ class AssetBrowser(QtWidgets.QMainWindow):
             # Sub Categories
             for sub_category_title, items in category_data.items():
                 title_label = CollapsableFrame(label=sub_category_title, parent=frame)
+                title_label.setProperty("partList", True)
                 layout.addWidget(title_label)
                 if not items:
                     continue

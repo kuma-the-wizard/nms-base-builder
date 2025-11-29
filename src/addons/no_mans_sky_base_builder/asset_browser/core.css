@@ -13,7 +13,7 @@ QScrollArea {
 QLineEdit,
 #refresh_button {
     background-color: #0a1b2e;
-    border: 1px solid #a78d1b;
+    border: 1px solid #060e18;
     border-radius: 4px;
     padding: 5px;
     color: #FFF;
@@ -22,8 +22,8 @@ QLineEdit,
 
 QLineEdit:hover,
 #refresh_button:hover {
-    background-color: #102c3d;
-    border: 1px solid #eec920;
+    background-color: #102844;
+    border: 1px solid #060e18;
     border-radius: 4px;
     padding: 5px;
     color: #FFF;
@@ -32,17 +32,17 @@ QLineEdit:hover,
 
 CollapsableFrame QPushButton {
     text-align: center;
-    padding: 10px;
+    padding: 7px 10px;
     border-radius: 0px;
     background-color: rgba(0, 0, 0, 0.4);
     color: #D8D02E;
     font-size: 16px;
     letter-spacing:2px;
-    /* font-weight: bold; */
     text-transform: uppercase;
-    /* border-bottom:1px solid #D8D02E; */
-    
-    
+}
+
+CollapsableFrame[partList="true"] QPushButton {
+    border-bottom:1px solid #D8D02E;
 }
 
 CollapsableFrame {
@@ -138,6 +138,19 @@ Preset QPushButton:pressed {
 #VariantButton {
     padding: 0px;
     font-size: 10px;
+    border-bottom:0px;
+    border-radius:4px;
+    font-weight: bold;
+    font-size: 12px;
+    background-color: #141b24;
+    border:1px solid #525456;
+    text-align: center;
+    padding-left:2px;
+}
+
+#VariantButton:hover {
+    background-color: #1e2835;
+    border:1px solid #DDDDDD;
 }
 
 QTabWidget {
@@ -155,11 +168,12 @@ QTabWidget::tab-bar:top {
 }
 
 QTabBar QToolButton {
-    background-color: #021825;
-    border-radius: 2px;
-    border: 1px solid #6e5d13;
+    background-color: #17202c;
+    border-top-right-radius: 10px;
+    border-top-left-radius: 10px;
     width: 30px;
     color: #FFF;
+    margin-right:2px;
 }
 
 QTabBar QToolButton:pressed {
@@ -167,11 +181,16 @@ QTabBar QToolButton:pressed {
 }
 
 QTabBar::tab {
-    background-color: #0c293b;
     margin-top: 2px;
     height: 20px;
     color: #FFF;
     text-transform: uppercase;
+    background-color: #17202c;
+    border-top-right-radius: 8px;
+    border-top-left-radius: 8px;
+    color: #FFF;
+    /* margin-right:10px; */
+    margin:2px;
 }
 
 QTabBar::tab:focus {
@@ -180,7 +199,7 @@ QTabBar::tab:focus {
 }
 
 QTabBar::tab:selected {
-    background: rgba(0, 0, 0, 0.9);
+    background: #4a5a75;
     margin-top: 2px;
     color: #fff;
 }
