@@ -1,14 +1,13 @@
-import json
 import os
 from functools import partial
 
-import asset_browser.icons.icons
-
+from .icons import icons
 from .utils.qt import QtCore, QtGui, QtWidgets
 
-THUMB_SIZE = 48
-ITEM_SIZE = 80
-FONT_SIZE = 7
+THUMB_SIZE = 64
+ITEM_SIZE_X = 100
+ITEM_SIZE_Y = 125
+FONT_SIZE = 10
 
 FILE_DIR = os.path.dirname(os.path.realpath(__file__))
 ICON_PATH = os.path.join(FILE_DIR, "icons")
@@ -44,8 +43,8 @@ class Item(QtWidgets.QFrame):
         self.item_id = item_id or ""
         self.variants = variants or []
         self.setToolTip(self.item_id)
-        self.setMinimumSize(QtCore.QSize(ITEM_SIZE, ITEM_SIZE))
-        self.setMaximumSize(QtCore.QSize(ITEM_SIZE, ITEM_SIZE))
+        self.setMinimumSize(QtCore.QSize(ITEM_SIZE_X, ITEM_SIZE_Y))
+        self.setMaximumSize(QtCore.QSize(ITEM_SIZE_X, ITEM_SIZE_Y))
         self.main_layout = QtWidgets.QVBoxLayout(self)
         self.main_layout.setContentsMargins(5, 5, 5, 5)
         self.main_layout.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignTop)
@@ -56,24 +55,31 @@ class Item(QtWidgets.QFrame):
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
     def _build_ui(self):
-        self.thumb = Thumb(part_id=self.item_id, parent=self)
+        self.thumb_container = QtWidgets.QWidget(self)
+        self.thumb_container_layout = QtWidgets.QHBoxLayout(self.thumb_container)
+        self.thumb_container_layout.setContentsMargins(0, 0, 0, 0)
+        self.thumb = Thumb(part_id=self.item_id, parent=self.thumb_container)
         self.label_widget = QtWidgets.QLabel(self.label, parent=self)
         self.label_widget.setAlignment(QtCore.Qt.AlignCenter)
         self.label_widget.setWordWrap(True)
         font = QtGui.QFont("Decorative", FONT_SIZE)
         self.label_widget.setFont(font)
-        self.label_widget.setMinimumWidth(THUMB_SIZE)
-        self.label_widget.setMaximumWidth(THUMB_SIZE)
+        self.label_widget.setMinimumWidth(ITEM_SIZE_X - 10)
+        self.label_widget.setMaximumWidth(ITEM_SIZE_X - 10)
         self.variants_button = QtWidgets.QPushButton("v", self)
         self.variants_button.setContentsMargins(0, 0, 0, 0)
-        var_but_width = 23
+        var_but_width = 25
         self.variants_button.setGeometry(
-            ITEM_SIZE - var_but_width - 2, 2, var_but_width, 23
+            ITEM_SIZE_X - var_but_width - 4, 4, var_but_width, var_but_width
         )
         self.variants_button.setVisible(False)
+        self.variants_button.setObjectName("VariantButton")
 
     def _layout(self):
-        self.main_layout.addWidget(self.thumb, QtCore.Qt.AlignCenter)
+        self.thumb_container_layout.addStretch()
+        self.thumb_container_layout.addWidget(self.thumb)
+        self.thumb_container_layout.addStretch()
+        self.main_layout.addWidget(self.thumb_container)
         self.main_layout.addWidget(self.label_widget, QtCore.Qt.AlignCenter)
 
     def _setup(self):
@@ -127,9 +133,10 @@ class Preset(QtWidgets.QFrame):
         self.label_button.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed
         )
-        font = QtGui.QFont("Decorative", 10)
+        font = QtGui.QFont("Decorative", FONT_SIZE)
         self.label_button.setFont(font)
         self.edit_button = QtWidgets.QPushButton("Edit", parent=self)
+        self.edit_button.setObjectName("EditButton")
 
     def _layout(self):
         self.main_layout.addWidget(self.label_button)

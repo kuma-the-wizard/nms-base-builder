@@ -38,17 +38,14 @@ A plugin for Blender to build bases in No Mans Sky.<br />
 <a name="requirements"></a>
 ## Requirements
 
+* Blender
+    * https://www.blender.org
 * Latest Base Builder Release
     * https://github.com/djmonkeyuk/nms-base-builder/releases
-* bpy_externall addon. Installed and enabled in Blender.
-    * https://github.com/djmonkeyuk/bpy_externall/tree/blender4-patch
 * A No Mans Sky Save Editor, you have a few options:
     * GoatFungus - https://github.com/goatfungus/NMSSaveEditor
     * NomNom - https://github.com/zencq/NomNom 
     * NMSBaseJsonEditor - https://www.nexusmods.com/nomanssky/mods/3849
-* Blender
-    * https://www.blender.org
-
 
 <br />
 
@@ -73,11 +70,9 @@ See video above for installation guide, otherwise follow these steps.
 2. Download the latest release. (https://github.com/djmonkeyuk/nms-base-builder/releases)
 3. Open "User Preferences" in Blender.
 4. Go to the Add-ons tab.
-5. Click "Install Add-on from File..." at the bottom of the window.
+5. Click "Install Add-on from File..." from the menu button at the top right of the window.
 6. Select the downloaded zip file.
-7. Enable the Addon in the list.
-7. In the right side panel of the viewport, click the "No Man's Sky" tab. If this is not visible then clicking the tiny triangle will expand the panel.
-
+7. In the right side panel of the viewport, click the "No Man's Sky Base Builder" tab. If this is not visible then clicking the tiny triangle will expand the panel.
 
 ## Preset Location
 
@@ -89,7 +84,7 @@ https://djmonkeyuk.github.io/nms-base-builder-presets/
 
 ## Technical Dependencies
 
-Casual users may ignore this section. These Python dependencies are installed automatically on exeuction of the Asset Browser UI.
+Casual users may ignore this section. These Python dependencies are installed automatically on execution of the Asset Browser UI.
 
 * PySide6
 
@@ -122,8 +117,8 @@ The fbx file name should reflect the name of the part in-game.
 Created and maintained by DjMonkey. You can reach out via various social media channels:
 
 * Discord: <a href="https://discord.gg/kpGVRKPn5W">https://discord.gg/kpGVRKPn5W</a>
-* Threads: <a href="https://www.threads.net/@dancingmoongame" target="_blank">@dancingmoongame</a>
-* Twitter/X: <a href="https://www.x.com/@dancingmoongame" target="_blank">@DancingMoonGame</a> or <a href="https://www.x.com/@charliebanks" target="_blank">@charliebanks</a>
+* Threads: <a href="https://www.threads.net/@djmonkeyuk" target="_blank">@djmonkeyuk</a>
+* Twitter/X: <a href="https://www.x.com/djmonkeyuk" target="_blank">@djmonkeyuk</a> or <a href="https://www.x.com/@charliebanks" target="_blank">@charliebanks</a>
 * BlueSky: <a href="https://bsky.app/profile/djmonkeyuk.bsky.social" target="_blank">@djmonkeyuk.bsky.social</a>
 
 ## Play my Indie Game!
@@ -132,7 +127,7 @@ If you have enjoyed using my tools, consider playing my very own indie game! It 
 
 > <i>'Tales from the Dancing Moon' is a life-sim RPG set in a parallel universe inspired by UK culture and fantasy novels. After the events of a shadow-beast invasion on a seaside town, complete villager quests and collect hidden diaries to understand your role in this mysterious character-driven story.</i>
 
-There is a <a href="https://store.steampowered.com/app/1782420/Tales_from_The_Dancing_Moon/" target="_blank">FREE demo</a> and an Early Access version. You would help me a lot by either wishlisting it, trying it out, or even sharing it with your friends!
+There is a <a href="https://store.steampowered.com/app/1782420/Tales_from_The_Dancing_Moon/" target="_blank">FREE demo</a>. You would help me a lot by either wishlisting it, grabbing a copy, or even sharing it with your friends!
 
 Click the image below to be taken to the Steam page!
 

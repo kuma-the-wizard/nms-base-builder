@@ -1,5 +1,4 @@
-from asset_browser.flow_layout import FlowLayout
-
+from .flow_layout import FlowLayout
 from .utils.qt import QtCore, QtGui, QtWidgets
 
 

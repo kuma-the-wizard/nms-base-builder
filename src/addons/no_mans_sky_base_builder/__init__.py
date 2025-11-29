@@ -1377,10 +1377,18 @@ class LoadFancyUI(bpy.types.Operator):
     bl_label = "Launch Asset Browser..."
 
     def execute(self, context):
-        # Load web page.
-        bpy.ops.wm.bpy_externall_server(speed=0.15, mode="start")
-        loader = os.path.join(ASSET_BROWSER_PATH, "load.py").replace("\\", "/")
-        subprocess.Popen([sys.executable, loader])
+        from .asset_browser import check_dependencies
+
+        valid = check_dependencies.check_dependencies()
+        if not valid:
+            ShowMessageBox(
+                message="Could not load Asset Browser. See Window > Toggle System Console for detials.",
+                title="Asset Browser",
+            )
+            return {"FINISHED"}
+        from .asset_browser import main as asset_browser_main
+
+        asset_browser_main.load()
         return {"FINISHED"}
 
 

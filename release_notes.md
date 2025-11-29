@@ -1,3 +1,11 @@
+release 6.1.4
+-------------
+
+* It is no longer required to installed bpy_external for the Asset Browser to work.
+* Visual refresh to the Asset Browser which improves readability and consistency with the Base App.
+* Added connection point data to the Corvette Mini Teleporter.
+
+
 release 6.1.3
 -------------
 
