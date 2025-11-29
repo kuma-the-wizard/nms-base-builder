@@ -376,25 +376,6 @@ class AssetBrowser(QtWidgets.QMainWindow):
     def sizeHint(self):
         return QtCore.QSize(1000, 1000)
 
-    def closeEvent(self, event):
-        PYTHON_FILE = os.path.join(tempfile.gettempdir(), "command_script.py")
-        script_contents = ""
-        with open(END_SNIPPET, "r") as stream:
-            script_contents = stream.read()
-        with open(PYTHON_FILE, "w") as stream:
-            stream.write(script_contents)
-
-        TEMP_PATH = os.path.join(tempfile.gettempdir(), "bpy_external.io")
-        with open(TEMP_PATH, "w") as stream:
-            stream.write(PYTHON_FILE)
-
-        time.sleep(0.5)
-        with open(TEMP_PATH, "w") as stream:
-            stream.write("")
-
-        # Close
-        super(AssetBrowser, self).closeEvent(event)
-
 
 qt_app = None
 qt_window = None
