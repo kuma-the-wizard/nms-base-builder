@@ -35,7 +35,6 @@ class AssetBrowser(QtWidgets.QMainWindow):
         super(AssetBrowser, self).__init__(*args, **kwargs)
         self.setWindowTitle("No Man's Sky Base Builder :: Asset Browser")
         self.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint, True)
-        self.setWindowFlag(QtCore.Qt.Tool, True)  # helps on macOS & Linux
         app_id = "djmonkey.NMSBB.AssetBrowser.1"  # arbitrary string
         # FIXME: do this in some platform-agnostic way if possible
         if hasattr(ctypes, "windll"):
