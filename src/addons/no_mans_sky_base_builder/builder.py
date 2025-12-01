@@ -70,6 +70,7 @@ class Builder(object):
             "MESSAGEMODULE",
             "BYTEBEAT",
             "BYTEBEATSWITCH",
+            "HOLO_DISCO_0",
             "FOS_BI",
             "FOS_BIRD",
             "FOS_BIRD_DIS",

@@ -127,9 +127,9 @@ def get_current_selection():
     Returns:
         bpy_types.Object: The selected item.
     """
-    if hasattr(bpy.context, "selected_objects"):
-        if bpy.context.selected_objects:
-            return bpy.context.selected_objects[-1]
+    selected_objects = [o for o in bpy.context.scene.objects if o.select_get()]
+    if selected_objects:
+        return selected_objects[-1]
 
 
 def get_distance_between(matrix1, matrix2):

@@ -1,3 +1,11 @@
+release 6.1.5
+-------------
+
+* Fixed an issue when adding parts from the Asset Browser was not taking into consideration the current selection.
+* Fixed an issue where miniimze and maximize buttons disappared from the Asset Browser window.
+* Fixed an issue where the Wonder Projector was not retaining it's message data.
+
+
 release 6.1.4
 -------------
 
