@@ -73,6 +73,13 @@ class AssetBrowser(QtWidgets.QMainWindow):
 
         # Tab widget
         self.tab_widget = QtWidgets.QTabWidget(self.main_widget)
+        tabbar = self.tab_widget.tabBar()
+        tabbar.setUsesScrollButtons(True)
+        tabbar.setExpanding(False)
+        tabbar.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed
+        )
+        tabbar.setElideMode(QtCore.Qt.ElideNone)
 
         self.search_scroll = QtWidgets.QScrollArea(self.main_widget)
         self.search_scroll.setWidgetResizable(True)
