@@ -5,16 +5,44 @@ import os
 import bpy
 
 from ..utils import python as python_utils
+import csv
 
 # Get Colour Information.
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 COLOURS_JSON = os.path.join(FILE_PATH, "..", "resources", "colours.json")
+COLOURS_CSV = os.path.join(FILE_PATH,  "..", "resources", "colours.csv")
 material_reference = python_utils.load_dictionary(COLOURS_JSON)
 
 GHOSTED_JSON = os.path.join(FILE_PATH, "..", "resources", "ghosted.json")
 ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
 GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
 
+def read_colours():
+    rows = []
+    palettes = []
+    with open(COLOURS_CSV, "r") as csv_file:
+        csv_reader = csv.reader((x.replace("\0", "") for x in csv_file), delimiter=",")
+        for idx, row in enumerate(csv_reader):
+            if idx == 0:
+                continue
+            palette = row[1]
+            if palette not in palettes:
+                palettes.append(palette)
+            nice_name = row[2]
+            colour_id = row[3]
+            rows.append([palette, nice_name, colour_id])
+    return palettes, rows
+
+BAKED_PALETTES, BAKED_COLOURS = read_colours()
+BAKED_PALETTES_UI = [(col, col, col) for col in BAKED_PALETTES]
+
+def get_colours_from_palette(palette):
+    data = []
+    for row in BAKED_COLOURS:
+        if palette == row[0]:
+            data.append((row[2], row[1], (0.0,0.0,0.0)))
+
+    return data
 
 def validate_material(colour_name, colour_value):
     """Creates or returns a material based on its name.
@@ -134,6 +162,9 @@ def assign_default_material(item, index=0):
     return material
 
 
+
+
+
 def assign_material(item, colour_index=0, material=None):
     """Given a blender object. assign a material and UserData index.
 
@@ -147,19 +178,6 @@ def assign_material(item, colour_index=0, material=None):
     """
     # Some Defaults
     alpha_value = 1.0
-
-    material_map = {
-        "CONCRETE": 0,
-        "RUST": 16777216,
-        "STONE": 33554432,
-        "WOOD": 50331648,
-    }
-
-    material_key = "CONCRETE"
-    if material:
-        material_key = list(material)[0]
-        material_index = material_map[material_key]
-        colour_index = material_index + colour_index
 
     # Apply Custom Variable.
     item["UserData"] = str(colour_index)
