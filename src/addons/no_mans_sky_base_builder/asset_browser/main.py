@@ -389,10 +389,11 @@ def qt_event_loop():
 
 
 def load():
+    global qt_app, qt_window
     if not QtWidgets.QApplication.instance():
-        QtWidgets.QApplication(sys.argv)
+        qt_app = QtWidgets.QApplication(sys.argv)
     else:
-        QtWidgets.QApplication.instance()
+        qt_app = QtWidgets.QApplication.instance()
     window = AssetBrowser()
     window.show()
     # Start Blender's timer-driven Qt loop
