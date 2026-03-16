@@ -1,21 +1,25 @@
 """Convenient material related methods."""
 
+import csv
 import os
+from operator import index
 
 import bpy
 
 from ..utils import python as python_utils
-import csv
 
 # Get Colour Information.
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 COLOURS_JSON = os.path.join(FILE_PATH, "..", "resources", "colours.json")
-COLOURS_CSV = os.path.join(FILE_PATH,  "..", "resources", "colours.csv")
+COLOURS_CSV = os.path.join(FILE_PATH, "..", "resources", "DT_Palettes.csv")
 material_reference = python_utils.load_dictionary(COLOURS_JSON)
 
 GHOSTED_JSON = os.path.join(FILE_PATH, "..", "resources", "ghosted.json")
 ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
 GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
+
+BAKED_INDEX_COLOURS = {}
+
 
 def read_colours():
     rows = []
@@ -25,24 +29,33 @@ def read_colours():
         for idx, row in enumerate(csv_reader):
             if idx == 0:
                 continue
-            palette = row[1]
+            palette = row[2]
             if palette not in palettes:
                 palettes.append(palette)
-            nice_name = row[2]
+            nice_name = row[4]
             colour_id = row[3]
-            rows.append([palette, nice_name, colour_id])
+            thumb = row[8]
+            primary = row[5]
+            if isinstance(primary, str):
+                primary = eval(primary)
+            rows.append([palette, nice_name, colour_id, thumb, primary])
+
+            BAKED_INDEX_COLOURS[int(colour_id)] = primary
     return palettes, rows
+
 
 BAKED_PALETTES, BAKED_COLOURS = read_colours()
 BAKED_PALETTES_UI = [(col, col, col) for col in BAKED_PALETTES]
+
 
 def get_colours_from_palette(palette):
     data = []
     for row in BAKED_COLOURS:
         if palette == row[0]:
-            data.append((row[2], row[1], (0.0,0.0,0.0)))
-
+            # index, name, colour, thumb
+            data.append((row[2], row[1], (0.0, 0.0, 0.0), row[3]))
     return data
+
 
 def validate_material(colour_name, colour_value):
     """Creates or returns a material based on its name.
@@ -162,7 +175,18 @@ def assign_default_material(item, index=0):
     return material
 
 
+def get_colour_from_palette_data(index):
+    """Get colour data from palette data.
 
+    Args:
+        index (int): The colour index.
+    """
+    return BAKED_INDEX_COLOURS.get(index, [0.8, 0.8, 0.8, 1.0])
+
+
+def darken_color(color, factor=0.6):
+    """Return a darker version of an RGB color."""
+    return [c * factor for c in color]
 
 
 def assign_material(item, colour_index=0, material=None):
@@ -190,13 +214,15 @@ def assign_material(item, colour_index=0, material=None):
         colour_name += "_transparent"
 
     # Get colour values.
-    colour_data = material_reference.get(str(colour_index), {})
-    colour_values = colour_data.get("colour", [0.8, 0.8, 0.8, alpha_value])
-    if len(colour_values) < 4:
-        colour_values.append(alpha_value)
+    primary = get_colour_from_palette_data(colour_index)
+    if isinstance(primary, str):
+        primary = eval(primary)
+    # primary = darken_color(primary)
+    if len(primary) < 4:
+        primary.append(alpha_value)
 
     # Get or create the material.
-    material = validate_material(colour_name, colour_values)
+    material = validate_material(colour_name, primary)
 
     set_material(item, material)
     return material

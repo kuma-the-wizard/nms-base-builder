@@ -20,8 +20,9 @@ from bpy.types import Panel, PropertyGroup
 
 from . import builder, part, preset
 from .part_overrides import line
-from .utils import blend_utils, curve, material as _material, python as python_utils
-
+from .utils import blend_utils, curve
+from .utils import material as _material
+from .utils import python as python_utils
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
@@ -75,8 +76,6 @@ def palette_items(self, context):
         ("RUST", "Rust", ""),
         ("CORVETTE", "Corvette", ""),
     ]
-
-
 
 
 # Core Settings Class
@@ -1015,7 +1014,7 @@ class NMS_PT_snap_panel(Panel):
 # Colour Panel ---
 class NMS_PT_colour_panel(Panel):
     bl_idname = "NMS_PT_colour_panel"
-    bl_label = "Colour"
+    bl_label = "Colour & Materials"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "No Mans Sky Base Builder"
@@ -1031,9 +1030,6 @@ class NMS_PT_colour_panel(Panel):
         nms_tool = scene.nms_base_tool
         pcoll = preview_collections["main"]
         colour_area = layout.column(align=True)
-        # default_colour_op = colour_area.operator(
-        #     "object.nms_apply_default_colour", text="Apply Default Colour"
-        # )
         enum_row = colour_area.row(align=True)
         enum_row.prop(nms_tool, "material_switch")
 
@@ -1041,10 +1037,13 @@ class NMS_PT_colour_panel(Panel):
 
         grid = layout.grid_flow(columns=3, even_columns=True)
 
-        for index, name, colour in colours:
-            image_path = os.path.join(os.path.dirname(__file__), "images", "0.jpg")
-            colour_icon = pcoll.get(f"{index}_colour", None)
-            op = grid.operator("object.nms_apply_colour", text=name, icon_value=colour_icon.icon_id if colour_icon else 0)
+        for index, name, colour, thumb in colours:
+            colour_icon = pcoll.get(os.path.splitext(thumb)[0], None)
+            op = grid.operator(
+                "object.nms_apply_colour",
+                text=name,
+                icon_value=colour_icon.icon_id if colour_icon else 0,
+            )
             op.colour_index = int(index)
 
 
@@ -2120,7 +2119,6 @@ classes = (
     NMS_PT_base_prop_panel,
     NMS_PT_snap_panel,
     NMS_PT_colour_panel,
-    WM_OT_select_colour,
     NMS_PT_logic_panel,
     NMS_PT_build_panel,
 )
@@ -2137,14 +2135,17 @@ def register():
     pcoll = bpy.utils.previews.new()
     # path to the folder where the icon is
     # the path is calculated relative to this py file inside the addon folder
-    my_icons_dir = os.path.join(os.path.dirname(__file__), "images")
+    # my_icons_dir = os.path.join(os.path.dirname(__file__), "images")
 
     # load a preview thumbnail of a file and store in the previews collection
     # Load Colours
-    for idx in range(16):
+    colours_dir = os.path.join(os.path.dirname(__file__), "images", "colours")
+    colour_files = os.listdir(colours_dir)
+    for colour_file in colour_files:
+        file_name = os.path.splitext(colour_file)[0]
         pcoll.load(
-            "{0}_colour".format(idx),
-            os.path.join(my_icons_dir, "{0}.jpg".format(idx)),
+            file_name,
+            os.path.join(colours_dir, colour_file),
             "IMAGE",
         )
 
