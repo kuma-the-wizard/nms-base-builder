@@ -70,14 +70,6 @@ def get_line_type_from_enum(context):
     return line_object
 
 
-def palette_items(self, context):
-    return [
-        ("DEFAULT", "Default", ""),
-        ("RUST", "Rust", ""),
-        ("CORVETTE", "Corvette", ""),
-    ]
-
-
 # Core Settings Class
 class NMSSettings(PropertyGroup):
     # Build Array of base part types. (Vanilla Parts - Mods - Presets)
@@ -1037,7 +1029,12 @@ class NMS_PT_colour_panel(Panel):
 
         grid = layout.grid_flow(columns=3, even_columns=True)
 
-        for index, name, colour, thumb in colours:
+        for row in colours:
+            index = row[3]
+            name = row[4]
+            colour = row[5]
+            thumb = row[8]
+            index, name, colour, thumb
             colour_icon = pcoll.get(os.path.splitext(thumb)[0], None)
             op = grid.operator(
                 "object.nms_apply_colour",
@@ -2133,11 +2130,7 @@ def register():
 
     # Load Icons.
     pcoll = bpy.utils.previews.new()
-    # path to the folder where the icon is
-    # the path is calculated relative to this py file inside the addon folder
-    # my_icons_dir = os.path.join(os.path.dirname(__file__), "images")
 
-    # load a preview thumbnail of a file and store in the previews collection
     # Load Colours
     colours_dir = os.path.join(os.path.dirname(__file__), "images", "colours")
     colour_files = os.listdir(colours_dir)

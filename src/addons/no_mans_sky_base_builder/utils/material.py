@@ -10,50 +10,61 @@ from ..utils import python as python_utils
 
 # Get Colour Information.
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
-COLOURS_JSON = os.path.join(FILE_PATH, "..", "resources", "colours.json")
 COLOURS_CSV = os.path.join(FILE_PATH, "..", "resources", "DT_Palettes.csv")
-material_reference = python_utils.load_dictionary(COLOURS_JSON)
 
 GHOSTED_JSON = os.path.join(FILE_PATH, "..", "resources", "ghosted.json")
 ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
 GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
 
-BAKED_INDEX_COLOURS = {}
+
+def get_palette_from_row(row):
+    return row[2]
 
 
-def read_colours():
-    rows = []
+def get_all_palettes():
     palettes = []
     with open(COLOURS_CSV, "r") as csv_file:
         csv_reader = csv.reader((x.replace("\0", "") for x in csv_file), delimiter=",")
         for idx, row in enumerate(csv_reader):
             if idx == 0:
                 continue
-            palette = row[2]
+            palette = get_palette_from_row(row)
             if palette not in palettes:
                 palettes.append(palette)
-            nice_name = row[4]
-            colour_id = row[3]
-            thumb = row[8]
-            primary = row[5]
-            if isinstance(primary, str):
-                primary = eval(primary)
-            rows.append([palette, nice_name, colour_id, thumb, primary])
-
-            BAKED_INDEX_COLOURS[int(colour_id)] = primary
-    return palettes, rows
+    return palettes
 
 
-BAKED_PALETTES, BAKED_COLOURS = read_colours()
+BAKED_PALETTES = get_all_palettes()
 BAKED_PALETTES_UI = [(col, col, col) for col in BAKED_PALETTES]
+
+BAKED_INDEX_COLOURS = {}
+
+
+def get_all_colours():
+    rows = []
+    with open(COLOURS_CSV, "r") as csv_file:
+        csv_reader = csv.reader((x.replace("\0", "") for x in csv_file), delimiter=",")
+        for idx, row in enumerate(csv_reader):
+            if idx == 0:
+                continue
+            rows.append(row)
+
+            colour_id = row[3]
+            primary_colour = row[5]
+            if isinstance(primary_colour, str):
+                primary_colour = eval(primary_colour)
+            BAKED_INDEX_COLOURS[int(colour_id)] = primary_colour
+    return rows
+
+
+BAKED_COLOURS = get_all_colours()
 
 
 def get_colours_from_palette(palette):
     data = []
     for row in BAKED_COLOURS:
-        if palette == row[0]:
-            # index, name, colour, thumb
-            data.append((row[2], row[1], (0.0, 0.0, 0.0), row[3]))
+        if palette == get_palette_from_row(row):
+            data.append(row)
     return data
 
 
