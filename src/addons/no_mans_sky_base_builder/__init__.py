@@ -89,7 +89,7 @@ class NMSSettings(PropertyGroup):
     )
 
     material_switch: EnumProperty(
-        name="Palette",
+        name="Material Palette",
         description="Decide what type of material to apply",
         items=_material.BAKED_PALETTES_UI,
     )
