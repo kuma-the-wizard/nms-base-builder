@@ -2,7 +2,6 @@
 
 import csv
 import os
-from operator import index
 
 import bpy
 
@@ -228,7 +227,6 @@ def assign_material(item, colour_index=0, material=None):
     primary = get_colour_from_palette_data(colour_index)
     if isinstance(primary, str):
         primary = eval(primary)
-    # primary = darken_color(primary)
     if len(primary) < 4:
         primary.append(alpha_value)
 
