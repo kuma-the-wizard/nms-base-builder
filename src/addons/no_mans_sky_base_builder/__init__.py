@@ -352,7 +352,7 @@ class NMSSettings(PropertyGroup):
                 "PersistentBaseDifficultyFlags", 0
             )
 
-    def serialise(self, get_presets=False):
+    def serialise(self, get_presets=False, objects_only=False):
         """Export the data in the blender scene to NMS compatible data.
 
         This will slot the data into the clip-board so you can easy copy
@@ -400,8 +400,11 @@ class NMSSettings(PropertyGroup):
             "AutoPowerSetting": {"BaseAutoPowerSetting": self.auto_power_setting},
         }
         # Capture Individual Objects
-        data.update(BUILDER.serialise(get_presets=get_presets))
+        objects_data = BUILDER.serialise(get_presets=get_presets)
+        if objects_only:
+            return objects_data["Objects"]
 
+        data.update(objects_data)
         return data
 
     # Import and Export Methods ---
@@ -427,13 +430,13 @@ class NMSSettings(PropertyGroup):
         self.deserialise_from_data(nms_import_data)
         BUILDER.deserialise_from_data(nms_import_data)
 
-    def export_nms_data(self):
+    def export_nms_data(self, objects_only=False):
         """Generate data and place it into the user's clipboard.
 
         This generates a flat set of individual base parts for NMS to read.
         All preset information is lost in this process.
         """
-        data = self.serialise()
+        data = self.serialise(objects_only=objects_only)
         bpy.context.window_manager.clipboard = json.dumps(data, indent=4)
 
     # Save and Load Methods ---
@@ -851,18 +854,28 @@ class NMS_PT_file_buttons_panel(Panel):
 
     def draw(self, context):
         layout = self.layout
-        first_column = layout.column(align=True)
+        file_box = layout.box()
+        first_column = file_box.column(align=True)
+        first_column.label(text="File")
         button_row = first_column.row(align=True)
         button_row.operator("object.nms_new_file")
         save_load_row = first_column.row(align=True)
         save_load_row.operator("object.nms_save_data", icon="FILE_TICK")
         save_load_row.operator("object.nms_load_data", icon="FILE_FOLDER")
-        nms_row = first_column.row(align=True)
-        nms_row.operator("object.nms_import_nms_data", icon="PASTEDOWN")
-        nms_row.operator("object.nms_export_nms_data", icon="COPYDOWN")
 
-        second_column = layout.column(align=True)
-        community_row = second_column.row(align=True)
+        import_box = layout.box()
+        second_column = import_box.column(align=True)
+        second_column.label(text="Import & Export")
+        nms_row = second_column.row(align=True)
+        nms_row.operator("object.nms_import_nms_data", icon="PASTEDOWN")
+        export_col = nms_row.column(align=True)
+        export_col.operator("object.nms_export_nms_data", icon="COPYDOWN")
+        export_col.operator("object.nms_export_nms_data_objects", icon="COPYDOWN")
+
+        communuity_box = layout.box()
+        third_column = communuity_box.column(align=True)
+        third_column.label(text="Commmunity")
+        community_row = third_column.row(align=True)
         community_row.operator("object.nms_visit_guides", icon="WORLD_DATA")
         community_row.operator("object.nms_visit_community", icon="WORLD_DATA")
 
@@ -1260,7 +1273,7 @@ def refresh_ui_part_list(scene, item_type="parts", pack=None):
 # File Operators ---
 class NewFile(bpy.types.Operator):
     bl_idname = "object.nms_new_file"
-    bl_label = "New"
+    bl_label = "New Base..."
     bl_options = {"REGISTER", "INTERNAL", "UNDO", "UNDO_GROUPED"}
 
     def execute(self, context):
@@ -1275,7 +1288,7 @@ class NewFile(bpy.types.Operator):
 
 class SaveData(bpy.types.Operator):
     bl_idname = "object.nms_save_data"
-    bl_label = "Save"
+    bl_label = "Save Base As..."
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -1291,7 +1304,7 @@ class SaveData(bpy.types.Operator):
 
 class LoadData(bpy.types.Operator):
     bl_idname = "object.nms_load_data"
-    bl_label = "Load"
+    bl_label = "Open Base..."
     bl_options = {"UNDO", "REGISTER"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
@@ -1308,7 +1321,7 @@ class LoadData(bpy.types.Operator):
 
 class ImportData(bpy.types.Operator):
     bl_idname = "object.nms_import_nms_data"
-    bl_label = "Import NMS"
+    bl_label = "Import from Clipboard"
     bl_options = {"UNDO", "REGISTER"}
 
     def execute(self, context):
@@ -1320,12 +1333,23 @@ class ImportData(bpy.types.Operator):
 
 class ExportData(bpy.types.Operator):
     bl_idname = "object.nms_export_nms_data"
-    bl_label = "Export NMS"
+    bl_label = "Export to Clipboard"
 
     def execute(self, context):
         scene = context.scene
         nms_tool = scene.nms_base_tool
         nms_tool.export_nms_data()
+        return {"FINISHED"}
+
+
+class ExportObjectsData(bpy.types.Operator):
+    bl_idname = "object.nms_export_nms_data_objects"
+    bl_label = "Export to Clipboard (Objects Only)"
+
+    def execute(self, context):
+        scene = context.scene
+        nms_tool = scene.nms_base_tool
+        nms_tool.export_nms_data(objects_only=True)
         return {"FINISHED"}
 
 
@@ -1417,7 +1441,7 @@ class VisitDiscord(bpy.types.Operator):
     """Launch the community discord URL."""
 
     bl_idname = "object.nms_visit_community"
-    bl_label = "Community Discord."
+    bl_label = "Discord."
 
     def execute(self, context):
         # Load web page.
@@ -2106,6 +2130,7 @@ classes = (
     SaveData,
     LoadData,
     ExportData,
+    ExportObjectsData,
     ImportData,
     PartCollection,
     ListDeleteOperator,
