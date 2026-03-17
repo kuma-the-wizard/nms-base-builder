@@ -1,5 +1,6 @@
 """Convenient material related methods."""
 
+import csv
 import os
 
 import bpy
@@ -8,12 +9,62 @@ from ..utils import python as python_utils
 
 # Get Colour Information.
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
-COLOURS_JSON = os.path.join(FILE_PATH, "..", "resources", "colours.json")
-material_reference = python_utils.load_dictionary(COLOURS_JSON)
+COLOURS_CSV = os.path.join(FILE_PATH, "..", "resources", "DT_Palettes.csv")
 
 GHOSTED_JSON = os.path.join(FILE_PATH, "..", "resources", "ghosted.json")
 ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
 GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
+
+
+def get_palette_from_row(row):
+    return row[2]
+
+
+def get_all_palettes():
+    palettes = []
+    with open(COLOURS_CSV, "r") as csv_file:
+        csv_reader = csv.reader((x.replace("\0", "") for x in csv_file), delimiter=",")
+        for idx, row in enumerate(csv_reader):
+            if idx == 0:
+                continue
+            palette = get_palette_from_row(row)
+            if palette not in palettes:
+                palettes.append(palette)
+    return palettes
+
+
+BAKED_PALETTES = get_all_palettes()
+BAKED_PALETTES_UI = [(col, col, col) for col in BAKED_PALETTES]
+
+BAKED_INDEX_COLOURS = {}
+
+
+def get_all_colours():
+    rows = []
+    with open(COLOURS_CSV, "r") as csv_file:
+        csv_reader = csv.reader((x.replace("\0", "") for x in csv_file), delimiter=",")
+        for idx, row in enumerate(csv_reader):
+            if idx == 0:
+                continue
+            rows.append(row)
+
+            colour_id = row[3]
+            primary_colour = row[5]
+            if isinstance(primary_colour, str):
+                primary_colour = eval(primary_colour)
+            BAKED_INDEX_COLOURS[int(colour_id)] = primary_colour
+    return rows
+
+
+BAKED_COLOURS = get_all_colours()
+
+
+def get_colours_from_palette(palette):
+    data = []
+    for row in BAKED_COLOURS:
+        if palette == get_palette_from_row(row):
+            data.append(row)
+    return data
 
 
 def validate_material(colour_name, colour_value):
@@ -134,6 +185,20 @@ def assign_default_material(item, index=0):
     return material
 
 
+def get_colour_from_palette_data(index):
+    """Get colour data from palette data.
+
+    Args:
+        index (int): The colour index.
+    """
+    return BAKED_INDEX_COLOURS.get(index, [0.8, 0.8, 0.8, 1.0])
+
+
+def darken_color(color, factor=0.6):
+    """Return a darker version of an RGB color."""
+    return [c * factor for c in color]
+
+
 def assign_material(item, colour_index=0, material=None):
     """Given a blender object. assign a material and UserData index.
 
@@ -148,19 +213,6 @@ def assign_material(item, colour_index=0, material=None):
     # Some Defaults
     alpha_value = 1.0
 
-    material_map = {
-        "CONCRETE": 0,
-        "RUST": 16777216,
-        "STONE": 33554432,
-        "WOOD": 50331648,
-    }
-
-    material_key = "CONCRETE"
-    if material:
-        material_key = list(material)[0]
-        material_index = material_map[material_key]
-        colour_index = material_index + colour_index
-
     # Apply Custom Variable.
     item["UserData"] = str(colour_index)
 
@@ -172,13 +224,14 @@ def assign_material(item, colour_index=0, material=None):
         colour_name += "_transparent"
 
     # Get colour values.
-    colour_data = material_reference.get(str(colour_index), {})
-    colour_values = colour_data.get("colour", [0.8, 0.8, 0.8, alpha_value])
-    if len(colour_values) < 4:
-        colour_values.append(alpha_value)
+    primary = get_colour_from_palette_data(colour_index)
+    if isinstance(primary, str):
+        primary = eval(primary)
+    if len(primary) < 4:
+        primary.append(alpha_value)
 
     # Get or create the material.
-    material = validate_material(colour_name, colour_values)
+    material = validate_material(colour_name, primary)
 
     set_material(item, material)
     return material

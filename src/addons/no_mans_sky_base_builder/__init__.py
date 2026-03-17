@@ -89,16 +89,9 @@ class NMSSettings(PropertyGroup):
     )
 
     material_switch: EnumProperty(
-        name="material_switch",
+        name="Material Palette",
         description="Decide what type of material to apply",
-        items=[
-            ("CONCRETE", "Concrete", "Concrete"),
-            ("RUST", "Rust", "Rust"),
-            ("STONE", "Stone", "Stone"),
-            ("WOOD", "Wood", "Wood"),
-        ],
-        options={"ENUM_FLAG"},
-        default={"CONCRETE"},
+        items=_material.BAKED_PALETTES_UI,
     )
 
     line_switch: EnumProperty(
@@ -869,9 +862,9 @@ class NMS_PT_file_buttons_panel(Panel):
         nms_row.operator("object.nms_export_nms_data", icon="COPYDOWN")
 
         second_column = layout.column(align=True)
-        community_row = second_column.column(align=True)
-        community_row.operator("object.nms_visit_community", icon="WORLD_DATA")
+        community_row = second_column.row(align=True)
         community_row.operator("object.nms_visit_guides", icon="WORLD_DATA")
+        community_row.operator("object.nms_visit_community", icon="WORLD_DATA")
 
 
 # Base Property Panel ---
@@ -1013,7 +1006,7 @@ class NMS_PT_snap_panel(Panel):
 # Colour Panel ---
 class NMS_PT_colour_panel(Panel):
     bl_idname = "NMS_PT_colour_panel"
-    bl_label = "Colour"
+    bl_label = "Colour & Materials"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "No Mans Sky Base Builder"
@@ -1029,20 +1022,26 @@ class NMS_PT_colour_panel(Panel):
         nms_tool = scene.nms_base_tool
         pcoll = preview_collections["main"]
         colour_area = layout.column(align=True)
-        default_colour_op = colour_area.operator(
-            "object.nms_apply_default_colour", text="Apply Default Colour"
-        )
         enum_row = colour_area.row(align=True)
-        enum_row.prop(nms_tool, "material_switch", expand=True)
-        colour_row_1 = colour_area.row(align=True)
-        colour_row_1.scale_y = 1.3
-        colour_row_1.scale_x = 1.3
-        for idx in range(16):
-            colour_icon = pcoll["{0}_colour".format(idx)]
-            colour_op = colour_row_1.operator(
-                "object.nms_apply_colour", text="", icon_value=colour_icon.icon_id
+        enum_row.prop(nms_tool, "material_switch")
+
+        colours = _material.get_colours_from_palette(nms_tool.material_switch)
+
+        grid = layout.grid_flow(columns=3, even_columns=True)
+
+        for row in colours:
+            index = row[3]
+            name = row[4]
+            colour = row[5]
+            thumb = row[8]
+            index, name, colour, thumb
+            colour_icon = pcoll.get(os.path.splitext(thumb)[0], None)
+            op = grid.operator(
+                "object.nms_apply_colour",
+                text=name,
+                icon_value=colour_icon.icon_id if colour_icon else 0,
             )
-            colour_op.colour_index = idx
+            op.colour_index = int(index)
 
 
 # Colour Panel ---
@@ -1418,7 +1417,7 @@ class VisitDiscord(bpy.types.Operator):
     """Launch the community discord URL."""
 
     bl_idname = "object.nms_visit_community"
-    bl_label = "Visit the Community Discord."
+    bl_label = "Community Discord."
 
     def execute(self, context):
         # Load web page.
@@ -1430,7 +1429,7 @@ class VisitGuides(bpy.types.Operator):
     """Launch the community discord URL."""
 
     bl_idname = "object.nms_visit_guides"
-    bl_label = "Visit the Online Guides."
+    bl_label = "Online Guides."
 
     def execute(self, context):
         # Load web page.
@@ -2131,16 +2130,15 @@ def register():
 
     # Load Icons.
     pcoll = bpy.utils.previews.new()
-    # path to the folder where the icon is
-    # the path is calculated relative to this py file inside the addon folder
-    my_icons_dir = os.path.join(os.path.dirname(__file__), "images")
 
-    # load a preview thumbnail of a file and store in the previews collection
     # Load Colours
-    for idx in range(16):
+    colours_dir = os.path.join(os.path.dirname(__file__), "images", "colours")
+    colour_files = os.listdir(colours_dir)
+    for colour_file in colour_files:
+        file_name = os.path.splitext(colour_file)[0]
         pcoll.load(
-            "{0}_colour".format(idx),
-            os.path.join(my_icons_dir, "{0}.jpg".format(idx)),
+            file_name,
+            os.path.join(colours_dir, colour_file),
             "IMAGE",
         )
 
