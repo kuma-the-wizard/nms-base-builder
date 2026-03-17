@@ -12,10 +12,9 @@ A plugin for Blender to build bases in No Mans Sky.<br />
 <p align="center">
   <a href="#key-features">Key Features</a> •
   <a href="#requirements">Requirements</a> •
-  <a href="#how-to-use">Installation & How To Use</a> •
+  <a href="#how-to-use">Guides</a> •
   <a href="#credits">Credits & Support</a> •
   <a href="#screenshots">Screenshots</a> •
-  <a href="#community_screenshots">Community Showcase</a>
 </p>
 
 <a name="key-features"></a>
@@ -31,7 +30,7 @@ A plugin for Blender to build bases in No Mans Sky.<br />
 * An asset browser for searching and locating base parts.
 
 <p align="center" style="font-size:26px">
-<img src="https://raw.githubusercontent.com/djmonkeyuk/nms-base-builder/master/images/AssetBrowser.jpg" alt="No Mans Sky"  width="75%">
+<img src="https://djmonkey.uk/images/public/asset_browser.png" alt="No Mans Sky"  width="75%">
 </p>
 
 
@@ -52,35 +51,19 @@ A plugin for Blender to build bases in No Mans Sky.<br />
 
 <a name="how-to-use"></a>
 
-## Installation and How To Use
+## Official Guides
 
-### Videos
-* **Installation** Video: https://youtu.be/TZKMGhNNFJQ
-* **Getting started** video: https://www.youtube.com/watch?v=qXcguoROM-A
-* How to use **presets** video: https://www.youtube.com/watch?v=BFIvRH5-S0I&t
-* How to do **snapping** video: https://youtu.be/1I3KDRiSTW8
-* How to manage **power and electricity** video: https://www.youtube.com/watch?v=jDascUR4NPA
-* Frontiers update and using the **Asset Browser** video : https://youtu.be/TZKMGhNNFJQ
+For the latest and greatest guidance on installation and how to use this Blender extension, please visit the <a href="https://djmonkey.uk/no-mans-sky-base-builder-blender/guides/" target="_blank">official guide pages.</a>
 
-### Installation Steps
+<a href="https://djmonkey.uk/no-mans-sky-base-builder-blender/guides/" target="_blank"><img src="https://djmonkey.uk/images/public/blender_guide_screen_30.png" /></a>
 
-See video above for installation guide, otherwise follow these steps.
-
-1. Download and install all the necessary requirements from the Requirements section.
-2. Download the latest release. (https://github.com/djmonkeyuk/nms-base-builder/releases)
-3. Open "User Preferences" in Blender.
-4. Go to the Add-ons tab.
-5. Click "Install Add-on from File..." from the menu button at the top right of the window.
-6. Select the downloaded zip file.
-7. In the right side panel of the viewport, click the "No Man's Sky Base Builder" tab. If this is not visible then clicking the tiny triangle will expand the panel.
 
 ## Preset Location
 
 Presets are stored in your "**%USERPROFILE%\NoMansSkyBaseBuilder\presets**" directory.
 These can be downloaded and shared with other people.
 
-View the Preset directory to downlaod and share your own creations.
-https://djmonkeyuk.github.io/nms-base-builder-presets/
+Visit the <a href="https://discord.gg/kpGVRKPn5W" target="_blank">Community Discord</a> where creators share their own prefabs!
 
 ## Technical Dependencies
 
@@ -88,27 +71,6 @@ Casual users may ignore this section. These Python dependencies are installed au
 
 * PySide6
 
-## Mod Compatibility
-
-The tool is designed towards supporting the vanilla game as much as possible, however
-any additional base parts introduced by mods will display as cubes but will still be able to import/export to the game.
-
-You can introduce your own FBX's by adding them to your user directory folder. The layout for this should be...
-
-* %USERPROFILE%\NoMansSkyBaseBuilder\
-  * mods
-    * mod_name
-      * models
-        * category
-          * MOD_WALLA.fbx
-          * MOD_WALLB.fbx
-        * category_b
-          * MOD_FLOORA.fbx
-          * MOD_FLOORB.fbx
-
-The names of categories is up to the user.
-
-The fbx file name should reflect the name of the part in-game.
 
 <a name="credits"></a>
 
@@ -141,23 +103,4 @@ Click the image below to be taken to the Steam page!
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/djmonkeyuk/nms-base-builder/feature/blender2.8/images/blender_showcase.png" alt="NMS1" width="100%">
-</p>
-
-<a name="community_screenshots"></a>
-## Community Showcase
-
-**/u/ashfacta**
-<p align="center">
-  <img src="https://raw.githubusercontent.com/djmonkeyuk/nms-base-builder/feature/blender2.8/images/casino.jpg" alt="Casino" width="24%">
-  <img src="https://raw.githubusercontent.com/djmonkeyuk/nms-base-builder/feature/blender2.8/images/airship.jpg" alt="Air Ship" width="24%">
-  <img src="https://raw.githubusercontent.com/djmonkeyuk/nms-base-builder/feature/blender2.8/images/drop_ship.jpg" alt="Drop Ship" width="24%">
-  <img src="https://raw.githubusercontent.com/djmonkeyuk/nms-base-builder/feature/blender2.8/images/skygate.jpg" alt="Sky Gate" width="24%">
-</p>
-
-**/u/258100**
-<p align="center">
-  <img src="https://raw.githubusercontent.com/djmonkeyuk/nms-base-builder/feature/blender2.8/images/starwars.jpg" alt="Star Wars" width="24%">
-  <img src="https://raw.githubusercontent.com/djmonkeyuk/nms-base-builder/feature/blender2.8/images/titanic.jpg" alt="Titanic" width="24%">
-  <img src="https://raw.githubusercontent.com/djmonkeyuk/nms-base-builder/feature/blender2.8/images/notre_dam.png" alt="ND" width="24%">
-  <img src="https://raw.githubusercontent.com/djmonkeyuk/nms-base-builder/feature/blender2.8/images/castle.png" alt="Castle" width="24%">
 </p>
