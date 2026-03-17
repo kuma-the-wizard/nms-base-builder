@@ -1,3 +1,14 @@
+release 6.1.6
+-------------
+
+* Revamped the colour options to allow users to use colours from a variety of material palettes.
+* Added a button only export the objects of the base to the user clipboard.
+* Re-processed meshes for STORAGEPANEL and BUILDFLATPANEL.
+* Fixed an issue where the Asset Browser would not load on Linux.
+* Fixed an issue where the Asset Browser tabs would be squashed and not be scrollable on Mac.
+* Fixed a mesh placement issue with the B_STR_U corvette pieces.
+
+
 release 6.1.5
 -------------
 
