@@ -1,3 +1,10 @@
+release 6.1.7
+-------------
+
+* Added Freighter colour options to the Colour and Materials tool.
+* Editing colours/materials should no longer reset additional UserData information like logic switches, states, etc.
+
+
 release 6.1.6
 -------------
 
