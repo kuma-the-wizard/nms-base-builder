@@ -2,10 +2,13 @@
 
 import csv
 import os
+import re
+from pprint import pprint
 
 import bpy
 
 from ..utils import python as python_utils
+from ..utils import userdata
 
 # Get Colour Information.
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -20,21 +23,30 @@ def get_palette_from_row(row):
     return row[2]
 
 
+def get_palette_index_from_row(row):
+    return row[4]
+
+
 def get_all_palettes():
-    palettes = []
+    palettes = {}
     with open(COLOURS_CSV, "r") as csv_file:
         csv_reader = csv.reader((x.replace("\0", "") for x in csv_file), delimiter=",")
         for idx, row in enumerate(csv_reader):
             if idx == 0:
                 continue
-            palette = get_palette_from_row(row)
-            if palette not in palettes:
-                palettes.append(palette)
+            palette_name = get_palette_from_row(row)
+            palette_index = get_palette_index_from_row(row)
+            if palette_name not in palettes:
+                palettes[palette_name] = palette_index
+
+    pprint(palettes)
     return palettes
 
 
 BAKED_PALETTES = get_all_palettes()
-BAKED_PALETTES_UI = [(col, col, col) for col in BAKED_PALETTES]
+BAKED_PALETTES_UI = [
+    (f"{value}_{key}", key, key) for key, value in BAKED_PALETTES.items()
+]
 
 BAKED_INDEX_COLOURS = {}
 
@@ -49,11 +61,28 @@ def get_all_colours():
             rows.append(row)
 
             colour_id = row[3]
-            primary_colour = row[5]
+            primary_colour = row[6]
             if isinstance(primary_colour, str):
-                primary_colour = eval(primary_colour)
+                primary_colour = [
+                    float(v) for v in re.findall(r"[RGB]=([0-9.]+)", primary_colour)
+                ]
             BAKED_INDEX_COLOURS[int(colour_id)] = primary_colour
     return rows
+
+
+def get_nice_name_from_indicies(colour_index, material_index):
+    with open(COLOURS_CSV, "r") as csv_file:
+        csv_reader = csv.reader((x.replace("\0", "") for x in csv_file), delimiter=",")
+        for idx, row in enumerate(csv_reader):
+            if idx == 0:
+                continue
+            colour_id = row[3]
+            material_id = row[4]
+            if int(colour_index) == int(colour_id) and int(material_index) == int(
+                material_id
+            ):
+                return f"{row[2]}: {row[5]}"
+    return ""
 
 
 BAKED_COLOURS = get_all_colours()
@@ -61,8 +90,10 @@ BAKED_COLOURS = get_all_colours()
 
 def get_colours_from_palette(palette):
     data = []
+    # palette_index = palette.split("_")[0]
+    palette_string = palette.split("_")[1]
     for row in BAKED_COLOURS:
-        if palette == get_palette_from_row(row):
+        if palette_string == get_palette_from_row(row):
             data.append(row)
     return data
 
@@ -185,13 +216,13 @@ def assign_default_material(item, index=0):
     return material
 
 
-def get_colour_from_palette_data(index):
+def get_colour_from_palette_data(colour_index, material_index):
     """Get colour data from palette data.
 
     Args:
         index (int): The colour index.
     """
-    return BAKED_INDEX_COLOURS.get(index, [0.8, 0.8, 0.8, 1.0])
+    return BAKED_INDEX_COLOURS.get(colour_index, [0.8, 0.8, 0.8, 1.0])
 
 
 def darken_color(color, factor=0.6):
@@ -199,7 +230,14 @@ def darken_color(color, factor=0.6):
     return [c * factor for c in color]
 
 
-def assign_material(item, colour_index=0, material=None):
+def restore_material(item, user_data_value):
+    col = userdata.get_colour(user_data_value)
+    mat = userdata.get_material(user_data_value)
+    print(f"Restoring material with colour index {col} and material index {mat}")
+    assign_material(item, col, mat)
+
+
+def assign_material(item, colour_index=0, material_index=0):
     """Given a blender object. assign a material and UserData index.
 
     Args:
@@ -214,17 +252,21 @@ def assign_material(item, colour_index=0, material=None):
     alpha_value = 1.0
 
     # Apply Custom Variable.
-    item["UserData"] = str(colour_index)
+    reference_value = int(item.get("UserData", 0))
+    new_userdata_value = userdata.update_colour_material(
+        reference_value, colour_index=colour_index, material_index=material_index
+    )
+    item["UserData"] = str(new_userdata_value)
 
     # Create Material
-    colour_name = "{0}_material".format(colour_index)
+    colour_name = "{0}_material".format(new_userdata_value)
     # Add transparent tag to material name.
     item_name = item.get("ObjectID", "")
     if item_name in GHOSTED_ITEMS:
         colour_name += "_transparent"
 
     # Get colour values.
-    primary = get_colour_from_palette_data(colour_index)
+    primary = get_colour_from_palette_data(colour_index, material_index)
     if isinstance(primary, str):
         primary = eval(primary)
     if len(primary) < 4:
@@ -232,6 +274,12 @@ def assign_material(item, colour_index=0, material=None):
 
     # Get or create the material.
     material = validate_material(colour_name, primary)
+
+    # Add Metadata to object.
+    nice_name = get_nice_name_from_indicies(colour_index, material_index)
+    if nice_name and ":" in nice_name:
+        item["readonly:Material"] = nice_name.split(":")[0].strip()
+        item["readonly:Colour"] = nice_name.split(":")[1].strip()
 
     set_material(item, material)
     return material

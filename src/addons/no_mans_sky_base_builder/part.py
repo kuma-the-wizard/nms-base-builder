@@ -61,7 +61,7 @@ class Part(object):
             self.belongs_to_preset = self.DEFAULT_BELONGS_TO_PRESET
             self.order = len(bpy.data.objects)
             # Assign material.
-            material.assign_material(self.__object, user_data)
+            material.restore_material(self.__object, user_data)
             # Set to origin.
             self.reset_transforms()
 

@@ -17,6 +17,7 @@ from bpy.props import (
     StringProperty,
 )
 from bpy.types import Panel, PropertyGroup
+from numpy import isin
 
 from . import builder, part, preset
 from .part_overrides import line
@@ -745,7 +746,7 @@ class NMSSettings(PropertyGroup):
 
         blend_utils.select(new_items)
 
-    def apply_colour(self, colour_index=0, material=None):
+    def apply_colour(self, colour_index=0, material=0):
         """Gives an item a new colour."""
         selected_objects = bpy.context.selected_objects
         if not selected_objects:
@@ -755,8 +756,9 @@ class NMSSettings(PropertyGroup):
             return {"FINISHED"}
 
         # Apply Colour Material.
+        maeterial_index = int(material.split("_")[0])
         for obj in selected_objects:
-            _material.assign_material(obj, colour_index, material)
+            _material.assign_material(obj, int(colour_index), int(maeterial_index))
 
         # Refresh the viewport.
         bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
@@ -1044,9 +1046,9 @@ class NMS_PT_colour_panel(Panel):
 
         for row in colours:
             index = row[3]
-            name = row[4]
-            colour = row[5]
-            thumb = row[8]
+            name = row[5]
+            colour = row[6]
+            thumb = row[9]
             index, name, colour, thumb
             colour_icon = pcoll.get(os.path.splitext(thumb)[0], None)
             op = grid.operator(
