@@ -3,7 +3,6 @@
 import csv
 import os
 import re
-from pprint import pprint
 
 import bpy
 
@@ -39,7 +38,6 @@ def get_all_palettes():
             if palette_name not in palettes:
                 palettes[palette_name] = palette_index
 
-    pprint(palettes)
     return palettes
 
 
