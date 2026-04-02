@@ -23,13 +23,16 @@ class Settings:
 
         self.folder_path = get_appdata(self.APP_TITLE)
         self.file_path = os.path.join(self.folder_path, "settings.json")
+        self.__favourites = []
+        self.__pinned_tabs = []
         self.load_from_file()
 
     def serialise(self):
-        return {"favourites": self.__favourites}
+        return {"favourites": self.__favourites, "pinned_tabs": self.__pinned_tabs}
 
     def deserialise(self, data):
         self.__favourites = data.get("favourites", [])
+        self.__pinned_tabs = data.get("pinned_tabs", [])
 
     def save_to_file(self):
         os.makedirs(self.folder_path, exist_ok=True)
@@ -87,4 +90,18 @@ class Settings:
         if part_id in self.__favourites:
             self.__favourites.remove(part_id)
             self.__favourites.insert(0, part_id)
+            self.save_to_file()
+
+    # Pinned Tabs ---
+    def get_pinned_tabs(self):
+        return self.__pinned_tabs
+
+    def add_pinned_tab(self, tab_id):
+        if tab_id not in self.__pinned_tabs:
+            self.__pinned_tabs.append(tab_id)
+            self.save_to_file()
+
+    def remove_pinned_tab(self, tab_id):
+        if tab_id in self.__pinned_tabs:
+            self.__pinned_tabs.remove(tab_id)
             self.save_to_file()

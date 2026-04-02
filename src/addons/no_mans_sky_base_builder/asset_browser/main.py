@@ -52,6 +52,7 @@ class AssetBrowser(QtWidgets.QMainWindow):
 
         self.generate_favourites()
         self.generate_contents()
+        self.refresh_tab_bar()
         self.apply_style()
 
     def _build_ui(self):
@@ -141,7 +142,10 @@ class AssetBrowser(QtWidgets.QMainWindow):
         info_frame.setObjectName("InfoFrame")
         info_layout = QtWidgets.QHBoxLayout(info_frame)
         info_label = QtWidgets.QLabel(
-            "Right click items to add or remove from favourites.", info_frame
+            """Right click items to add or remove from favourites.
+            
+            Right click on a tab to pin it to the left of the bar.""",
+            info_frame,
         )
         info_label.setAlignment(QtCore.Qt.AlignCenter)
         info_label.setObjectName("InfoLabel")
@@ -202,7 +206,8 @@ class AssetBrowser(QtWidgets.QMainWindow):
             scroll_frame.setWidget(frame)
             layout = QtWidgets.QVBoxLayout(frame)
             layout.setAlignment(QtCore.Qt.AlignTop)
-            self.tab_widget.addTab(scroll_frame, category_title)
+            category_tab = self.tab_widget.addTab(scroll_frame, category_title)
+
             if not category_data:
                 continue
 
@@ -422,6 +427,76 @@ class AssetBrowser(QtWidgets.QMainWindow):
         self.search_lineedit.textChanged.connect(self.refresh_search)
         self.refresh_presets_button.clicked.connect(self.refresh_presets)
         self.tab_widget.currentChanged.connect(self.refresh_layouts)
+        tabbar = self.tab_widget.tabBar()
+        tabbar.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        tabbar.customContextMenuRequested.connect(self.show_tab_context_menu)
+
+    def show_tab_context_menu(self, pos):
+        tabbar = self.tab_widget.tabBar()
+
+        index = tabbar.tabAt(pos)
+        if index == -1:
+            return  # clicked empty space
+
+        menu = QtWidgets.QMenu()
+        tab_name = tabbar.tabText(index)
+        if tab_name == "Favourites":
+            return  # Don't allow pinning the favourites tab.
+        if tab_name in self.__settings.get_pinned_tabs():
+            action = menu.addAction("Unpin Tab")
+            action.triggered.connect(partial(self.remove_from_pinned_tabs, tab_name))
+        else:
+            pin_action = menu.addAction("Pin Tab")
+            pin_action.triggered.connect(partial(self.add_to_pinned_tabs, tab_name))
+        action = menu.exec(tabbar.mapToGlobal(pos))
+
+    def add_to_pinned_tabs(self, tab_name):
+        self.__settings.add_pinned_tab(tab_name)
+        self.refresh_tab_bar()
+
+    def remove_from_pinned_tabs(self, tab_name):
+        self.__settings.remove_pinned_tab(tab_name)
+        self.refresh_tab_bar()
+
+    def get_tab_index(self, name):
+        tabbar = self.tab_widget.tabBar()
+        for i in range(tabbar.count()):
+            if tabbar.tabText(i) == name:
+                return i
+        return -1
+
+    def refresh_tab_bar(self):
+        tabbar = self.tab_widget.tabBar()
+        all_tabs = [tabbar.tabText(i) for i in range(tabbar.count())]
+        for index in range(tabbar.count()):
+            tab_name = tabbar.tabText(index)
+            if tab_name == "Favourites":
+                continue  # Don't allow pinning the favourites tab.
+
+            if tab_name in self.__settings.get_pinned_tabs():
+                tabbar.setTabIcon(index, QtGui.QIcon(":PIN"))
+            else:
+                tabbar.setTabIcon(index, QtGui.QIcon())
+
+        tab_count = 1
+        tab_bar = self.tab_widget.tabBar()
+        for tab in sorted(self.__settings.get_pinned_tabs()):
+            if tab_name == "Favourites":
+                continue  # Don't allow pinning the favourites tab.
+            index = self.get_tab_index(tab)
+            tab_bar.moveTab(index, tab_count)
+            tab_count += 1
+
+        unpinned_tabs = [
+            tab
+            for tab in all_tabs
+            if tab not in self.__settings.get_pinned_tabs() and tab != "Favourites"
+        ]
+        unpinned_tabs.sort()
+        for tab in unpinned_tabs:
+            index = self.get_tab_index(tab)
+            tab_bar.moveTab(index, tab_count)
+            tab_count += 1
 
     def refresh_layouts(self, tab_index):
         scroll_widget = self.tab_widget.currentWidget()
