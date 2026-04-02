@@ -35,6 +35,7 @@ class Thumb(QtWidgets.QLabel):
 class Item(QtWidgets.QFrame):
 
     clicked = QtCore.Signal()
+    rightClicked = QtCore.Signal()
     varClicked = QtCore.Signal(str)
 
     def __init__(self, item_id=None, label=None, variants=None, *args, **kwargs):
@@ -95,7 +96,11 @@ class Item(QtWidgets.QFrame):
         variants_menu.exec(QtGui.QCursor.pos())
 
     def mousePressEvent(self, event):
-        self.clicked.emit()
+        if event.button() == QtCore.Qt.LeftButton:
+            self.clicked.emit()
+        elif event.button() == QtCore.Qt.RightButton:
+            print("Right click detected on item:", self.item_id)
+            self.rightClicked.emit()
 
     def add_variant(self, variant_id, variant_label):
         self.variants.append((variant_id, variant_label))

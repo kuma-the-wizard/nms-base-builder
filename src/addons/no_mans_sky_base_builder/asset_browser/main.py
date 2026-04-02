@@ -12,6 +12,7 @@ from .collapsable_frame import CollapsableFrame
 from .flow_layout import FlowLayout
 from .icons import icons
 from .item import Item, Preset
+from .settings import Settings
 from .utils import contexts, parts_definition
 from .utils.qt import QtCore, QtGui, QtWidgets
 
@@ -47,7 +48,9 @@ class AssetBrowser(QtWidgets.QMainWindow):
         self._build_ui()
         self._layout_ui()
         self._setup_ui()
+        self.__settings = Settings()
 
+        self.generate_favourites()
         self.generate_contents()
         self.apply_style()
 
@@ -116,6 +119,77 @@ class AssetBrowser(QtWidgets.QMainWindow):
                         )
                         button_data["widget"].setVisible(match)
 
+    def generate_favourites(self):
+        # Main Category
+        scroll_frame = QtWidgets.QScrollArea(self)
+        scroll_frame.setWidgetResizable(True)
+        frame = QtWidgets.QFrame(scroll_frame)
+        scroll_frame.setWidget(frame)
+        layout = QtWidgets.QVBoxLayout(frame)
+        layout.setAlignment(QtCore.Qt.AlignTop)
+        self.tab_widget.addTab(
+            scroll_frame,
+            QtGui.QIcon(":FAVOURITES"),
+            "Favourites",
+        )
+
+        self.favourites_frame = CollapsableFrame(label="Favourites", parent=frame)
+        self.favourites_frame.setProperty("partList", True)
+        layout.addWidget(self.favourites_frame)
+
+        info_frame = QtWidgets.QFrame(frame)
+        info_frame.setObjectName("InfoFrame")
+        info_layout = QtWidgets.QHBoxLayout(info_frame)
+        info_label = QtWidgets.QLabel(
+            "Right click items to add or remove from favourites.", info_frame
+        )
+        info_label.setAlignment(QtCore.Qt.AlignCenter)
+        info_label.setObjectName("InfoLabel")
+        info_layout.addWidget(info_label)
+        layout.addWidget(info_frame)
+
+        self.refresh_favourites()
+
+    def refresh_favourites(self):
+        self.__fav_widgets = {}
+        browser_data = parts_definition.get_part_definition()
+        # --- Clear layout ---
+        self.favourites_frame.clear()
+
+        # --- Add new widgets ---
+        for favourite in self.__settings.get_favourites():
+            item_widget = Item(
+                item_id=favourite,
+                label=NICE_NAME_DATA.get(favourite, favourite),
+                parent=self.favourites_frame,
+            )
+            self.favourites_frame.addWidget(item_widget)
+            item_widget.clicked.connect(
+                partial(self.send_part_command_to_blender, favourite)
+            )
+            item_widget.varClicked.connect(self.send_part_command_to_blender)
+            self.attach_favourites_menu(item_widget, favourite, expanded=True)
+            self.__fav_widgets[favourite] = [
+                item_widget,
+            ]
+
+        # Add Variants
+        for category_title, category_data in browser_data.items():
+            if not category_data:
+                continue
+            # Sub Categories
+            for sub_category_title, items in category_data.items():
+                for item_data in items:
+                    item = item_data["id"]
+                    nice_name = item_data["nice_name"]
+                    variant_of = item_data["variantOf"]
+                    if variant_of != "None":
+                        variant_key = variant_of[1:]
+                        if variant_key in self.__fav_widgets:
+                            widgets = self.__fav_widgets[variant_key]
+                            for widget in widgets:
+                                widget.add_variant(item, nice_name)
+
     def generate_contents(self):
         browser_data = parts_definition.get_part_definition()
         # Add Categories
@@ -158,6 +232,7 @@ class AssetBrowser(QtWidgets.QMainWindow):
                             item_widget.varClicked.connect(
                                 self.send_part_command_to_blender
                             )
+                            self.attach_favourites_menu(item_widget, item)
 
                             # Add to search frame.
                             search_item_widget = Item(
@@ -172,6 +247,7 @@ class AssetBrowser(QtWidgets.QMainWindow):
                             search_item_widget.varClicked.connect(
                                 self.send_part_command_to_blender
                             )
+                            self.attach_favourites_menu(search_item_widget, item)
                             self.__search_buttons[item] = {
                                 "widget": search_item_widget,
                                 "search_id": item.lower(),
@@ -208,6 +284,59 @@ class AssetBrowser(QtWidgets.QMainWindow):
         self.presets_layout.setAlignment(QtCore.Qt.AlignTop)
         self.tab_widget.addTab(scroll_frame, "Presets")
         self.generate_presets()
+
+    def attach_favourites_menu(self, item_widget, item_id, expanded=False):
+        menu = QtWidgets.QMenu()
+        menu.aboutToShow.connect(
+            lambda: self.update_favourites_menu(menu, item_id, expanded)
+        )
+        item_widget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        item_widget.customContextMenuRequested.connect(
+            lambda pos: menu.exec_(item_widget.mapToGlobal(pos))
+        )
+
+    def update_favourites_menu(self, menu, item_id, expanded=False):
+        menu.clear()
+        if expanded:
+            # Move left and Move right options.
+            if self.__settings.can_move_left(item_id):
+                action = menu.addAction("Move to Front")
+                action.triggered.connect(
+                    partial(self.bring_favourite_to_front, item_id)
+                )
+                menu.addSeparator()
+                action = menu.addAction("Move Left")
+                action.triggered.connect(partial(self.move_favourite_left, item_id))
+            if self.__settings.can_move_right(item_id):
+                action = menu.addAction("Move Right")
+                action.triggered.connect(partial(self.move_favourite_right, item_id))
+            menu.addSeparator()
+        if item_id in self.__settings.get_favourites():
+            action = menu.addAction("Remove from Favourites")
+            action.triggered.connect(partial(self.remove_from_favourites, item_id))
+        else:
+            action = menu.addAction("Add to Favourites")
+            action.triggered.connect(partial(self.add_to_favourites, item_id))
+
+    def bring_favourite_to_front(self, item_id):
+        self.__settings.bring_favourite_to_front(item_id)
+        self.refresh_favourites()
+
+    def move_favourite_left(self, item_id):
+        self.__settings.move_favourite_left(item_id)
+        self.refresh_favourites()
+
+    def move_favourite_right(self, item_id):
+        self.__settings.move_favourite_right(item_id)
+        self.refresh_favourites()
+
+    def add_to_favourites(self, item_id):
+        self.__settings.add_favourite(item_id)
+        self.refresh_favourites()
+
+    def remove_from_favourites(self, item_id):
+        self.__settings.remove_favourite(item_id)
+        self.refresh_favourites()
 
     def clear_presets(self):
         for preset_id, preset_data in self.__preset_search_buttons.items():

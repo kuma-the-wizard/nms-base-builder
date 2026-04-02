@@ -1,20 +1,18 @@
-#! /usr/bin/python2
-# -*- coding: utf-8 -*-
+import sys
 
 from .utils.qt import QtCore, QtGui, QtWidgets
 
 
 class FlowLayout(QtWidgets.QLayout):
-    def __init__(self, parent=None, margin=0, spacing=-1):
-        super(FlowLayout, self).__init__(parent)
+    heightChanged = QtCore.Signal(int)
 
-        self.margin = margin
-        if parent is not None:
-            self.setContentsMargins(margin, margin, margin, margin)
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
-        self.setSpacing(spacing)
+        # if parent is not None:
+        #     self.setContentsMargins(QtCore.QMargins(0, 0, 0, 0))
 
-        self.itemList = []
+        self._item_list = []
 
     def __del__(self):
         item = self.takeAt(0)
@@ -22,36 +20,39 @@ class FlowLayout(QtWidgets.QLayout):
             item = self.takeAt(0)
 
     def addItem(self, item):
-        self.itemList.append(item)
+        self._item_list.append(item)
+        self.invalidate()
 
     def count(self):
-        return len(self.itemList)
+        return len(self._item_list)
 
     def itemAt(self, index):
-        if index >= 0 and index < len(self.itemList):
-            return self.itemList[index]
+        if 0 <= index < len(self._item_list):
+            return self._item_list[index]
 
         return None
 
     def takeAt(self, index):
-        if index >= 0 and index < len(self.itemList):
-            return self.itemList.pop(index)
+        if 0 <= index < len(self._item_list):
+            item = self._item_list.pop(index)
+            self.invalidate()
+            return item
 
         return None
 
     def expandingDirections(self):
-        return QtCore.Qt.Orientations(QtCore.Qt.Orientation(0))
+        return QtCore.Qt.Orientation(0)
 
     def hasHeightForWidth(self):
         return True
 
     def heightForWidth(self, width):
-        height = self._doLayout(QtCore.QRect(0, 0, width, 4), True)
+        height = self._do_layout(QtCore.QRect(0, 0, width, 0), True)
         return height
 
     def setGeometry(self, rect):
         super(FlowLayout, self).setGeometry(rect)
-        self._doLayout(rect, False)
+        self._do_layout(rect, False)
 
     def sizeHint(self):
         return self.minimumSize()
@@ -59,45 +60,53 @@ class FlowLayout(QtWidgets.QLayout):
     def minimumSize(self):
         size = QtCore.QSize()
 
-        for item in self.itemList:
+        for item in self._item_list:
+            widget = item.widget()
+            if widget is not None and widget.isHidden():
+                continue
             size = size.expandedTo(item.minimumSize())
 
-        size += QtCore.QSize(2 * self.margin, 2 * self.margin)
+        size += QtCore.QSize(
+            2 * self.contentsMargins().top(), 2 * self.contentsMargins().top()
+        )
         return size
 
-    def _doLayout(self, rect, testOnly):
-        x = rect.x() + 4
-        y = rect.y() + 4
-        lineHeight = 0
+    def _do_layout(self, rect, test_only):
+        x = rect.x()
+        y = rect.y()
+        line_height = 0
+        spacing = self.spacing()
 
-        for item in self.itemList:
-
-            wid = item.widget()
-            if not wid.isVisible():
+        for item in self._item_list:
+            widget = item.widget()
+            if widget is not None and widget.isHidden():
                 continue
-            spaceX = self.spacing() + wid.style().layoutSpacing(
-                QtWidgets.QSizePolicy.PushButton,
-                QtWidgets.QSizePolicy.PushButton,
-                QtCore.Qt.Horizontal,
+            style = item.widget().style()
+            layout_spacing_x = style.layoutSpacing(
+                QtWidgets.QSizePolicy.ControlType.PushButton,
+                QtWidgets.QSizePolicy.ControlType.PushButton,
+                QtCore.Qt.Orientation.Horizontal,
             )
-
-            spaceY = self.spacing() + wid.style().layoutSpacing(
-                QtWidgets.QSizePolicy.PushButton,
-                QtWidgets.QSizePolicy.PushButton,
-                QtCore.Qt.Vertical,
+            layout_spacing_y = style.layoutSpacing(
+                QtWidgets.QSizePolicy.ControlType.PushButton,
+                QtWidgets.QSizePolicy.ControlType.PushButton,
+                QtCore.Qt.Orientation.Vertical,
             )
+            space_x = spacing + layout_spacing_x
+            space_y = spacing + layout_spacing_y
+            next_x = x + item.sizeHint().width() + space_x
+            if next_x - space_x > rect.right() and line_height > 0:
+                x = rect.x()
+                y = y + line_height + space_y
+                next_x = x + item.sizeHint().width() + space_x
+                line_height = 0
 
-            nextX = x + item.sizeHint().width() + spaceX
-            if (nextX + 4) - spaceX > rect.right() and lineHeight > 0:
-                x = rect.x() + 4
-                y = y + lineHeight + spaceY
-                nextX = x + item.sizeHint().width() + spaceX
-                lineHeight = 0
-
-            if not testOnly:
+            if not test_only:
                 item.setGeometry(QtCore.QRect(QtCore.QPoint(x, y), item.sizeHint()))
 
-            x = nextX
-            lineHeight = max(lineHeight, item.sizeHint().height())
+            x = next_x
+            line_height = max(line_height, item.sizeHint().height())
 
-        return y + lineHeight - rect.y() + 8
+        new_height = y + line_height - rect.y()
+        self.heightChanged.emit(new_height)
+        return new_height
