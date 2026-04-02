@@ -144,7 +144,7 @@ class AssetBrowser(QtWidgets.QMainWindow):
         info_label = QtWidgets.QLabel(
             """Right click items to add or remove from favourites.
             
-            Right click on a tab to pin it to the left of the bar.""",
+Right click on a tab to pin it to the left of the tab bar.""",
             info_frame,
         )
         info_label.setAlignment(QtCore.Qt.AlignCenter)
@@ -303,13 +303,18 @@ class AssetBrowser(QtWidgets.QMainWindow):
     def update_favourites_menu(self, menu, item_id, expanded=False):
         menu.clear()
         if expanded:
-            # Move left and Move right options.
+            # Bring to front/back option.
             if self.__settings.can_move_left(item_id):
-                action = menu.addAction("Move to Front")
+                action = menu.addAction("Move to Start")
                 action.triggered.connect(
                     partial(self.bring_favourite_to_front, item_id)
                 )
-                menu.addSeparator()
+            if self.__settings.can_move_right(item_id):
+                action = menu.addAction("Move to End")
+                action.triggered.connect(partial(self.send_favourite_to_back, item_id))
+            menu.addSeparator()
+            # Move left and Move right options.
+            if self.__settings.can_move_left(item_id):
                 action = menu.addAction("Move Left")
                 action.triggered.connect(partial(self.move_favourite_left, item_id))
             if self.__settings.can_move_right(item_id):
@@ -325,6 +330,10 @@ class AssetBrowser(QtWidgets.QMainWindow):
 
     def bring_favourite_to_front(self, item_id):
         self.__settings.bring_favourite_to_front(item_id)
+        self.refresh_favourites()
+
+    def send_favourite_to_back(self, item_id):
+        self.__settings.send_favourite_to_back(item_id)
         self.refresh_favourites()
 
     def move_favourite_left(self, item_id):
@@ -440,7 +449,7 @@ class AssetBrowser(QtWidgets.QMainWindow):
 
         menu = QtWidgets.QMenu()
         tab_name = tabbar.tabText(index)
-        if tab_name == "Favourites":
+        if tab_name in ["Favourites", "Presets"]:
             return  # Don't allow pinning the favourites tab.
         if tab_name in self.__settings.get_pinned_tabs():
             action = menu.addAction("Unpin Tab")
@@ -470,7 +479,7 @@ class AssetBrowser(QtWidgets.QMainWindow):
         all_tabs = [tabbar.tabText(i) for i in range(tabbar.count())]
         for index in range(tabbar.count()):
             tab_name = tabbar.tabText(index)
-            if tab_name == "Favourites":
+            if tab_name in ["Favourites"]:
                 continue  # Don't allow pinning the favourites tab.
 
             if tab_name in self.__settings.get_pinned_tabs():
@@ -481,7 +490,7 @@ class AssetBrowser(QtWidgets.QMainWindow):
         tab_count = 1
         tab_bar = self.tab_widget.tabBar()
         for tab in sorted(self.__settings.get_pinned_tabs()):
-            if tab_name == "Favourites":
+            if tab_name in ["Favourites"]:
                 continue  # Don't allow pinning the favourites tab.
             index = self.get_tab_index(tab)
             tab_bar.moveTab(index, tab_count)
@@ -490,9 +499,12 @@ class AssetBrowser(QtWidgets.QMainWindow):
         unpinned_tabs = [
             tab
             for tab in all_tabs
-            if tab not in self.__settings.get_pinned_tabs() and tab != "Favourites"
+            if tab not in self.__settings.get_pinned_tabs()
+            and tab not in ["Favourites"]
         ]
         unpinned_tabs.sort()
+        unpinned_tabs.remove("Presets")
+        unpinned_tabs.append("Presets")
         for tab in unpinned_tabs:
             index = self.get_tab_index(tab)
             tab_bar.moveTab(index, tab_count)

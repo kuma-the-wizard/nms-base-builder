@@ -92,6 +92,12 @@ class Settings:
             self.__favourites.insert(0, part_id)
             self.save_to_file()
 
+    def send_favourite_to_back(self, part_id):
+        if part_id in self.__favourites:
+            self.__favourites.remove(part_id)
+            self.__favourites.append(part_id)
+            self.save_to_file()
+
     # Pinned Tabs ---
     def get_pinned_tabs(self):
         return self.__pinned_tabs

@@ -1,3 +1,12 @@
+release 6.2.0
+-------------
+
+* Added the option to tag base parts as a "Favourite" which adds them to a dedicated tab in the Asset Browser.
+* Added the option to pin category tabs which places them in their own pinned section to the left of the tab bar.
+* Base Building App prefabs (.nmsprefab) can now be listed and loaded natively using the Preset/Prefab mechanism.
+* Fixed visibility of the Vesper Rim part in the asset browser.
+
+
 release 6.1.7
 -------------
 
