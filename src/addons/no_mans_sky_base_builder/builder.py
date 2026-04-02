@@ -404,7 +404,7 @@ class Builder(object):
     def get_uncategorized_presets(self):
         presets = []
         for preset_file in os.listdir(preset.Preset.PRESET_PATH):
-            if preset_file.endswith(".json"):
+            if preset_file.endswith(".json") or preset_file.endswith(".nmsprefab"):
                 presets.append(os.path.splitext(preset_file)[0])
         return presets
 
@@ -418,7 +418,7 @@ class Builder(object):
         for preset_file in os.listdir(
             os.path.join(preset.Preset.PRESET_PATH, category)
         ):
-            if preset_file.endswith(".json"):
+            if preset_file.endswith(".json") or preset_file.endswith(".nmsprefab"):
                 presets.append(os.path.splitext(preset_file)[0])
         return presets
 

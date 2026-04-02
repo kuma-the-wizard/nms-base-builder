@@ -88,15 +88,19 @@ class Preset(object):
                 sub_presets = os.listdir(full_path)
                 for sub_preset in sub_presets:
                     full_sub_preset_path = os.path.join(full_path, sub_preset)
-                    if os.path.isfile(full_sub_preset_path) and sub_preset.endswith(
-                        ".json"
+                    if os.path.isfile(full_sub_preset_path) and (
+                        sub_preset.endswith(".json")
+                        or sub_preset.endswith(".nmsprefab")
                     ):
                         preset_name = os.path.splitext(sub_preset)[0]
                         all_presets[preset_name] = full_sub_preset_path
             # Handle root presets.
-            if os.path.isfile(full_path) and preset.endswith(".json"):
+            if os.path.isfile(full_path) and (
+                preset.endswith(".json") or preset.endswith(".nmsprefab")
+            ):
                 preset_name = os.path.splitext(preset)[0]
                 all_presets[preset_name] = full_path
+        # print(all_presets)
         return all_presets
 
     @property
@@ -232,8 +236,12 @@ class Preset(object):
             compensate_normal = True
             if base_version < 5:
                 compensate_normal = False
+            object_list = data.get("Objects", [])
+            # Handle BBA Prefab
+            if "Prefab" in data:
+                object_list = data["Prefab"]
             # Reconstruct objects.
-            for part_data in data.get("Objects", []):
+            for part_data in object_list:
                 object_id = part_data["ObjectID"].replace("^", "")
                 user_data = part_data["UserData"]
                 use_class = self.builder.get_part_class(object_id)
