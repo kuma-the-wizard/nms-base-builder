@@ -494,28 +494,32 @@ Right click on a tab to pin it to the left of the tab bar.""",
             else:
                 tabbar.setTabIcon(index, QtGui.QIcon())
 
-        tab_count = 1
-        tab_bar = self.tab_widget.tabBar()
-        for tab in sorted(self.__settings.get_pinned_tabs()):
-            if tab_name in ["Favourites"]:
-                continue  # Don't allow pinning the favourites tab.
-            index = self.get_tab_index(tab)
-            tab_bar.moveTab(index, tab_count)
-            tab_count += 1
+        pinned_tabs = set(self.__settings.get_pinned_tabs())
 
-        unpinned_tabs = [
+        all_tabs = [tabbar.tabText(i) for i in range(tabbar.count())]
+
+        pinned = sorted(
             tab
             for tab in all_tabs
-            if tab not in self.__settings.get_pinned_tabs()
-            and tab not in ["Favourites"]
-        ]
-        unpinned_tabs.sort()
-        unpinned_tabs.remove("Presets")
-        unpinned_tabs.append("Presets")
-        for tab in unpinned_tabs:
-            index = self.get_tab_index(tab)
-            tab_bar.moveTab(index, tab_count)
-            tab_count += 1
+            if tab in pinned_tabs and tab not in ["Favourites", "Presets"]
+        )
+
+        unpinned = sorted(
+            tab
+            for tab in all_tabs
+            if tab not in pinned_tabs and tab not in ["Favourites", "Presets"]
+        )
+
+        final_order = ["Favourites"] + pinned + unpinned
+
+        if "Presets" in all_tabs:
+            final_order.append("Presets")
+
+        for target_index, tab_name in enumerate(final_order):
+            current_index = self.get_tab_index(tab_name)
+
+            if current_index != -1 and current_index != target_index:
+                tabbar.moveTab(current_index, target_index)
 
     def refresh_layouts(self, tab_index):
         scroll_widget = self.tab_widget.currentWidget()
