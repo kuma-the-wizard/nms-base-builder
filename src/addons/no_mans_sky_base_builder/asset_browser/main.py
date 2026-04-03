@@ -310,6 +310,15 @@ Right click on a tab to pin it to the left of the tab bar.""",
     def update_favourites_menu(self, menu, item_id, expanded=False):
         menu.clear()
         if expanded:
+            # Move left and Move right options.
+            if self.__settings.can_move_left(item_id):
+                action = menu.addAction("Move Left")
+                action.triggered.connect(partial(self.move_favourite_left, item_id))
+            if self.__settings.can_move_right(item_id):
+                action = menu.addAction("Move Right")
+                action.triggered.connect(partial(self.move_favourite_right, item_id))
+            menu.addSeparator()
+
             # Bring to front/back option.
             if self.__settings.can_move_left(item_id):
                 action = menu.addAction("Move to Start")
@@ -319,14 +328,7 @@ Right click on a tab to pin it to the left of the tab bar.""",
             if self.__settings.can_move_right(item_id):
                 action = menu.addAction("Move to End")
                 action.triggered.connect(partial(self.send_favourite_to_back, item_id))
-            menu.addSeparator()
-            # Move left and Move right options.
-            if self.__settings.can_move_left(item_id):
-                action = menu.addAction("Move Left")
-                action.triggered.connect(partial(self.move_favourite_left, item_id))
-            if self.__settings.can_move_right(item_id):
-                action = menu.addAction("Move Right")
-                action.triggered.connect(partial(self.move_favourite_right, item_id))
+
             menu.addSeparator()
         if item_id in self.__settings.get_favourites():
             action = menu.addAction("Remove from Favourites")
