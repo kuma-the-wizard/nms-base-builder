@@ -1,1 +1,1 @@
-blender --command extension build --source-dir "G:/Apps/nms-base-builder/src/addons/no_mans_sky_base_builder" 
+blender --command extension build --source-dir .\src\addons\no_mans_sky_base_builder\ --output-dir .\dist
