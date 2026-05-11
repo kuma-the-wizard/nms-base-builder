@@ -24,6 +24,7 @@ from .part_overrides import line
 from .utils import blend_utils, curve
 from .utils import material as _material
 from .utils import python as python_utils
+from .utils import mirror_utils
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
@@ -701,15 +702,23 @@ class NMSSettings(PropertyGroup):
                 object_id = target["ObjectID"]
                 mirror_id = part.Part.get_mirror_part_id(object_id)
                 new_item = target
+                mirror_part_exist = False
                 if mirror_id in nice_name_dictionary.keys():
                     # Build Item.
                     new_item = BUILDER.mirror_part(target)
-                else:
-                    new_item.rotation_euler.y *= -1
-                    new_item.rotation_euler.z *= -1
+                    mirror_part_exist = True
 
+                # mirror part across x axis
                 if across_x:
-                    new_item.location.x = -new_item.location.x
+                    mirrored_matrix_world = mirror_utils.mirror_matrix_world(object_id, new_item.matrix_world,True)
+                    new_item.matrix_world = mirrored_matrix_world
+                # mirror part on its location
+                else:
+                    # Apply mirroring fixes on parts that dont have a ingame asset to represent their mirror.
+                    if not mirror_part_exist:
+                        mirrored_matrix_world = mirror_utils.mirror_matrix_world(object_id, new_item.matrix_world, False)
+                        new_item.matrix_world = mirrored_matrix_world
+                        
                 if hasattr(new_item, "object"):
                     new_items.append(new_item.object)
                 else:
