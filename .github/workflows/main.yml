@@ -1,0 +1,44 @@
+name: Build Blender Extension
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-extension:
+    runs-on: ubuntu-latest
+
+    env:
+      ADDON_DIR: "src/addons/no_mans_sky_base_builder"
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Blender
+        uses: funkyfuture/setup-blender@v1
+        with:
+          blender-version: "latest"
+
+      - name: Verify Blender Install
+        run: |
+          blender --version
+
+      - name: Validate Extension
+        run: |
+          blender --command extension validate "${ADDON_DIR}"
+
+      - name: Build Extension
+        run: |
+          blender --command extension build "${ADDON_DIR}"
+
+      - name: List Generated Files
+        run: |
+          find . -name "*.zip"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: no_mans_sky_base_builder
+          path: ./*.zip
