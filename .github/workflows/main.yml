@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+
   workflow_dispatch:
 
 jobs:
@@ -12,15 +13,30 @@ jobs:
 
     env:
       ADDON_DIR: "src/addons/no_mans_sky_base_builder"
+      BLENDER_VERSION: "5.1.0"
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Blender
-        uses: funkyfuture/setup-blender@v1
-        with:
-          blender-version: "latest"
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            wget \
+            xz-utils
+
+      - name: Download Blender
+        run: |
+          wget https://download.blender.org/release/Blender4.2/blender-${BLENDER_VERSION}-linux-x64.tar.xz
+
+      - name: Extract Blender
+        run: |
+          tar -xf blender-${BLENDER_VERSION}-linux-x64.tar.xz
+
+      - name: Add Blender To PATH
+        run: |
+          echo "$PWD/blender-${BLENDER_VERSION}-linux-x64" >> $GITHUB_PATH
 
       - name: Verify Blender Install
         run: |
@@ -34,7 +50,7 @@ jobs:
         run: |
           blender --command extension build "${ADDON_DIR}"
 
-      - name: List Generated Files
+      - name: List Generated ZIP Files
         run: |
           find . -name "*.zip"
 
