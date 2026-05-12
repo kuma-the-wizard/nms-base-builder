@@ -1,6 +1,9 @@
 {
   "local_y_180_rotation_parts": [
     "S_SAIL0",
+    "S_SAIL1",
+    "S_SAIL2",
+    "S_SAIL3",
     "BASE_CAVE3"
   ],
   "mirror_z_180_identifiers": [
