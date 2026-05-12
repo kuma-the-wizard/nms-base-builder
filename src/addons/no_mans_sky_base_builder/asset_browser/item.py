@@ -99,7 +99,6 @@ class Item(QtWidgets.QFrame):
         if event.button() == QtCore.Qt.LeftButton:
             self.clicked.emit()
         elif event.button() == QtCore.Qt.RightButton:
-            print("Right click detected on item:", self.item_id)
             self.rightClicked.emit()
 
     def add_variant(self, variant_id, variant_label):

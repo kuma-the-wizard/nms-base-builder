@@ -37,6 +37,5 @@ class BONE_REPLACER(part.Part):
         matrix = copy(self.object.matrix_world)
         bone_id = self.message
         blend_utils.delete(self.object)
-        print("SWAPPING WITH", bone_id)
         bone_part = self.builder.add_part(bone_id)
         bone_part.object.matrix_world = matrix
