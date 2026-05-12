@@ -292,7 +292,6 @@ class Part(object):
             item.data.materials.clear()
             item.select_set(False)
             blend_utils.add_to_scene(item)
-            print ("Imported OBJ for {}".format(object_id))
             return item
 
         # Create cube.

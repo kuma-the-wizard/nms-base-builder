@@ -117,8 +117,3 @@ def remove_unused_icons():
             os.remove("{}/{}".format(icons_dir, icon))
         except:
             pass
-
-
-parts = list_missing_parts()
-for part in parts:
-    print ("- {}".format(part))
