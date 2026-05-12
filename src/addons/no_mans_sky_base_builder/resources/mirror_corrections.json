@@ -1,0 +1,12 @@
+{
+  "local_y_180_rotation_parts": [
+    "S_SAIL0",
+    "BASE_CAVE3"
+  ],
+  "mirror_z_180_identifiers": [
+    "TRIFLOOR"
+  ],
+  "position_offsets": {
+    "STORAGEPANEL": [0.05444555, 0.0, 0.0]
+  }
+}
