@@ -49,7 +49,7 @@ jobs:
 
       - name: Build Extension
         run: |
-          blender --command extension build "${ADDON_DIR}"
+          blender --command extension build --source-dir "${ADDON_DIR}"
 
       - name: List Generated ZIP Files
         run: |
