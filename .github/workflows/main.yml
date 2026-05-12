@@ -13,6 +13,7 @@ jobs:
 
     env:
       ADDON_DIR: "src/addons/no_mans_sky_base_builder"
+      BLENDER_URL: "5.1"
       BLENDER_VERSION: "5.1.0"
 
     steps:
@@ -28,7 +29,7 @@ jobs:
 
       - name: Download Blender
         run: |
-          wget https://download.blender.org/release/Blender4.2/blender-${BLENDER_VERSION}-linux-x64.tar.xz
+          wget https://download.blender.org/release/Blender${BLENDER_URL}/blender-${BLENDER_VERSION}-linux-x64.tar.xz
 
       - name: Extract Blender
         run: |
