@@ -1,3 +1,13 @@
+release 6.3.0
+-------------
+
+* Improvements and optimizations to the mirror, mirror across X, and flip functions (Thanks to Kuma the Wizard).
+* Added more logic checks to the PySide start up to prevent start up errors for some users with the Asset Browser.
+* Fixed an issue where Blender would become unresponsive after loading the Asset Browser.
+* Added parts from 6.3.0 update including GAMETABLE and Quicksilver rewards.
+* Removed extraneous print statements.
+
+
 release 6.2.0
 -------------
 
