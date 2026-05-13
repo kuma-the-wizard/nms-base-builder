@@ -231,7 +231,6 @@ def darken_color(color, factor=0.6):
 def restore_material(item, user_data_value):
     col = userdata.get_colour(user_data_value)
     mat = userdata.get_material(user_data_value)
-    print(f"Restoring material with colour index {col} and material index {mat}")
     assign_material(item, col, mat)
 
 

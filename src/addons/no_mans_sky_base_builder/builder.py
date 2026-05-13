@@ -27,6 +27,7 @@ from .part_overrides import (
 )
 from .utils import blend_utils
 from .utils import python as python_utils
+from mathutils import Matrix
 
 
 class Builder(object):
@@ -163,7 +164,6 @@ class Builder(object):
     def get_part_class(cls, object_id):
         for class_ref, part_list in cls.override_classes.items():
             if object_id in part_list:
-                print("USING ::", class_ref)
                 return class_ref
         return part.Part
 
@@ -262,33 +262,33 @@ class Builder(object):
 
     def mirror_part(self, part_object):
         object_id = part_object["ObjectID"]
-        user_data = part_object["UserData"]
         new_object_id = part.Part.get_mirror_part_id(object_id)
-        # Add new part
-        new_item = self.add_part(new_object_id)
-        use_matrix = copy(part_object.matrix_world)
-        new_item.matrix_world = use_matrix
-        # Copy material
-        new_item.user_data = user_data
-        new_item.object.active_material = part_object.active_material.copy()
-        # Remove old part.
-        blend_utils.delete(part_object)
-        return new_item
+        # Flip mesh vertices across X
+        mirror_matrix = Matrix.Scale(-1, 4, (1, 0, 0))
+        part_object.data.transform(mirror_matrix)
+        # Update ObjectID and name
+        part_object["ObjectID"] = new_object_id
+        part_object.name = new_object_id
+        # Update cache
+        if object_id in self.__part_cache:
+            del self.__part_cache[object_id]
+        self.__part_cache[new_object_id] = part_object.name
+        return part_object
 
     def flip_part(self, part_object):
         object_id = part_object["ObjectID"]
-        user_data = part_object["UserData"]
         new_object_id = part.Part.get_flip_part_id(object_id)
-        # Add new part
-        new_item = self.add_part(new_object_id)
-        use_matrix = copy(part_object.matrix_world)
-        new_item.matrix_world = use_matrix
-        # Copy material
-        new_item.user_data = user_data
-        new_item.object.active_material = part_object.active_material.copy()
-        # Remove old part.
-        blend_utils.delete(part_object)
-        return new_item
+        # Flip mesh vertices across Y
+        mirror_matrix = Matrix.Scale(-1, 4, (0, 1, 0))
+        part_object.data.transform(mirror_matrix)
+        # Update ObjectID and name
+        part_object["ObjectID"] = new_object_id
+        part_object.name = new_object_id
+        # Update cache
+        if object_id in self.__part_cache:
+            del self.__part_cache[object_id]
+        self.__part_cache[new_object_id] = part_object.name
+        return part_object
 
     # Serialising ---
     def serialise(self, get_presets=False, add_timestamp=False):

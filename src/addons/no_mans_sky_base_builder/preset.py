@@ -100,7 +100,6 @@ class Preset(object):
             ):
                 preset_name = os.path.splitext(preset)[0]
                 all_presets[preset_name] = full_path
-        # print(all_presets)
         return all_presets
 
     @property

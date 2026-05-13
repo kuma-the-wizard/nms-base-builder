@@ -605,25 +605,37 @@ Right click on a tab to pin it to the left of the tab bar.""",
         return QtCore.QSize(1000, 1000)
 
 
+import threading
+
 qt_app = None
 qt_window = None
+qt_thread = None
 
 
 def qt_event_loop():
     global qt_app
     if qt_app is None:
         return None
-    qt_app.processEvents()
+    # Only process pending Qt events for a very short time slice.
+    # This prevents heavy resize/event storms from blocking Blender.
+    qt_app.processEvents(QtCore.QEventLoop.AllEvents, 1)
     return 0.01
 
 
+def qt_thread_func():
+    global qt_app
+    qt_app.exec_()
+
+
 def load():
-    global qt_app, qt_window
+    global qt_app, qt_window, qt_thread
     if not QtWidgets.QApplication.instance():
         qt_app = QtWidgets.QApplication(sys.argv)
     else:
         qt_app = QtWidgets.QApplication.instance()
     window = AssetBrowser()
     window.show()
-    # Start Blender's timer-driven Qt loop
-    bpy.app.timers.register(qt_event_loop, persistent=True)
+    # Start Qt event loop in a separate thread to avoid blocking Blender
+    qt_thread = threading.Thread(target=qt_thread_func, daemon=True)
+    qt_thread.start()
+

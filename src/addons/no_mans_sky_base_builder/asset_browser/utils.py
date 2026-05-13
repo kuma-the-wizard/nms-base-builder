@@ -15,7 +15,6 @@ def get_nice_ui_parts():
             if not top_sub_data:
                 continue
             for cat in top_sub_data:
-                print(cat)
                 for cat_name, items in cat.items():
                     if not items:
                         continue
@@ -118,8 +117,3 @@ def remove_unused_icons():
             os.remove("{}/{}".format(icons_dir, icon))
         except:
             pass
-
-
-parts = list_missing_parts()
-for part in parts:
-    print ("- {}".format(part))
