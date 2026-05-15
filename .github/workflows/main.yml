@@ -60,9 +60,24 @@ jobs:
         with:
           name: no_mans_sky_base_builder
           path: ./*.zip
+          
+      - name: Extract Release Notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+
+          awk "
+            /^release ${VERSION}$/ {flag=1}
+            /^release [0-9]/ && flag && !/^release ${VERSION}$/ {exit}
+            flag
+          " release_notes.md > CURRENT_RELEASE_NOTES.md
+
+      - name: Show Extracted Notes
+        run: |
+          cat CURRENT_RELEASE_NOTES.md
       
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: ./*.zip
+          body_path: CURRENT_RELEASE_NOTES.md
