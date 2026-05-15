@@ -1505,11 +1505,13 @@ class OpenPresetFolder(bpy.types.Operator):
     bl_label = "Open Preset Folder"
 
     def execute(self, context):
-        # Load web page.
-        # FIXME: Mac OS
+        # Open the preset folder with the system's default file manager.
         if hasattr(os, "startfile"):
             # Windows
             os.startfile(PRESET_PATH)
+        elif sys.platform == "darwin":
+            # macOS
+            subprocess.Popen(["open", PRESET_PATH])
         else:
             # Linux etc. (requires XDG tools)
             subprocess.call(["xdg-open", PRESET_PATH])
