@@ -60,3 +60,9 @@ jobs:
         with:
           name: no_mans_sky_base_builder
           path: ./*.zip
+      
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./*.zip
