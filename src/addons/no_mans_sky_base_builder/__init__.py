@@ -2,14 +2,7 @@ import json
 import os
 import subprocess
 import sys
-import webbrowser
-
-# Add it to the system path if it isn't already there
-addon_dir = os.path.dirname(__file__)
-libs_dir = os.path.join(addon_dir, "lib")
-if libs_dir not in sys.path:
-    sys.path.insert(0, libs_dir)
-
+import webbrowser   
 import bpy
 import bpy.ops
 import bpy.utils
@@ -25,13 +18,19 @@ from bpy.props import (
 from bpy.types import Panel, PropertyGroup
 from numpy import isin
 
+# Add part to lz libs for different os
+from . import platforms_manager
+libs_dir = platforms_manager.get_lib_directory()
+if libs_dir not in sys.path:
+    sys.path.insert(0, libs_dir)
+
 from . import builder, part, preset
 from .part_overrides import line
 from .utils import blend_utils, curve
 from .utils import material as _material
 from .utils import python as python_utils
 from .utils import mirror_utils
-from .save_editor import conversion_utils, save_editor_utils
+from .save_editor import save_editor_utils
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
@@ -45,7 +44,6 @@ GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
 NICE_JSON = os.path.join(FILE_PATH, "resources", "nice_names.json")
 nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
 
-from .operators.save_editor_operators import ExportObfuscatedObjectsData, OpenSaveFile
 from .addon_state import preview_collections
 from .support_methods import ShowMessageBox, part_switch
 
@@ -388,11 +386,6 @@ class NMSSettings(PropertyGroup):
         return data
     
     
-    def serialise_obfuscated(self, get_presets=False, objects_only=False):
-        data = self.serialise(get_presets=get_presets, objects_only=objects_only)
-        #obfuscated_data = conversion_utils.obfuscate_dict(data)
-        obfuscated_data = conversion_utils.load_save_file()
-        return obfuscated_data
     
     def open_savefile(self):
         return ""
@@ -914,14 +907,14 @@ class SaveFilePath(bpy.types.AddonPreferences):
 class SaveData(bpy.types.PropertyGroup):
     
     #this will populate the enum property yo display list
-    save_slots_enum_list = []
+    enum_save_slots_list = []
     #this stores data related to save slot like paths etd
-    save_slots_data = []
+    data_save_slot = []
     
-    #this stores list of bases
-    base_enum_list = []
+    #this stores data for displaying list
+    enum_base_list = []
     #this is cache for PersistentPlayerBases data
-    persistent_base_data = {}
+    data_persistent_base = {}
 
     # there can be miltiple accounts on same device
     nms_account_selected: bpy.props.EnumProperty(
@@ -935,16 +928,15 @@ class SaveData(bpy.types.PropertyGroup):
     nms_save_slot: bpy.props.EnumProperty(
         name="save slot",
         description="Folder where save files are stored",
-        items = lambda self, context: SaveData.save_slots_enum_list,
+        items = lambda self, context: SaveData.enum_save_slots_list,
         update = lambda self, context: self.on_save_slot_list_change(),
     )
     
     # Index of base imorted, this is index of base inside PersistentPlayerBase array
-    nms_base : bpy.props.EnumProperty(
+    nms_base_index : bpy.props.EnumProperty(
         name="base index",
         description="Index of the base in the save file.",
-        items = lambda self, context: SaveData.base_enum_list,
-        update = lambda self, context: self.on_base_selected(context),
+        items = lambda self, context: SaveData.enum_base_list,
     )
     
     # base can be a corvette or a normal base
@@ -961,10 +953,10 @@ class SaveData(bpy.types.PropertyGroup):
     
 
     def on_account_list_change(self):
-        SaveData.save_slots_enum_list = self.get_save_slots_list()
-        #self.nms_save_slot = SaveData.save_slots_enum_list[0][0]
-        #SaveData.persistent_base_data = {}
-        #SaveData.base_enum_list = [("","","")]
+        SaveData.enum_save_slots_list = self.get_save_slots_list()
+        self.nms_save_slot = SaveData.enum_save_slots_list[0][0]
+        SaveData.data_persistent_base = {}
+        SaveData.enum_base_list = [("","","")]
     
     def get_accounts_list(self):
         default_account_list_item = ("Select Account", "Select Account", "No account selected")
@@ -974,16 +966,14 @@ class SaveData(bpy.types.PropertyGroup):
         return accounts_enum_list
     
     def on_save_slot_list_change(self):
-        #SaveData.persistent_base_data = {}
-        print("save slot data : ",SaveData.save_slots_data)
-        print("self.nms_save_slot : ",self.nms_save_slot)
+        
+        self.reset_base_list()
         
         current_slot_data = self.get_current_slot_data()
         if current_slot_data is not None:
-            SaveData.persistent_base_data = save_editor_utils.get_persistent_player_bases(current_slot_data)
-            SaveData.base_enum_list = self.get_bases_list()
+            SaveData.data_persistent_base = save_editor_utils.get_persistent_player_bases(current_slot_data)
+            SaveData.enum_base_list = self.get_bases_list()
             
-        #self.on_base_type_selected()
     
     def get_save_slots_list(self):
         default_save_slot_list_item = ("Select Save Slot", "Select Save Slot", "No save slot selected")
@@ -991,18 +981,17 @@ class SaveData(bpy.types.PropertyGroup):
         if not account_selected == "Select Account":
             print("account selected", account_selected)
             save_slots = save_editor_utils.get_save_slots_list(account_selected)
-            SaveData.save_slots_data = save_slots
-            save_slots_enum_list = [(str(slot["slot"]), "Save Slot " + str(slot["slot"]), "save slot for importing base/corvette") for slot in save_slots]
-            save_slots_enum_list.insert(0, default_save_slot_list_item)
-            return save_slots_enum_list
+            SaveData.data_save_slot = save_slots
+            enum_save_slots_list = [(str(slot["slot"]), "Save Slot " + str(slot["slot"]), "save slot for importing base/corvette") for slot in save_slots]
+            enum_save_slots_list.insert(0, default_save_slot_list_item)
+            return enum_save_slots_list
         return default_save_slot_list_item
     
     def on_base_type_selected(self):
+        self.reset_base_list()
         if not self.nms_save_slot == "Select Save Slot":
-            SaveData.base_enum_list = self.get_bases_list()
+            SaveData.enum_base_list = self.get_bases_list()
             
-    def on_base_selected(self,context):
-        print()
 
     def get_bases_list(self):
         default_base_list_item = (
@@ -1015,17 +1004,28 @@ class SaveData(bpy.types.PropertyGroup):
         key_persistent_base_types = save_editor_utils.eng_to_obf_translator("PersistentBaseTypes")
         key_name = save_editor_utils.eng_to_obf_translator("Name")
         
-        base_enum_list = []
-        for index, base in enumerate(SaveData.persistent_base_data):
+        enum_base_list = []
+        for index, base in enumerate(SaveData.data_persistent_base):
             if(base[key_base_type][key_persistent_base_types] == self.nms_base_type):
                 item_tuple = (str(index), str(base[key_name]), "")
-                base_enum_list.append(item_tuple)
-        base_enum_list.insert(0, default_base_list_item)
-        return base_enum_list
+                enum_base_list.append(item_tuple)
+        enum_base_list.insert(0, default_base_list_item)
+        return enum_base_list
     
     def imort_base_from_save_file(self,context):
-        base_selected_intex = self.nms_base
-        obf_base_data = SaveData.persistent_base_data[int(base_selected_intex)]
+        base_index = self.nms_base_index
+        
+        if not str(base_index).isdigit():
+            return 
+        
+        if int(base_index) < 0:
+            return
+        
+        if SaveData.data_persistent_base is None:
+            return
+        
+        
+        obf_base_data = SaveData.data_persistent_base[int(base_index)]
         translated_base_data = save_editor_utils.translate_to_eng_data(obf_base_data)
         
         try:
@@ -1045,29 +1045,46 @@ class SaveData(bpy.types.PropertyGroup):
         serialised_base_objects_data  = nms_tools.serialise(objects_only = True)
         
         current_slot_data = self.get_current_slot_data()
+    
+        base_index = self.nms_base_index
         
-        if current_slot_data is not None:
-            key_name = save_editor_utils.eng_to_obf_translator("Name")
+        if current_slot_data is None:
+            return
         
-            base_index = self.nms_base
-            base_type = self.nms_base_type
-            base = SaveData.persistent_base_data[int(base_index)]
-            base_name = base[key_name]
-            
-            base_identifiers = {
-                "base_index": int(base_index),
-                "base_name" : base_name,
-                "base_type" : base_type
-            }
-            
-            save_editor.save_editor_utils.save_base_to_save_file(serialised_base_objects_data, base_identifiers, current_slot_data)
+        if not str(base_index).isdigit():
+            return 
+        
+        if int(base_index) < 0:
+            return
+        
+        key_name = save_editor_utils.eng_to_obf_translator("Name")
+        key_galactic_address = save_editor_utils.eng_to_obf_translator("GalacticAddress")
+    
+        base_type = self.nms_base_type
+        base = SaveData.data_persistent_base[int(base_index)]
+        base_name = base[key_name]
+        base_galactic_address = base[key_galactic_address]
+        
+        base_identifiers = {
+            "base_index": int(base_index),
+            "base_name" : base_name,
+            "base_type" : base_type,
+            "galactic_address" : base_galactic_address
+        }
+        
+        save_editor.save_editor_utils.save_base_to_save_file(serialised_base_objects_data, base_identifiers, current_slot_data)
         
     def get_current_slot_data(self):
         if not self.nms_save_slot == "Select Save Slot":
-            for slot in SaveData.save_slots_data:
+            for slot in SaveData.data_save_slot:
                 if str(slot["slot"]) == self.nms_save_slot:
                     return slot
         return None
+    
+    def reset_base_list(self):
+        if len(SaveData.enum_base_list) > 0:
+            if len(SaveData.enum_base_list[0][0]) > 0:
+                self.nms_base_index = SaveData.enum_base_list[0][0]
         
         
     

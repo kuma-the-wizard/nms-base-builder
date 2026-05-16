@@ -1,43 +1,4 @@
-from ..save_editor.save_manager import NMSSaveManager
 import bpy
-
-class ExportObfuscatedObjectsData(bpy.types.Operator):
-    bl_idname = "object.nms_export_obfuscated_nms_data_objects"
-    bl_label = "Clipboard Obfuscated Object Data"
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.export_obfuscated_nms_data(objects_only=True)
-        return {"FINISHED"}
-    
-
-class OpenSaveFile(bpy.types.Operator):
-    bl_idname = "object.nms_open_save_file"
-    bl_label = "choose .hg file to import"
-    
-    def execute(self, context):
-        #print("Selected:", self.filepath)
-        
-        manager = NMSSaveManager()
-        accounts = manager.get_all_saves()
-        #for account in accounts:
-        #    print(account)
-        """print("ACCOUNT: {account['account_id']}")
-        print("=" * 50)
-
-        for save in account["saves"]:
-
-            print(f"Slot: {save['slot']}")
-            print(f"Name: {save['save_name']}")
-            print(f"Mode: {save['game_mode']}")
-            print(f"File: {save['filepath']}")
-            print("-" * 30)"""
-    
-        
-        return {"FINISHED"}
-    
-    
     
 class SelectSaveFolder(bpy.types.Operator):
     bl_idname = "object.nms_select_save_folder"
@@ -113,8 +74,6 @@ class ExportBaseToSave(bpy.types.Operator):
         return {"FINISHED"}
     
 classes = (
-    ExportObfuscatedObjectsData,
-    OpenSaveFile,
     SelectSaveFolder,
     ImportBaseFromSave,
     ExportBaseToSave

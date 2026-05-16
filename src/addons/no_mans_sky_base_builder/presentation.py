@@ -86,7 +86,7 @@ class NMS_PT_save_editor_panel(Panel):
         base_type_row = se_column.row(align=True)
         base_type_row.label(text="Base Type")
         base_type_row.prop(save_data, "nms_base_type",expand=True, text = "base type")
-        se_column.prop(save_data, "nms_base", text="")
+        se_column.prop(save_data, "nms_base_index", text="")
         
         se_column.separator()
         import_export_row = se_column.row(align=True)

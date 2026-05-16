@@ -3,23 +3,12 @@ import json
 import struct
 import lz4.block
 from pathlib import Path
-from ..utils import python as python_utils
+import shutil
 
 MAGIC = 0xFEEDA1E5
 CHUNK_SIZE = 0x80000  # 524288 bytes
 
-FILE_PATH = os.path.dirname(os.path.realpath(__file__))
-
-SAVE_MAP_JSON_FILE = os.path.join(FILE_PATH, "save_map_dictionary.json")
-
-save_map_dictionary_reversed = python_utils.load_dictionary(SAVE_MAP_JSON_FILE)
-save_map_dictionary = {v: k for k, v in save_map_dictionary_reversed.items()}
-
-eng_to_obf_translator = lambda k: save_map_dictionary.get(k, k)
-obf_to_eng_translator = lambda k: save_map_dictionary_reversed.get(k, k)
-
-
-class NMSHGFile:
+class HGFile:
     def __init__(self, path):
         self.path = Path(path)
         self.json_data = None
@@ -84,6 +73,22 @@ class NMSHGFile:
         with open(output_path, "wb") as f:
             for block in blocks:
                 f.write(block)
+                
+    def make_backup(self, output_path = None):
+        path  = self.path
+        folder = os.path.dirname(path)
+        name, ext = os.path.splitext(os.path.basename(path))
+        
+        backup_folder = os.path.join(
+            folder,"blender_backup"
+        )
+        os.makedirs(backup_folder, exist_ok=True)
+        
+        backup_file = os.path.join(
+            backup_folder,
+            f"{name}{ext}.blender.bak"
+        )
+        shutil.copy2(path, backup_file)
 
     # HELPER FUNCTIONS
     def export_json(self, path):
