@@ -4,6 +4,12 @@ import subprocess
 import sys
 import webbrowser
 
+# Add it to the system path if it isn't already there
+addon_dir = os.path.dirname(__file__)
+libs_dir = os.path.join(addon_dir, "lib")
+if libs_dir not in sys.path:
+    sys.path.insert(0, libs_dir)
+
 import bpy
 import bpy.ops
 import bpy.utils
@@ -25,6 +31,7 @@ from .utils import blend_utils, curve
 from .utils import material as _material
 from .utils import python as python_utils
 from .utils import mirror_utils
+from .save_editor import conversion_utils, save_editor_utils
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
@@ -38,38 +45,9 @@ GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
 NICE_JSON = os.path.join(FILE_PATH, "resources", "nice_names.json")
 nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
 
-
-# Setting Support Methods ---
-def ShowMessageBox(message="", title="Message Box", icon="INFO"):
-    def draw(self, context):
-        self.layout.label(text=message)
-
-    bpy.context.window_manager.popup_menu(draw, title=title, icon=icon)
-
-
-def part_switch(self, context):
-    """Toggle method for switching between parts and presets."""
-    scene = context.scene
-    part_list = "presets" if self.enum_switch == {"PRESETS"} else "parts"
-
-    if self.enum_switch not in [{"PRESETS"}]:
-        refresh_ui_part_list(scene, part_list, pack=list(self.enum_switch)[0])
-    else:
-        refresh_ui_part_list(scene, part_list)
-
-
-def get_line_type_from_enum(context):
-    line_object = "U_POWERLINE"
-    scene = context.scene
-    nms_tool = scene.nms_base_tool
-    line_value = list(nms_tool.line_switch)[0]
-    if line_value == "TELEPORT":
-        line_object = "U_PORTALLINE"
-    elif line_value == "PIPE":
-        line_object = "U_PIPELINE"
-    elif line_value == "BYTEBEAT":
-        line_object = "U_BYTEBEATLINE"
-    return line_object
+from .operators.save_editor_operators import ExportObfuscatedObjectsData, OpenSaveFile
+from .addon_state import preview_collections
+from .support_methods import ShowMessageBox, part_switch
 
 
 # Core Settings Class
@@ -408,6 +386,16 @@ class NMSSettings(PropertyGroup):
 
         data.update(objects_data)
         return data
+    
+    
+    def serialise_obfuscated(self, get_presets=False, objects_only=False):
+        data = self.serialise(get_presets=get_presets, objects_only=objects_only)
+        #obfuscated_data = conversion_utils.obfuscate_dict(data)
+        obfuscated_data = conversion_utils.load_save_file()
+        return obfuscated_data
+    
+    def open_savefile(self):
+        return ""
 
     # Import and Export Methods ---
     def import_nms_data(self):
@@ -439,6 +427,15 @@ class NMSSettings(PropertyGroup):
         All preset information is lost in this process.
         """
         data = self.serialise(objects_only=objects_only)
+        bpy.context.window_manager.clipboard = json.dumps(data, indent=4)
+        
+    def export_obfuscated_nms_data(self, objects_only=False):
+        """Generate data and place it into the user's clipboard.
+
+        This generates a flat set of individual base parts for NMS to read.
+        All preset information is lost in this process.
+        """
+        data = self.serialise_obfuscated(False)
         bpy.context.window_manager.clipboard = json.dumps(data, indent=4)
 
     # Save and Load Methods ---
@@ -849,304 +846,6 @@ class NMSSettings(PropertyGroup):
             )
 
 
-# UI ---
-# File Buttons Panel ---
-class NMS_PT_file_buttons_panel(Panel):
-    bl_idname = "NMS_PT_file_buttons_panel"
-    bl_label = "No Man's Sky Base Builder"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "No Mans Sky Base Builder"
-    bl_context = "objectmode"
-
-    @classmethod
-    def poll(self, context):
-        return True
-
-    def draw(self, context):
-        layout = self.layout
-        file_box = layout.box()
-        first_column = file_box.column(align=True)
-        first_column.label(text="File")
-        button_row = first_column.row(align=True)
-        button_row.operator("object.nms_new_file")
-        save_load_row = first_column.row(align=True)
-        save_load_row.operator("object.nms_save_data", icon="FILE_TICK")
-        save_load_row.operator("object.nms_load_data", icon="FILE_FOLDER")
-
-        import_box = layout.box()
-        second_column = import_box.column(align=True)
-        second_column.label(text="Import & Export")
-        nms_row = second_column.row(align=True)
-        nms_row.operator("object.nms_import_nms_data", icon="PASTEDOWN")
-        export_col = nms_row.column(align=True)
-        export_col.operator("object.nms_export_nms_data", icon="COPYDOWN")
-        export_col.operator("object.nms_export_nms_data_objects", icon="COPYDOWN")
-
-        communuity_box = layout.box()
-        third_column = communuity_box.column(align=True)
-        third_column.label(text="Commmunity")
-        community_row = third_column.row(align=True)
-        community_row.operator("object.nms_visit_guides", icon="WORLD_DATA")
-        community_row.operator("object.nms_visit_community", icon="WORLD_DATA")
-
-
-# Base Property Panel ---
-class NMS_PT_base_prop_panel(Panel):
-    bl_idname = "NMS_PT_base_prop_panel"
-    bl_label = "Base Properties"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "No Mans Sky Base Builder"
-    bl_context = "objectmode"
-
-    @classmethod
-    def poll(self, context):
-        return True
-
-    def draw(self, context):
-        layout = self.layout
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        properties_box = layout.box()
-        properties_column = properties_box.column(align=True)
-        properties_column.prop(nms_tool, "string_base")
-        properties_column.prop(nms_tool, "string_address")
-        properties_column.prop(nms_tool, "string_userdata")
-
-
-# Snap Panel ---
-class NMS_PT_snap_panel(Panel):
-    bl_idname = "NMS_PT_snap_panel"
-    bl_label = "Tools"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "No Mans Sky Base Builder"
-    bl_context = "objectmode"
-
-    @classmethod
-    def poll(self, context):
-        return True
-
-    def draw(self, context):
-        layout = self.layout
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-
-        # Split into two columns of equal widths.
-        split = layout.split(factor=0.5)
-        tools_column, snap_column = (split.column(), split.column())
-
-        # Create Part Count Box.
-        part_box = tools_column.box()
-        splitter = part_box.split(factor=0.7)
-        splitter.label(text="Part Count:")
-        part_count = len([obj for obj in bpy.data.objects if "ObjectID" in obj])
-        splitter.label(text="{}".format(part_count))
-
-        tools_box = tools_column.box()
-        tools_col = tools_box.column(align=True)
-
-        tools_col.label(text="Visibility")
-        # Room Vis Button.
-        label = "Normal"
-        if nms_tool.room_vis_switch == 1:
-            label = "Ghosted"
-        elif nms_tool.room_vis_switch == 2:
-            label = "Invisible"
-
-        tools_col.operator("object.nms_toggle_room_visibility", icon="CUBE", text=label)
-
-        tools_col.label(text="Duplicate")
-        tools_col.operator("object.nms_duplicate", icon="DUPLICATE")
-        dup_along_curve = tools_col.operator(
-            "object.nms_duplicate_along_curve", icon="CURVE_DATA"
-        )
-        tools_col.label(text="Delete")
-        tools_col.operator("object.nms_delete", icon="CANCEL")
-
-        # Create Snapping box.
-        snap_box = snap_column.box()
-        snap_col = snap_box.column(align=True)
-        snap_col.label(text="Snap")
-        snap_op = snap_col.operator("object.nms_snap", icon="SNAP_ON")
-
-        target_row = snap_col.row(align=True)
-        target_row.label(text="Target")
-        snap_target_prev = target_row.operator(
-            "object.nms_snap", icon="TRIA_LEFT", text="Prev"
-        )
-        snap_target_next = target_row.operator(
-            "object.nms_snap", icon="TRIA_RIGHT", text="Next"
-        )
-
-        source_row = snap_col.row(align=True)
-        source_row.label(text="Source")
-        snap_source_prev = source_row.operator(
-            "object.nms_snap", icon="TRIA_LEFT", text="Prev"
-        )
-        snap_source_next = source_row.operator(
-            "object.nms_snap", icon="TRIA_RIGHT", text="Next"
-        )
-
-        # Corvette Mirror Tools
-        mirror_box = snap_column.box()
-        mirror_col = mirror_box.column(align=True)
-        mirror_col.label(text="Mirroring")
-        mirror_op = mirror_col.operator("object.nms_mirror", icon="ARROW_LEFTRIGHT")
-        mirror_op_x = mirror_col.operator(
-            "object.nms_mirror_across_x", icon="ARROW_LEFTRIGHT"
-        )
-        flip_op = mirror_col.operator("object.nms_flip", icon="DECORATE_OVERRIDE")
-
-        # Set Snap Operator assignments.
-        # Default
-        snap_op.prev_source = False
-        snap_op.next_source = False
-        snap_op.prev_target = False
-        snap_op.next_target = False
-        # Previous Target.
-        snap_target_prev.prev_source = False
-        snap_target_prev.next_source = False
-        snap_target_prev.prev_target = True
-        snap_target_prev.next_target = False
-        # Next Target.
-        snap_target_next.prev_source = False
-        snap_target_next.next_source = False
-        snap_target_next.prev_target = False
-        snap_target_next.next_target = True
-        # Previous Source.
-        snap_source_prev.prev_source = True
-        snap_source_prev.next_source = False
-        snap_source_prev.prev_target = False
-        snap_source_prev.next_target = False
-        # Next Source.
-        snap_source_next.prev_source = False
-        snap_source_next.next_source = True
-        snap_source_next.prev_target = False
-        snap_source_next.next_target = False
-
-
-# Colour Panel ---
-class NMS_PT_colour_panel(Panel):
-    bl_idname = "NMS_PT_colour_panel"
-    bl_label = "Colour & Materials"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "No Mans Sky Base Builder"
-    bl_context = "objectmode"
-
-    @classmethod
-    def poll(self, context):
-        return True
-
-    def draw(self, context):
-        layout = self.layout
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        pcoll = preview_collections["main"]
-        colour_area = layout.column(align=True)
-        enum_row = colour_area.row(align=True)
-        enum_row.prop(nms_tool, "material_switch")
-
-        colours = _material.get_colours_from_palette(nms_tool.material_switch)
-
-        grid = layout.grid_flow(columns=3, even_columns=True)
-
-        for row in colours:
-            index = row[3]
-            name = row[5]
-            colour = row[6]
-            thumb = row[9]
-            index, name, colour, thumb
-            colour_icon = pcoll.get(os.path.splitext(thumb)[0], None)
-            op = grid.operator(
-                "object.nms_apply_colour",
-                text=name,
-                icon_value=colour_icon.icon_id if colour_icon else 0,
-            )
-            op.colour_index = int(index)
-
-
-# Colour Panel ---
-class NMS_PT_logic_panel(Panel):
-    bl_idname = "NMS_PT_logic_panel"
-    bl_label = "Cables and Logic"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "No Mans Sky Base Builder"
-    bl_context = "objectmode"
-
-    @classmethod
-    def poll(self, context):
-        return True
-
-    def draw(self, context):
-        layout = self.layout
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-
-        layout = self.layout
-        box = layout.box()
-        col = box.column()
-        col.label(text="Cables")
-        enum_row = col.row()
-        enum_row.prop(nms_tool, "line_switch")
-        row = col.row()
-        row.operator("object.nms_point", icon="EMPTY_DATA")
-        row.operator("object.nms_connect", icon="PARTICLES")
-        divide_row = col.row()
-        divide_row.operator("object.nms_divide", icon="LINCURVE")
-        divide_row.operator("object.nms_split", icon="MOD_PHYSICS")
-        select_row = col.row()
-        select_row.operator("object.nms_select_connected", icon="RESTRICT_SELECT_OFF")
-        select_row.operator("object.nms_select_floating", icon="RESTRICT_INSTANCED_ON")
-
-        col.label(text="Logic")
-        logic_row = col.row()
-        logic_row.operator("object.nms_logic_button")
-        logic_row.operator("object.nms_logic_wall_switch")
-        logic_row.operator("object.nms_logic_prox_switch")
-        logic_row.operator("object.nms_logic_inv_switch")
-        logic_row.operator("object.nms_logic_auto_switch")
-        logic_row.operator("object.nms_logic_floor_switch")
-        logic_row.operator("object.nms_logic_beat_switch")
-
-
-# Build Panel ---
-class NMS_PT_build_panel(Panel):
-    bl_idname = "NMS_PT_build_panel"
-    bl_label = "Build"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "No Mans Sky Base Builder"
-    bl_context = "objectmode"
-
-    @classmethod
-    def poll(self, context):
-        return True
-
-    def draw(self, context):
-        layout = self.layout
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        col = layout.column(align=True)
-        col.operator("object.nms_launch_asset_browser", icon="DESKTOP")
-        col.operator("object.nms_save_as_preset", icon="SCENE_DATA")
-        row = col.row(align=True)
-        row.operator("object.nms_get_more_presets", icon="WORLD_DATA")
-        row.operator("object.nms_open_preset_folder", icon="FILE_FOLDER")
-        layout.prop(nms_tool, "enum_switch", expand=True)
-        layout.template_list(
-            "NMS_UL_actions_list",
-            "compact",
-            context.scene,
-            "col",
-            context.scene,
-            "col_idx",
-        )
-
-
 class NMS_UL_actions_list(bpy.types.UIList):
     previous_layout = None
 
@@ -1194,967 +893,215 @@ class NMS_UL_actions_list(bpy.types.UIList):
                     operator.tooltip = "Place this preset in the scene."
 
 
+# Global Save path for to persiste across blend files                 
+class SaveFilePath(bpy.types.AddonPreferences):
+    # This must match your addon folder name
+    bl_idname = __package__
+
+    # Define the data you want to persist
+    nms_save_folder_path: bpy.props.StringProperty(
+        name="Save Dir",
+        description="Folder where save files are stored",
+        default="/"
+    )
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="NMS .hg save location:")
+        layout.prop(self, "nms_save_folder_path")
+        
+#save data to persist within blend files.
+class SaveData(bpy.types.PropertyGroup):
+    
+    #this will populate the enum property
+    save_slots_enum_list = []
+    #this stores data related to save slot like paths etd
+    save_slots_data = []
+    #this stores list of bases
+    base_enum_list = []
+    #this is cache for PersistentPlayerBases data
+    persistent_base_data = {}
+
+    # there can be miltiple accounts on same device
+    nms_account_selected: bpy.props.EnumProperty(
+        name="account",
+        description="account from which save file will be loaded",
+        items = lambda self, context: self.get_accounts_list(),
+        update = lambda self, context: self.on_account_list_change(),
+    )
+    
+    #save slot for that account
+    nms_save_slot: bpy.props.EnumProperty(
+        name="save slot",
+        description="Folder where save files are stored",
+        items = lambda self, context: SaveData.save_slots_enum_list,
+        update = lambda self, context: self.on_save_slot_list_change(),
+    )
+    
+    # Index of base imorted, this is index of base inside PersistentPlayerBase array
+    nms_base : bpy.props.EnumProperty(
+        name="base index",
+        description="Index of the base in the save file.",
+        items = lambda self, context: SaveData.base_enum_list,
+        update = lambda self, context: self.on_base_selected(context),
+    )
+    
+    # base can be a corvette or a normal base
+    nms_base_type: bpy.props.EnumProperty(
+        name="base type",
+        description="Type of the base.",
+        items = [
+            ("PlayerShipBase", "Corvette", "show list of corvettes and freighters"),
+            ("HomePlanetBase", "Base", "show list of bases"),
+        ],
+        update = lambda self, context: self.on_base_type_selected()
+    )
+    
+    
+
+    def on_account_list_change(self):
+        SaveData.save_slots_enum_list = self.get_save_slots_list()
+        #self.nms_save_slot = SaveData.save_slots_enum_list[0][0]
+        #SaveData.persistent_base_data = {}
+        #SaveData.base_enum_list = [("","","")]
+    
+    def get_accounts_list(self):
+        default_account_list_item = ("Select Account", "Select Account", "No account selected")
+        accounts_list = save_editor_utils.get_accounts_list()
+        accounts_enum_list = [(str(account), account.name, "") for account in accounts_list]
+        accounts_enum_list.insert(0, default_account_list_item)
+        return accounts_enum_list
+    
+    def on_save_slot_list_change(self):
+        #SaveData.persistent_base_data = {}
+        print("save slot selected is  ", self.nms_save_slot)
+        if not self.nms_save_slot == "Select Save Slot":
+            save_slot_data = {}
+            for slot in SaveData.save_slots_data:
+                print("slot data  : ",slot)
+                if str(slot["slot"]) == self.nms_save_slot:
+                    save_slot_data = slot
+                    SaveData.save_slots_data = slot
+                    break
+            SaveData.persistent_base_data = save_editor_utils.get_persistent_player_bases(save_slot_data)
+            SaveData.base_enum_list = self.get_bases_list()
+        #self.on_base_type_selected()
+    
+    def get_save_slots_list(self):
+        default_save_slot_list_item = ("Select Save Slot", "Select Save Slot", "No save slot selected")
+        account_selected = self.nms_account_selected 
+        if not account_selected == "Select Account":
+            print("account selected", account_selected)
+            save_slots = save_editor_utils.get_save_slots_list(account_selected)
+            SaveData.save_slots_data = save_slots
+            save_slots_enum_list = [(str(slot["slot"]), "Save Slot " + str(slot["slot"]), "save slot for importing base/corvette") for slot in save_slots]
+            save_slots_enum_list.insert(0, default_save_slot_list_item)
+            return save_slots_enum_list
+        return default_save_slot_list_item
+    
+    def on_base_type_selected(self):
+        if not self.nms_save_slot == "Select Save Slot":
+            SaveData.base_enum_list = self.get_bases_list()
+            
+    def on_base_selected(self,context):
+        print()
+
+    def get_bases_list(self):
+        default_base_list_item = (
+            "Select Corvette" if self.nms_base_type == "PlayerShipBase" else "Select Base", 
+            "Select Corvette" if self.nms_base_type == "PlayerShipBase" else "Select Base", 
+            "No base selected"
+        )
+        
+        key_base_type = save_editor_utils.eng_to_obf_translator("BaseType")
+        key_persistent_base_types = save_editor_utils.eng_to_obf_translator("PersistentBaseTypes")
+        key_name = save_editor_utils.eng_to_obf_translator("Name")
+        
+        base_enum_list = []
+        for index, base in enumerate(SaveData.persistent_base_data):
+            if(base[key_base_type][key_persistent_base_types] == self.nms_base_type):
+                item_tuple = (str(index), str(base[key_name]), "")
+                base_enum_list.append(item_tuple)
+        base_enum_list.insert(0, default_base_list_item)
+        return base_enum_list
+    
+    def imort_base_from_save_file(self,context):
+        base_selected_intex = self.nms_base
+        obf_base_data = SaveData.persistent_base_data[int(base_selected_intex)]
+        translated_base_data = save_editor_utils.translate_to_eng_data(obf_base_data)
+        
+        try:
+            nms_import_data = json.dumps(translated_base_data)
+            nms_base_json = json.loads(nms_import_data)
+        except:
+            message = ("Could not import base data" )
+            ShowMessageBox(message=message, title="Import")
+            return
+
+        nms_tools = context.scene.nms_base_tool
+        nms_tools.deserialise_from_data(nms_base_json)
+        BUILDER.deserialise_from_data(nms_base_json)
+        
+    def export_base_to_save_file(self,context):
+        nms_tools = context.scene.nms_base_tool
+        serialised_base_objects_data  = nms_tools.serialise(objects_only = True)
+        
+        key_base_type = save_editor_utils.eng_to_obf_translator("BaseType")
+        key_persistent_base_types = save_editor_utils.eng_to_obf_translator("PersistentBaseTypes")
+        key_name = save_editor_utils.eng_to_obf_translator("Name")
+        
+        base_index = self.nms_base
+        base_type = self.nms_base_type
+        base = SaveData.persistent_base_data[int(base_index)]
+        base_name = base[key_name]
+        
+        save_slot = SaveData.save_slots_data
+        
+        base_identifiers = {
+            "base_index": int(base_index),
+            "base_name" : base_name,
+            "base_type" : base_type
+        }
+        
+        print("base index :", int(base_index))
+        print("base name :", base_name)
+        print("base type :", base_type)
+        
+        save_editor.save_editor_utils.save_base_to_save_file(serialised_base_objects_data, base_identifiers, save_slot)
+        
+        
+    
+
 class PartCollection(bpy.types.PropertyGroup):
     title: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
     item_type: bpy.props.StringProperty()
 
 
-def create_sublists(input_list, n=3):
-    """Create a list of sub-lists with n elements."""
-    if not input_list:
-        return []
-    total_list = [input_list[x : x + n] for x in range(0, len(input_list), n)]
-    # Fill in any blanks.
-    last_list = total_list[-1]
-    while len(last_list) < n:
-        last_list.append("")
-    return total_list
-
-
-def generate_ui_list_data(item_type="parts", pack=None):
-    """Generate a list of Blender UI friendly data of categories and parts.
-
-    When we retrieve presets we just want an item name.
-
-    For parts I am doing a trick where I am grouping sets of 3 parts in order
-    to make a grid in each UIList entry.
-
-    Args:
-        item_type (str): The type of items we want to retrieve
-            options - "presets", "parts".
-
-    Return:
-        list: tuple (str, str): Label and Description of items for the UIList.
-    """
-    ui_list_data = []
-    # Presets
-    if "presets" in item_type:
-        preset_categories = BUILDER.get_preset_categories()
-        for category in preset_categories:
-            presets = BUILDER.get_presets_from_category(category)
-            if presets:
-                ui_list_data.append((category, ""))
-                for _preset in sorted(presets):
-                    ui_list_data.append(("", _preset))
-        # Uncategorized.
-        presets = BUILDER.get_uncategorized_presets()
-        if presets:
-            ui_list_data.append(("Uncategorized Presets", ""))
-            for _preset in sorted(presets):
-                ui_list_data.append(("", _preset))
-    else:
-        # Packs/Parts
-        for category in BUILDER.get_categories(pack=pack):
-            ui_list_data.append((category, ""))
-            category_parts = BUILDER.get_parts_from_category(category, pack=pack)
-            category_parts = sorted(category_parts, key=BUILDER.get_nice_name)
-            new_parts = create_sublists(category_parts)
-            for part in new_parts:
-                joined_list = ",".join(part)
-                ui_list_data.append(("", joined_list))
-    return ui_list_data
-
-
-def refresh_ui_part_list(scene, item_type="parts", pack=None):
-    """Refresh the UI List.
-
-    Args:
-        item_type: The type of items we want to retrieve.
-            options - "presets", "parts".
-    """
-    # Clear the scene col.
-    try:
-        scene.col.clear()
-    except:
-        pass
-
-    # Get part data based on
-    ui_list_data = generate_ui_list_data(item_type=item_type, pack=pack)
-    # Create items with labels and descriptions.
-    for i, (label, description) in enumerate(ui_list_data, 1):
-        item = scene.col.add()
-        item.title = label.title().replace("_", " ")
-        item.description = description
-        item.item_type = item_type
-        item.name = " ".join((str(i), label, description))
-
-
-# Operators ---
-# File Operators ---
-class NewFile(bpy.types.Operator):
-    bl_idname = "object.nms_new_file"
-    bl_label = "New Base..."
-    bl_options = {"REGISTER", "INTERNAL", "UNDO", "UNDO_GROUPED"}
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.new_file()
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_confirm(self, event)
-
-
-class SaveData(bpy.types.Operator):
-    bl_idname = "object.nms_save_data"
-    bl_label = "Save Base As..."
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.save_nms_data(self.filepath)
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
-class LoadData(bpy.types.Operator):
-    bl_idname = "object.nms_load_data"
-    bl_label = "Open Base..."
-    bl_options = {"UNDO", "REGISTER"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.load_nms_data(self.filepath)
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
-class ImportData(bpy.types.Operator):
-    bl_idname = "object.nms_import_nms_data"
-    bl_label = "Import from Clipboard"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.import_nms_data()
-        return {"FINISHED"}
-
-
-class ExportData(bpy.types.Operator):
-    bl_idname = "object.nms_export_nms_data"
-    bl_label = "Export to Clipboard"
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.export_nms_data()
-        return {"FINISHED"}
-
-
-class ExportObjectsData(bpy.types.Operator):
-    bl_idname = "object.nms_export_nms_data_objects"
-    bl_label = "Export to Clipboard (Objects Only)"
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.export_nms_data(objects_only=True)
-        return {"FINISHED"}
-
-
-# Tool Operators ---
-class ToggleRoom(bpy.types.Operator):
-    bl_idname = "object.nms_toggle_room_visibility"
-    bl_label = "Toggle Room Visibility: Normal"
-    bl_options = {
-        "UNDO",
-        "REGISTER",
-    }  # I think this must pass "UNDO" because it changes objects, but it probably doesn't interact correctly with the plugin?
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.toggle_room_visibility()
-        return {"FINISHED"}
-
-
-class SaveAsPreset(bpy.types.Operator):
-    """Save the current scene contents as a new Preset"""
-
-    bl_idname = "object.nms_save_as_preset"
-    bl_label = "Save As Preset"
-    preset_name: bpy.props.StringProperty(name="Preset Name")
-
-    def execute(self, context):
-        # Save Preset.
-        BUILDER.save_preset_to_file(self.preset_name)
-        # Refresh Preset List.
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        if nms_tool.enum_switch == {"PRESETS"}:
-            refresh_ui_part_list(scene, "presets")
-        # Reset string variable.
-        self.preset_name = ""
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)
-
-
-class LoadFancyUI(bpy.types.Operator):
-    """Launch the standalone asset browser."""
-
-    bl_idname = "object.nms_launch_asset_browser"
-    bl_label = "Launch Asset Browser..."
-
-    def execute(self, context):
-        from .asset_browser import check_dependencies
-
-        valid = check_dependencies.check_dependencies()
-        if not valid:
-            ShowMessageBox(
-                message="Could not load Asset Browser. See Window > Toggle System Console for detials.",
-                title="Asset Browser",
-            )
-            return {"FINISHED"}
-        from .asset_browser import main as asset_browser_main
-
-        asset_browser_main.load()
-        return {"FINISHED"}
-
-
-class PresetsMenu(bpy.types.Menu):
-    bl_idname = "OBJECT_MT_nms_get_more_presets_menu"
-    bl_label = "Get More Presets..."
-
-    def draw(self, context):
-        layout = self.layout
-        layout.operator("object.nms_visit_prefab_community")
-        layout.operator("object.nms_visit_github")
-
-
-class GetMorePresets(bpy.types.Operator):
-    """Load the No Man's Sky Presets web page to find more community presets."""
-
-    bl_idname = "object.nms_get_more_presets"
-    bl_label = "Get More Presets..."
-
-    def execute(self, context):
-        # Load web page.
-        bpy.ops.wm.call_menu(name=PresetsMenu.bl_idname)
-        return {"FINISHED"}
-
-
-class VisitDiscord(bpy.types.Operator):
-    """Launch the community discord URL."""
-
-    bl_idname = "object.nms_visit_community"
-    bl_label = "Discord."
-
-    def execute(self, context):
-        # Load web page.
-        webbrowser.open_new("https://discord.gg/kpGVRKPn5W")
-        return {"FINISHED"}
-
-
-class VisitGuides(bpy.types.Operator):
-    """Launch the community discord URL."""
-
-    bl_idname = "object.nms_visit_guides"
-    bl_label = "Online Guides."
-
-    def execute(self, context):
-        # Load web page.
-        webbrowser.open_new(
-            "https://djmonkey.uk/no-mans-sky-base-builder-blender/guides/"
-        )
-        return {"FINISHED"}
-
-
-class VisitPrefabDiscord(bpy.types.Operator):
-    """Launch the community discord URL."""
-
-    bl_idname = "object.nms_visit_prefab_community"
-    bl_label = "from the Community Discord..."
-
-    def execute(self, context):
-        # Load web page.
-        webbrowser.open_new("https://discord.gg/EqCXaFcd7Y")
-        return {"FINISHED"}
-
-
-class VisitGitHubRepo(bpy.types.Operator):
-    """Launch the GitHub Repo URL."""
-
-    bl_idname = "object.nms_visit_github"
-    bl_label = "from the GitHub Repository..."
-
-    def execute(self, context):
-        # Load web page.
-        webbrowser.open_new("https://djmonkeyuk.github.io/nms-base-builder-presets/")
-        return {"FINISHED"}
-
-
-class OpenPresetFolder(bpy.types.Operator):
-    """Open the folder containing your presets."""
-
-    bl_idname = "object.nms_open_preset_folder"
-    bl_label = "Open Preset Folder"
-
-    def execute(self, context):
-        # Load web page.
-        # FIXME: Mac OS
-        if hasattr(os, "startfile"):
-            # Windows
-            os.startfile(PRESET_PATH)
-        else:
-            # Linux etc. (requires XDG tools)
-            subprocess.call(["xdg-open", PRESET_PATH])
-        return {"FINISHED"}
-
-
-# List Operators ---
-class ListBuildOperator(bpy.types.Operator):
-    """Build the specified item."""
-
-    bl_idname = "object.list_build_operator"
-    bl_label = "Simple Object Operator"
-    bl_options = {"UNDO", "REGISTER"}
-    part_id: StringProperty()
-    tooltip: StringProperty()
-
-    @classmethod
-    def description(cls, context, operator):
-        return operator.tooltip
-
-    def execute(self, context):
-        # Get Selection
-        selection = blend_utils.get_current_selection()
-
-        # Build item
-        if self.part_id in preset.Preset.get_presets():
-            new_item = BUILDER.add_preset(self.part_id)
-        else:
-            new_item = BUILDER.add_part(self.part_id)
-            if hasattr(new_item, "build_rig"):
-                new_item.build_rig()
-
-        # Make this item the selected.
-        new_item.select()
-
-        # If there was a previous selection, snap the new item to it.
-        if selection:
-            builder_selection = BUILDER.get_builder_object_from_bpy_object(selection)
-            if builder_selection:
-                new_item.snap_to(builder_selection)
-        return {"FINISHED"}
-
-
-class ListEditOperator(bpy.types.Operator):
-    """Edit the specified preset."""
-
-    bl_idname = "object.list_edit_operator"
-    bl_label = "Edit Preset"
-    bl_options = {"UNDO", "REGISTER"}
-    part_id: StringProperty()
-
-    def execute(self, context):
-        nms_tool = context.scene.nms_base_tool
-        if self.part_id in preset.Preset.get_presets():
-            nms_tool.new_file()
-            preset.Preset(
-                preset_id=self.part_id,
-                builder_object=BUILDER,
-                create_control=False,
-                apply_shader=False,
-                build_rigs=True,
-            )
-            BUILDER.build_rigs()
-            BUILDER.optimise_control_points()
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_confirm(self, event)
-
-
-class ListDeleteOperator(bpy.types.Operator):
-    """Delete the specified preset."""
-
-    bl_idname = "object.list_delete_operator"
-    bl_label = "Delete"
-    part_id: StringProperty()
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = context.scene.nms_base_tool
-        if self.part_id in preset.Preset.get_presets():
-            preset.Preset.delete_preset(self.part_id)
-            if nms_tool.enum_switch == {"PRESETS"}:
-                refresh_ui_part_list(scene, "presets")
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_confirm(self, event)
-
-
-# Tool Operators ---
-class Duplicate(bpy.types.Operator):
-    """Duplicate the selected part."""
-
-    bl_idname = "object.nms_duplicate"
-    bl_label = "Duplicate"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.duplicate()
-        return {"FINISHED"}
-
-
-class Delete(bpy.types.Operator):
-    """Remove the selected part from the scene."""
-
-    bl_idname = "object.nms_delete"
-    bl_label = "Delete"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.delete()
-        return {"FINISHED"}
-
-
-class DuplicateAlongCurve(bpy.types.Operator):
-    """Duplicate the selected part along a Blender curve."""
-
-    bl_idname = "object.nms_duplicate_along_curve"
-    bl_label = "Duplicate Along Curve"
-    bl_options = {"UNDO", "REGISTER"}
-    distance_percentage: bpy.props.FloatProperty(
-        name="Distance Percentage Between Item."
-    )
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.duplicate_along_curve(distance_percentage=self.distance_percentage)
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)
-
-
-class Mirror(bpy.types.Operator):
-    """Mirror the object local to itself."""
-
-    bl_idname = "object.nms_mirror"
-    bl_label = "Mirror"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.mirror()
-        return {"FINISHED"}
-
-
-class MirrorAcrossX(bpy.types.Operator):
-    """Mirror the object along the X axis."""
-
-    bl_idname = "object.nms_mirror_across_x"
-    bl_label = "Mirror Across X Axis"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.mirror(across_x=True)
-        return {"FINISHED"}
-
-
-class Flip(bpy.types.Operator):
-    """Flip the object along the Y axis (Only available on certain Corvette pieces)"""
-
-    bl_idname = "object.nms_flip"
-    bl_label = "Flip"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.flip()
-        return {"FINISHED"}
-
-
-class ApplyColour(bpy.types.Operator):
-    """Apply this colour to the selected part."""
-
-    bl_idname = "object.nms_apply_colour"
-    bl_label = "Apply Colour"
-    bl_options = {"UNDO", "REGISTER"}
-    colour_index: IntProperty(default=0)
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        material = nms_tool.material_switch
-        nms_tool.apply_colour(colour_index=self.colour_index, material=material)
-        return {"FINISHED"}
-
-
-class ApplyDefaultColour(bpy.types.Operator):
-    """Revert the colour back to default on selected part."""
-
-    bl_idname = "object.nms_apply_default_colour"
-    bl_label = "Apply Default Colour"
-    bl_options = {"UNDO", "REGISTER"}
-    colour_index: IntProperty(default=0)
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.apply_default_colour()
-        return {"FINISHED"}
-
-
-class Snap(bpy.types.Operator):
-    """Snap the selected object to another selected object."""
-
-    bl_idname = "object.nms_snap"
-    bl_label = "Snap"
-    bl_options = {"UNDO", "REGISTER"}
-
-    next_source: BoolProperty()
-    prev_source: BoolProperty()
-    next_target: BoolProperty()
-    prev_target: BoolProperty()
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        kwargs = {
-            "next_source": self.next_source,
-            "prev_source": self.prev_source,
-            "next_target": self.next_target,
-            "prev_target": self.prev_target,
-        }
-        nms_tool.snap(**kwargs)
-        return {"FINISHED"}
-
-
-# Logic Operators ---
-class Point(bpy.types.Operator):
-    """Create a new point controller used to create logic cables.\nSelect this twice to create a cables between 2 points."""
-
-    bl_idname = "object.nms_point"
-    bl_label = "New Point"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        # Get current selection.
-        selection = blend_utils.get_current_selection()
-
-        # Don't stack multiple for multiple clicks
-        if selection and context.scene.cursor.location == selection.location:
-            return {"CANCELLED"}
-
-        # Create a new point at the cursor.
-        point = line.Line.create_point(BUILDER, name="ARBITRARY_POINT")
-        point.location = context.scene.cursor.location
-
-        # If another powerline was already selected, connect it
-        if selection and "rig_item" in selection:
-            line_object = selection.get("power_line", "U_POWERLINE").split(".")[0]
-            power_line = BUILDER.add_part(line_object, build_rigs=False)
-            # Create controls.
-            power_line.build_rig(start=selection, end=point)
-
-        # Now select the new point.
-        blend_utils.select(point)
-        return {"FINISHED"}
-
-
-class Connect(bpy.types.Operator):
-    """Form a cable between 2 objects that have cable connections."""
-
-    bl_idname = "object.nms_connect"
-    bl_label = "Connect"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        # Validate selection.
-        selected_objects = [
-            BUILDER.get_builder_object_from_bpy_object(o)
-            for o in bpy.context.selected_objects
-        ]
-        selected_objects = [o for o in selected_objects if o.has_snap_point("POWER")]
-        if len(selected_objects) < 2:
-            message = "Make sure you have two or more electric points selected."
-            ShowMessageBox(message=message, title="Connect")
-            return {"FINISHED"}
-
-        # Test this after selection for better error reporting
-        if not bpy.context.active_object:
-            message = "Make sure one object is the active object (shift select the object to connect everything to)."
-            ShowMessageBox(message=message, title="Connect")
-            return {"FINISHED"}
-
-        active_object = BUILDER.get_builder_object_from_bpy_object(
-            bpy.context.active_object
-        )
-        if not active_object.has_snap_point("POWER"):
-            message = "Make sure the active object supports electrical connections."
-            ShowMessageBox(message=message, title="Connect")
-            return {"FINISHED"}
-
-        for selected_object in selected_objects:
-            if selected_object is active_object:
-                continue
-            if selected_object.name == active_object.name:
-                continue
-            # Build and perform connection.
-            start_point, end_point = line.Line.generate_control_points(
-                active_object, selected_object, BUILDER
-            )
-            if not start_point or not end_point:
-                # should have been tested by filtering selected_objects above
-                continue
-
-            # Re-obtain objects
-            start_point = blend_utils.get_item_by_name(start_point.name)
-            end_point = blend_utils.get_item_by_name(end_point.name)
-
-            # Create new power line.
-            line_object_id = get_line_type_from_enum(context)
-
-            # if "power_line" in start_point:
-            #     line_object_id = start_point["power_line"].split(".")[0]
-            power_line = BUILDER.add_part(line_object_id, build_rigs=False)
-            # Create controls.
-            power_line.build_rig(start=start_point, end=end_point)
-
-        return {"FINISHED"}
-
-
-class Divide(bpy.types.Operator):
-    """Divide a selected cable into 2 cables."""
-
-    bl_idname = "object.nms_divide"
-    bl_label = "Divide"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        # Get Selected item.
-        target = blend_utils.get_current_selection()
-
-        # Validate
-        invalid_message = "Make sure you have a powerline item selected."
-        title = "Divide"
-        if not target:
-            ShowMessageBox(message=invalid_message, title=title)
-            return {"FINISHED"}
-        if "ObjectID" not in target:
-            ShowMessageBox(message=invalid_message, title=title)
-            return {"FINISHED"}
-        valid_parts = ["U_POWERLINE", "U_PIPELINE", "U_PORTALLINE", "U_BYTEBEATLINE"]
-        if target["ObjectID"] not in valid_parts:
-            ShowMessageBox(message=invalid_message, title=title)
-            return {"FINISHED"}
-
-        # Perform split.
-        power_line = BUILDER.get_builder_object_from_bpy_object(target)
-        power_line.divide()
-        return {"FINISHED"}
-
-
-class Split(bpy.types.Operator):
-    """Divide a selected cable into 2 cables with a gap between them."""
-
-    bl_idname = "object.nms_split"
-    bl_label = "Split"
-
-    def execute(self, context):
-        # Get Selected item.
-        target = blend_utils.get_current_selection()
-
-        # Validate
-        invalid_message = "Make sure you have a powerline item selected."
-        title = "Split"
-        if not target:
-            ShowMessageBox(message=invalid_message, title=title)
-            return {"FINISHED"}
-        if "ObjectID" not in target:
-            ShowMessageBox(message=invalid_message, title=title)
-            return {"FINISHED"}
-        valid_parts = ["U_POWERLINE", "U_PIPELINE", "U_PORTALLINE", "U_BYTEBEATLINE"]
-        if target["ObjectID"] not in valid_parts:
-            ShowMessageBox(message=invalid_message, title=title)
-            return {"FINISHED"}
-
-        # Perform split.
-        power_line = BUILDER.get_builder_object_from_bpy_object(target)
-        power_line.split()
-        return {"FINISHED"}
-
-
-class SelectConnected(bpy.types.Operator):
-    """Select all objects that are connected to the selected cable."""
-
-    bl_idname = "object.nms_select_connected"
-    bl_label = "Select Connected"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        selected_objects = [
-            BUILDER.get_builder_object_from_bpy_object(o)
-            for o in bpy.context.selected_objects
-        ]
-
-        newly_selected = set()
-        for o in selected_objects:
-            newly_selected.update(o.get_connected_snapped_objects("POWER"))
-        for o in newly_selected:
-            o.object.select_set(True)
-        return {"FINISHED"}
-
-
-class SelectFloating(bpy.types.Operator):
-    """Select free-floating cable points."""
-
-    bl_idname = "object.nms_select_floating"
-    bl_label = "Select Floating"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        for part in BUILDER.get_all_parts(include_lines=True):
-            if not "SnapID" in part:
-                continue
-            part = BUILDER.get_builder_object_from_bpy_object(part)
-            if part.snap_id != "POWER_CONTROL":
-                continue
-            is_connected_to_object = False
-            num_line_connections = 0
-            for target in part.get_connected_snapped_objects(
-                "POWER", include_lines=False
-            ):
-                if not hasattr(target, "start_control"):
-                    is_connected_to_object = True
-                    break
-                else:
-                    num_line_connections += 1
-
-            if not is_connected_to_object and num_line_connections < 2:
-                part.object.select_set(True)
-
-        return {"FINISHED"}
-
-
-class LogicButton(bpy.types.Operator):
-    """Add a Logic Button to the scene."""
-
-    bl_idname = "object.nms_logic_button"
-    bl_label = "BTN"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        # Get Selected item.
-        selection = blend_utils.get_current_selection()
-        # Build button.
-        button = BUILDER.add_part("U_SWITCHBUTTON")
-        # Snap to selection.
-        if selection:
-            selection = BUILDER.get_builder_object_from_bpy_object(selection)
-            button.snap_to(selection)
-
-        # Select new item.
-        button.select()
-        return {"FINISHED"}
-
-
-class LogicWallSwitch(bpy.types.Operator):
-    """Add a Logic Switch to the scene."""
-
-    bl_idname = "object.nms_logic_wall_switch"
-    bl_label = "SWITCH"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        # Get Selected item.
-        selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_SWITCHWALL")
-        # Snap to selection.
-        if selection:
-            selection = BUILDER.get_builder_object_from_bpy_object(selection)
-            button.snap_to(selection)
-        # Select new item.
-        button.select()
-        return {"FINISHED"}
-
-
-class LogicProxSwitch(bpy.types.Operator):
-    """Add a Logic Proximity Sensor to the scene."""
-
-    bl_idname = "object.nms_logic_prox_switch"
-    bl_label = "PROX"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        # Get Selected item.
-        selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_SWITCHPROX")
-        # Snap to selection.
-        if selection:
-            selection = BUILDER.get_builder_object_from_bpy_object(selection)
-            button.snap_to(selection)
-        # Select new item.
-        button.select()
-        return {"FINISHED"}
-
-
-class LogicInvSwitch(bpy.types.Operator):
-    """Add a Logic Inverter to the scene."""
-
-    bl_idname = "object.nms_logic_inv_switch"
-    bl_label = "INV"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        # Get Selected item.
-        selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_TRANSISTOR1")
-        # Snap to selection.
-        if selection:
-            selection = BUILDER.get_builder_object_from_bpy_object(selection)
-            button.snap_to(selection)
-        # Select new item.
-        button.select()
-        return {"FINISHED"}
-
-
-class LogicAutoSwitch(bpy.types.Operator):
-    """Add a Logic Auto to the scene."""
-
-    bl_idname = "object.nms_logic_auto_switch"
-    bl_label = "AUTO"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        # Get Selected item.
-        selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_TRANSISTOR2")
-        # Snap to selection.
-        if selection:
-            selection = BUILDER.get_builder_object_from_bpy_object(selection)
-            button.snap_to(selection)
-        # Select new item.
-        button.select()
-        return {"FINISHED"}
-
-
-class LogicFloorSwitch(bpy.types.Operator):
-    """Add a Logic Floor Switch to the scene."""
-
-    bl_idname = "object.nms_logic_floor_switch"
-    bl_label = "FLOOR"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        # Get Selected item.
-        selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_SWITCHPRESS")
-        # Snap to selection.
-        if selection:
-            selection = BUILDER.get_builder_object_from_bpy_object(selection)
-            button.snap_to(selection)
-        # Select new item.
-        button.select()
-        return {"FINISHED"}
-
-
-class LogicBeatSwitch(bpy.types.Operator):
-    """Add a Logic ByteBeat switch to the scene."""
-
-    bl_idname = "object.nms_logic_beat_switch"
-    bl_label = "BEAT"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        # Get Selected item.
-        selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("BYTEBEATSWITCH")
-        # Snap to selection.
-        if selection:
-            selection = BUILDER.get_builder_object_from_bpy_object(selection)
-            button.snap_to(selection)
-        # Select new item.
-        button.select()
-        return {"FINISHED"}
-
-
-# We can store multiple preview collections here,
-# however in this example we only store "main"
-preview_collections = {}
-
 # Plugin Registration ---
+from .operators import build_operators, color_operators, file_operators, socials_operators, tool_operators, wiring_operators,save_editor_operators
+from .presentation import ui_classes
+
+operator_classes = (
+    build_operators.classes +
+    color_operators.classes +
+    file_operators.classes +
+    socials_operators.classes +
+    tool_operators.classes +
+    wiring_operators.classes +
+    save_editor_operators.classes
+)
 
 classes = (
     NMSSettings,
-    Snap,
-    Point,
-    Connect,
-    Divide,
-    Split,
-    SelectConnected,
-    SelectFloating,
-    LogicButton,
-    LogicWallSwitch,
-    LogicProxSwitch,
-    LogicInvSwitch,
-    LogicAutoSwitch,
-    LogicFloorSwitch,
-    LogicBeatSwitch,
-    ApplyColour,
-    ApplyDefaultColour,
-    Duplicate,
-    DuplicateAlongCurve,
-    Delete,
-    Mirror,
-    MirrorAcrossX,
-    Flip,
-    SaveAsPreset,
-    LoadFancyUI,
-    GetMorePresets,
-    PresetsMenu,
-    VisitDiscord,
-    VisitGuides,
-    VisitPrefabDiscord,
-    VisitGitHubRepo,
-    OpenPresetFolder,
-    ToggleRoom,
-    NewFile,
-    SaveData,
-    LoadData,
-    ExportData,
-    ExportObjectsData,
-    ImportData,
     PartCollection,
-    ListDeleteOperator,
-    ListEditOperator,
-    ListBuildOperator,
     NMS_UL_actions_list,
-    NMS_PT_file_buttons_panel,
-    NMS_PT_base_prop_panel,
-    NMS_PT_snap_panel,
-    NMS_PT_colour_panel,
-    NMS_PT_logic_panel,
-    NMS_PT_build_panel,
+    SaveFilePath,
+    SaveData
 )
+
+combined_classes = classes + ui_classes  + operator_classes
+
 
 
 def register():
@@ -2181,11 +1128,12 @@ def register():
     preview_collections["main"] = pcoll
 
     # Register Plugin
-    for _class in classes:
+    for _class in combined_classes:
         bpy.utils.register_class(_class)
     bpy.types.Scene.nms_base_tool = PointerProperty(type=NMSSettings)
     bpy.types.Scene.col = bpy.props.CollectionProperty(type=PartCollection)
     bpy.types.Scene.col_idx = bpy.props.IntProperty(default=0)
+    bpy.types.Scene.nms_save_data = bpy.props.PointerProperty(type=SaveData)
 
 
 def unregister():
@@ -2193,7 +1141,7 @@ def unregister():
         bpy.utils.previews.remove(pcoll)
     preview_collections.clear()
 
-    for _class in reversed(classes):
+    for _class in reversed(combined_classes):
         bpy.utils.unregister_class(_class)
     del bpy.types.Scene.nms_base_tool
 
