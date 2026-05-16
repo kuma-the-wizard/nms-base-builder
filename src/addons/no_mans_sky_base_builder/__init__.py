@@ -913,10 +913,11 @@ class SaveFilePath(bpy.types.AddonPreferences):
 #save data to persist within blend files.
 class SaveData(bpy.types.PropertyGroup):
     
-    #this will populate the enum property
+    #this will populate the enum property yo display list
     save_slots_enum_list = []
     #this stores data related to save slot like paths etd
     save_slots_data = []
+    
     #this stores list of bases
     base_enum_list = []
     #this is cache for PersistentPlayerBases data
@@ -974,22 +975,19 @@ class SaveData(bpy.types.PropertyGroup):
     
     def on_save_slot_list_change(self):
         #SaveData.persistent_base_data = {}
-        print("save slot selected is  ", self.nms_save_slot)
-        if not self.nms_save_slot == "Select Save Slot":
-            save_slot_data = {}
-            for slot in SaveData.save_slots_data:
-                print("slot data  : ",slot)
-                if str(slot["slot"]) == self.nms_save_slot:
-                    save_slot_data = slot
-                    SaveData.save_slots_data = slot
-                    break
-            SaveData.persistent_base_data = save_editor_utils.get_persistent_player_bases(save_slot_data)
+        print("save slot data : ",SaveData.save_slots_data)
+        print("self.nms_save_slot : ",self.nms_save_slot)
+        
+        current_slot_data = self.get_current_slot_data()
+        if current_slot_data is not None:
+            SaveData.persistent_base_data = save_editor_utils.get_persistent_player_bases(current_slot_data)
             SaveData.base_enum_list = self.get_bases_list()
+            
         #self.on_base_type_selected()
     
     def get_save_slots_list(self):
         default_save_slot_list_item = ("Select Save Slot", "Select Save Slot", "No save slot selected")
-        account_selected = self.nms_account_selected 
+        account_selected = self.nms_account_selected
         if not account_selected == "Select Account":
             print("account selected", account_selected)
             save_slots = save_editor_utils.get_save_slots_list(account_selected)
@@ -1046,28 +1044,30 @@ class SaveData(bpy.types.PropertyGroup):
         nms_tools = context.scene.nms_base_tool
         serialised_base_objects_data  = nms_tools.serialise(objects_only = True)
         
-        key_base_type = save_editor_utils.eng_to_obf_translator("BaseType")
-        key_persistent_base_types = save_editor_utils.eng_to_obf_translator("PersistentBaseTypes")
-        key_name = save_editor_utils.eng_to_obf_translator("Name")
+        current_slot_data = self.get_current_slot_data()
         
-        base_index = self.nms_base
-        base_type = self.nms_base_type
-        base = SaveData.persistent_base_data[int(base_index)]
-        base_name = base[key_name]
+        if current_slot_data is not None:
+            key_name = save_editor_utils.eng_to_obf_translator("Name")
         
-        save_slot = SaveData.save_slots_data
+            base_index = self.nms_base
+            base_type = self.nms_base_type
+            base = SaveData.persistent_base_data[int(base_index)]
+            base_name = base[key_name]
+            
+            base_identifiers = {
+                "base_index": int(base_index),
+                "base_name" : base_name,
+                "base_type" : base_type
+            }
+            
+            save_editor.save_editor_utils.save_base_to_save_file(serialised_base_objects_data, base_identifiers, current_slot_data)
         
-        base_identifiers = {
-            "base_index": int(base_index),
-            "base_name" : base_name,
-            "base_type" : base_type
-        }
-        
-        print("base index :", int(base_index))
-        print("base name :", base_name)
-        print("base type :", base_type)
-        
-        save_editor.save_editor_utils.save_base_to_save_file(serialised_base_objects_data, base_identifiers, save_slot)
+    def get_current_slot_data(self):
+        if not self.nms_save_slot == "Select Save Slot":
+            for slot in SaveData.save_slots_data:
+                if str(slot["slot"]) == self.nms_save_slot:
+                    return slot
+        return None
         
         
     
