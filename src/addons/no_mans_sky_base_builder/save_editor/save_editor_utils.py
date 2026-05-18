@@ -30,6 +30,7 @@ base_name = eng_to_obf_translator("Name")
 base_type = eng_to_obf_translator("BaseType")
 persistent_base_types = eng_to_obf_translator("PersistentBaseTypes")
 galactic_address = eng_to_obf_translator("GalacticAddress")
+save_name = eng_to_obf_translator("SaveName")
 
 
 #this function recursively replaces keys according to mapping provided by translator
@@ -71,6 +72,9 @@ def get_accounts_list():
 
 
 def get_save_slots_list(account):
+    
+    from .hg_save_file import HGFile
+    
     hg_files_list = []
     for file in Path(account).glob("save*.hg"):
         hg_files_list.append(file)
@@ -84,10 +88,13 @@ def get_save_slots_list(account):
             if number%2 == 0:
                 save_slot_number = number//2
                 saves_links = [str(prev_slot), str(file)]
-                save_slots.append({
+                save_file = HGFile(file)
+                save_slot = {
                     "slot": save_slot_number,
-                    "saves": saves_links
-                })
+                    "saves": saves_links,
+                    "save_name": save_file.search_property(save_name)
+                }
+                save_slots.append(save_slot)
         prev_slot = file
     return save_slots  
 
@@ -137,40 +144,56 @@ def matches_base(base, identifier):
         and base[base_type][persistent_base_types] == identifier["base_type"]
         and base[galactic_address] == identifier["galactic_address"]
     )
-
     
-def save_base_to_save_file(objects_data, base_identifier,  save_slot):
+def get_save_file(save_slot):
     save_location = get_lastes_save_file_location(save_slot)
-    
     from .hg_save_file import HGFile
     save_file = HGFile(save_location)
-    
-    data = save_file.load()
-    
+    return save_file
+
+def search_base_with_identifier(data, base_identifier):
     base_list = data[base_context][player_state_data][persistent_player_bases]
-    
     try:
         in_base = base_list[base_identifier["base_index"]]
     except IndexError:
         print("base not found")
-        return
+        return None
     
     base_found = matches_base(in_base,base_identifier)
-    
-    if not base_found:
+    if base_found:
+        return in_base
+    else:
         for base in base_list:
             if matches_base(base, base_identifier):
-                in_base = base
-                base_found = True
-                    
-    if not base_found:
+                return in_base
+    return None
+
+def import_paticular_base_from_save(base_identifier,  save_slot):
+    save_file = get_save_file(save_slot)
+    data = save_file.load()
+    
+    return search_base_with_identifier(data, base_identifier)
+    
+def save_base_to_save_file(objects_data, base_identifier,  save_slot, base_name_from_fields = None):
+    save_file = get_save_file(save_slot)
+    data = save_file.load()
+    
+    in_base = search_base_with_identifier(data, base_identifier)
+    
+    if in_base is None:
         return
     
     key_objects = eng_to_obf_translator("Objects")
     obf_objects_data = translate_to_obf_data(objects_data)
     in_base[key_objects] = obf_objects_data
     
+    if base_name_from_fields is not None:
+        in_base[base_name] = base_name_from_fields
+    
     save_file.make_backup()
     save_file.save()
     
+def extract_savename(save_slot):
+    save_file = get_save_file(save_slot)
+    return save_file.search_property(save_name)
         

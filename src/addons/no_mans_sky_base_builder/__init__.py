@@ -1,8 +1,5 @@
 import json
 import os
-import subprocess
-import sys
-import webbrowser   
 import bpy
 import bpy.ops
 import bpy.utils
@@ -15,15 +12,10 @@ from bpy.props import (
     PointerProperty,
     StringProperty,
 )
-from bpy.types import Panel, PropertyGroup
-from numpy import isin
+from bpy.types import PropertyGroup
+from bpy.app.handlers import persistent
 
 # Add part to lz libs for different os
-print("Starting plugin")
-from . import platforms_manager
-libs_dir = platforms_manager.get_lib_directory()
-if libs_dir not in sys.path:
-    sys.path.insert(0, libs_dir)
 
 from . import builder, part, preset
 from .part_overrides import line
@@ -31,7 +23,6 @@ from .utils import blend_utils, curve
 from .utils import material as _material
 from .utils import python as python_utils
 from .utils import mirror_utils
-from .save_editor import save_editor_utils
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
@@ -47,6 +38,9 @@ nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
 
 from .addon_state import preview_collections
 from .support_methods import ShowMessageBox, part_switch
+
+from . import platforms_manager
+from .save_editor.save_data import SaveData
 
 
 # Core Settings Class
@@ -886,207 +880,8 @@ class NMS_UL_actions_list(bpy.types.UIList):
                     delete_operator.part_id = item.description
                     operator.tooltip = "Place this preset in the scene."
 
+        
 
-# Global Save path for to persiste across blend files                 
-class SaveFilePath(bpy.types.AddonPreferences):
-    # This must match your addon folder name
-    bl_idname = __package__
-
-    # Define the data you want to persist
-    nms_save_folder_path: bpy.props.StringProperty(
-        name="",
-        description="Folder where save files are stored",
-        default="/"
-    )
-
-    def draw(self, context):
-        layout = self.layout
-        layout.label(text="NMS .hg save location:")
-        layout.prop(self, "nms_save_folder_path")
-        
-#save data to persist within blend files.
-class SaveData(bpy.types.PropertyGroup):
-    
-    #this will populate the enum property yo display list
-    enum_save_slots_list = []
-    #this stores data related to save slot like paths etd
-    data_save_slot = []
-    
-    #this stores data for displaying list
-    enum_base_list = []
-    #this is cache for PersistentPlayerBases data
-    data_persistent_base = {}
-
-    # there can be miltiple accounts on same device
-    nms_account_selected: bpy.props.EnumProperty(
-        name="",
-        description="account from which save file will be loaded",
-        items = lambda self, context: self.get_accounts_list(),
-        update = lambda self, context: self.on_account_list_change(),
-    )
-    
-    #save slot for that account
-    nms_save_slot: bpy.props.EnumProperty(
-        name="",
-        description="Folder where save files are stored",
-        items = lambda self, context: SaveData.enum_save_slots_list,
-        update = lambda self, context: self.on_save_slot_list_change(),
-    )
-    
-    # Index of base imorted, this is index of base inside PersistentPlayerBase array
-    nms_base_index : bpy.props.EnumProperty(
-        name="base index",
-        description="Index of the base in the save file.",
-        items = lambda self, context: SaveData.enum_base_list,
-    )
-    
-    # base can be a corvette or a normal base
-    nms_base_type: bpy.props.EnumProperty(
-        name="base type",
-        description="Type of the base.",
-        items = [
-            ("PlayerShipBase", "Corvette", "show list of corvettes and freighters"),
-            ("HomePlanetBase", "Base", "show list of bases"),
-        ],
-        update = lambda self, context: self.on_base_type_selected()
-    )
-    
-    
-
-    def on_account_list_change(self):
-        SaveData.enum_save_slots_list = self.get_save_slots_list()
-        self.nms_save_slot = SaveData.enum_save_slots_list[0][0]
-        SaveData.data_persistent_base = {}
-        SaveData.enum_base_list = [("","","")]
-    
-    def get_accounts_list(self):
-        default_account_list_item = ("Select Account", "Select Account", "No account selected")
-        accounts_list = save_editor_utils.get_accounts_list()
-        accounts_enum_list = [(str(account), account.name, "") for account in accounts_list]
-        accounts_enum_list.insert(0, default_account_list_item)
-        return accounts_enum_list
-    
-    def on_save_slot_list_change(self):
-        
-        self.reset_base_list()
-        
-        current_slot_data = self.get_current_slot_data()
-        if current_slot_data is not None:
-            SaveData.data_persistent_base = save_editor_utils.get_persistent_player_bases(current_slot_data)
-            SaveData.enum_base_list = self.get_bases_list()
-            
-    
-    def get_save_slots_list(self):
-        default_save_slot_list_item = ("Select Save Slot", "Select Save Slot", "No save slot selected")
-        account_selected = self.nms_account_selected
-        if not account_selected == "Select Account":
-            print("account selected", account_selected)
-            save_slots = save_editor_utils.get_save_slots_list(account_selected)
-            SaveData.data_save_slot = save_slots
-            enum_save_slots_list = [(str(slot["slot"]), "Save Slot " + str(slot["slot"]), "save slot for importing base/corvette") for slot in save_slots]
-            enum_save_slots_list.insert(0, default_save_slot_list_item)
-            return enum_save_slots_list
-        return default_save_slot_list_item
-    
-    def on_base_type_selected(self):
-        self.reset_base_list()
-        if not self.nms_save_slot == "Select Save Slot":
-            SaveData.enum_base_list = self.get_bases_list()
-            
-
-    def get_bases_list(self):
-        default_base_list_item = (
-            "Select Corvette" if self.nms_base_type == "PlayerShipBase" else "Select Base", 
-            "Select Corvette" if self.nms_base_type == "PlayerShipBase" else "Select Base", 
-            "No base selected"
-        )
-        
-        key_base_type = save_editor_utils.eng_to_obf_translator("BaseType")
-        key_persistent_base_types = save_editor_utils.eng_to_obf_translator("PersistentBaseTypes")
-        key_name = save_editor_utils.eng_to_obf_translator("Name")
-        
-        enum_base_list = []
-        for index, base in enumerate(SaveData.data_persistent_base):
-            if(base[key_base_type][key_persistent_base_types] == self.nms_base_type):
-                item_tuple = (str(index), str(base[key_name]), "")
-                enum_base_list.append(item_tuple)
-        enum_base_list.insert(0, default_base_list_item)
-        return enum_base_list
-    
-    def imort_base_from_save_file(self,context):
-        base_index = self.nms_base_index
-        
-        if not str(base_index).isdigit():
-            return 
-        
-        if int(base_index) < 0:
-            return
-        
-        if SaveData.data_persistent_base is None:
-            return
-        
-        
-        obf_base_data = SaveData.data_persistent_base[int(base_index)]
-        translated_base_data = save_editor_utils.translate_to_eng_data(obf_base_data)
-        
-        try:
-            nms_import_data = json.dumps(translated_base_data)
-            nms_base_json = json.loads(nms_import_data)
-        except:
-            message = ("Could not import base data" )
-            ShowMessageBox(message=message, title="Import")
-            return
-
-        nms_tools = context.scene.nms_base_tool
-        nms_tools.deserialise_from_data(nms_base_json)
-        BUILDER.deserialise_from_data(nms_base_json)
-        
-    def export_base_to_save_file(self,context):
-        nms_tools = context.scene.nms_base_tool
-        serialised_base_objects_data  = nms_tools.serialise(objects_only = True)
-        
-        current_slot_data = self.get_current_slot_data()
-    
-        base_index = self.nms_base_index
-        
-        if current_slot_data is None:
-            return
-        
-        if not str(base_index).isdigit():
-            return 
-        
-        if int(base_index) < 0:
-            return
-        
-        key_name = save_editor_utils.eng_to_obf_translator("Name")
-        key_galactic_address = save_editor_utils.eng_to_obf_translator("GalacticAddress")
-    
-        base_type = self.nms_base_type
-        base = SaveData.data_persistent_base[int(base_index)]
-        base_name = base[key_name]
-        base_galactic_address = base[key_galactic_address]
-        
-        base_identifiers = {
-            "base_index": int(base_index),
-            "base_name" : base_name,
-            "base_type" : base_type,
-            "galactic_address" : base_galactic_address
-        }
-        
-        save_editor.save_editor_utils.save_base_to_save_file(serialised_base_objects_data, base_identifiers, current_slot_data)
-        
-    def get_current_slot_data(self):
-        if not self.nms_save_slot == "Select Save Slot":
-            for slot in SaveData.data_save_slot:
-                if str(slot["slot"]) == self.nms_save_slot:
-                    return slot
-        return None
-    
-    def reset_base_list(self):
-        if len(SaveData.enum_base_list) > 0:
-            if len(SaveData.enum_base_list[0][0]) > 0:
-                self.nms_base_index = SaveData.enum_base_list[0][0]
-        
         
     
 
@@ -1114,8 +909,7 @@ classes = (
     NMSSettings,
     PartCollection,
     NMS_UL_actions_list,
-    SaveFilePath,
-    SaveData
+    SaveData,
 )
 
 combined_classes = classes + ui_classes  + operator_classes
@@ -1152,7 +946,21 @@ def register():
     bpy.types.Scene.col = bpy.props.CollectionProperty(type=PartCollection)
     bpy.types.Scene.col_idx = bpy.props.IntProperty(default=0)
     bpy.types.Scene.nms_save_data = bpy.props.PointerProperty(type=SaveData)
-
+    
+    bpy.types.Scene.nms_save_folder_path = StringProperty(
+        name="Save Directory ",
+        description="Folder where save files are stored",
+        default = str(platforms_manager.get_root_save_folder()) if not None else "/"
+    )
+    
+    bpy.types.Scene.nms_check_export_name = BoolProperty(
+        name="Export base name",
+        description="Update name along with objects.",
+        default=False
+    )
+    
+    
+    
 
 def unregister():
     for pcoll in preview_collections.values():

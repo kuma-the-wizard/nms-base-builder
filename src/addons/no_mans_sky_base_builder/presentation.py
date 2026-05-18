@@ -64,9 +64,9 @@ class NMS_PT_save_editor_panel(Panel):
 
     def draw(self, context):
         layout = self.layout
-        prefs = context.preferences.addons[__package__].preferences
         save_data = context.scene.nms_save_data
         
+        is_base_data_loaded = save_data.is_base_data_loaded()
         lz4_found =  save_editor_dependencies.check_package("lz4")
         
         if not lz4_found:
@@ -77,11 +77,11 @@ class NMS_PT_save_editor_panel(Panel):
             enable_row.operator("object.nms_enable_save_editor", icon = "PLUGIN")
         else:
             # Select Save
+            layout.prop(save_data,"check_plugin_enabled")
             save_folder_box = layout.box()
             sf_column = save_folder_box.column(align=True)
-            sf_column.label(text="Save Folder")
             savefile_col = sf_column.row(align=True)
-            savefile_col.prop(prefs, "nms_save_folder_path")
+            savefile_col.prop(context.scene, "nms_save_folder_path")
             savefile_col.operator( "object.nms_select_save_folder", text="", icon='FILE_FOLDER')
             sf_column.separator()
             sf_column.label(text = "Account / Slot")
@@ -92,6 +92,7 @@ class NMS_PT_save_editor_panel(Panel):
             #Select Base
             save_data_box = layout.box()
             se_column = save_data_box.column(align = True)
+            se_column.enabled = is_base_data_loaded
             se_column.label(text="Save Data")
             base_type_row = se_column.row(align=True)
             base_type_row.prop(save_data, "nms_base_type",expand=True, text = "base type")
@@ -100,6 +101,8 @@ class NMS_PT_save_editor_panel(Panel):
             import_export_row = se_column.row(align=True)
             import_export_row.operator("object.nms_import_base_from_save", icon="IMPORT", text = "Import")
             import_export_row.operator("object.nms_export_base_to_save", icon="EXPORT", text = "Update")
+            se_column.separator()
+            se_column.prop(context.scene, "nms_check_export_name")
         
 
 # Base Property Panel ---

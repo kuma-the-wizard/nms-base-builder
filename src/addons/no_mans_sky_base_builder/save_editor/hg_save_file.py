@@ -98,3 +98,27 @@ class HGFile:
     def import_json(self, path):
         with open(path, "r", encoding="utf-8") as f:
             self.json_data = json.load(f)
+            
+    def search_property(self, property):
+        offset = 0
+        buffer = ""
+        with open(self.path, "rb") as f:
+            raw = f.read()
+        while offset < len(raw):
+            if offset + 16 > len(raw):
+                raise ValueError("Invalid HG block header")
+            magic, comp_size, decomp_size, _ = struct.unpack(  "<IIII", raw[offset:offset + 16])
+            if magic != MAGIC:
+                raise ValueError(f"Invalid magic at offset {offset}: {hex(magic)}")
+            offset += 16
+            comp_data = raw[offset:offset + comp_size]
+            offset += comp_size
+            chunk = lz4.block.decompress(comp_data,uncompressed_size=decomp_size)
+            buffer += chunk.decode("utf-8", errors="ignore")
+            if property in buffer:
+                i = buffer.find(property)
+                snippet = buffer[i:i+200]
+                try:
+                    return snippet.split(":")[1].split('"')[1]
+                except:
+                    return None

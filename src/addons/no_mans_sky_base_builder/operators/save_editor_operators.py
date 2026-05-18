@@ -59,6 +59,9 @@ class LoadBases(bpy.types.Operator):
     bl_label = "Load"
 
     def execute(self, context):
+        scene = context.scene
+        save_data = scene.nms_save_data
+        save_data.load_base_data()
         return {"FINISHED"}
     
 class EnableSaveEditor(bpy.types.Operator):
