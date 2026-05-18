@@ -4,8 +4,6 @@ from pathlib import Path
 from ..utils import python as python_utils
 from .. import platforms_manager
 
-from .hg_save_file import HGFile
-
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 SAVE_MAP_JSON_FILE = os.path.join(FILE_PATH, "save_map_dictionary.json")
 
@@ -94,9 +92,13 @@ def get_save_slots_list(account):
     return save_slots  
 
 def get_bases_list(save_slot):
+    
     save_location = save_slot["saves"][0]
     print("getting bases list for save slot:", save_slot)
+    
+    from .hg_save_file import HGFile
     save_file = HGFile(save_location)
+    
     data = save_file.load()
     bases_list = []
     for index, base in enumerate(data[base_context][player_state_data][persistent_player_bases]):
@@ -110,7 +112,9 @@ def get_bases_list(save_slot):
 def get_persistent_player_bases(save_slot):
     save_location = get_lastes_save_file_location(save_slot)
     
+    from .hg_save_file import HGFile
     save_file = HGFile(save_location)
+    
     data = save_file.load()
     obfuscated_persistent_base_data = data[base_context][player_state_data][persistent_player_bases]
     
@@ -137,7 +141,10 @@ def matches_base(base, identifier):
     
 def save_base_to_save_file(objects_data, base_identifier,  save_slot):
     save_location = get_lastes_save_file_location(save_slot)
+    
+    from .hg_save_file import HGFile
     save_file = HGFile(save_location)
+    
     data = save_file.load()
     
     base_list = data[base_context][player_state_data][persistent_player_bases]

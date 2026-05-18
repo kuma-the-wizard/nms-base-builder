@@ -28,21 +28,11 @@ def check_package(package_name):
     found = importlib.util.find_spec(package_name) 
     return found
 
-def check_dependencies():
-    try:
-        import pip
-
-        print("Pip found.")
-    except:
+def installDependencies():
+    if not check_package("pip"):
         install_pip()
-        importlib.reload(site)
 
-    try:
-        import lz4.block
-
-        print("lz4 found.")
-    except:
+    if not check_package("lz4"):
         install_package("lz4")
-        importlib.reload(site)
 
     return True

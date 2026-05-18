@@ -1,4 +1,9 @@
 import bpy
+
+import random
+
+
+from ..save_editor import save_editor_dependencies
     
 class SelectSaveFolder(bpy.types.Operator):
     bl_idname = "object.nms_select_save_folder"
@@ -28,31 +33,7 @@ class SelectSaveFolder(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
     
-    
-class AccountsList(bpy.types.Operator):
-    bl_idname = "object.nms_save_accounts_list"
-    bl_label = "select account"
 
-    directory: bpy.props.StringProperty(
-        subtype='DIR_PATH'
-    )
-
-    def execute(self, context):
-        package_name = __package__.rsplit(".", 1)[0]
-        prefs = context.preferences.addons[package_name].preferences
-        save_file_identifier = "HelloGames\\NMS\\"
-
-        print("folder is :", self.directory)
-        if str(self.directory).lower().endswith(save_file_identifier.lower()):
-            prefs.nms_save_folder_path = self.directory
-            bpy.ops.wm.save_userpref()
-            print("Selected folder is valid:", prefs.nms_save_folder_path)
-        else :
-            self.report({'ERROR'}, f"Selected folder does not a NMS save folder. Please select the correct folder.")
-            print("Selected folder is invalid:", self.directory)
-        
-        return {'FINISHED'}
-    
 class ImportBaseFromSave(bpy.types.Operator):
     bl_idname = "object.nms_import_base_from_save"
     bl_label = "Import data from selected file"
@@ -73,8 +54,28 @@ class ExportBaseToSave(bpy.types.Operator):
         save_data.export_base_to_save_file(context)
         return {"FINISHED"}
     
+class LoadBases(bpy.types.Operator):
+    bl_idname = "object.nms_load_bases_from_save_slot"
+    bl_label = "Load"
+
+    def execute(self, context):
+        return {"FINISHED"}
+    
+class EnableSaveEditor(bpy.types.Operator):
+    
+    bl_idname = "object.nms_enable_save_editor"
+    bl_label = "Enable Save Editor"
+    
+    def execute(self, context):
+        save_editor_dependencies.installDependencies()
+        return {"FINISHED"}
+    
+
+    
 classes = (
     SelectSaveFolder,
     ImportBaseFromSave,
-    ExportBaseToSave
+    ExportBaseToSave,
+    EnableSaveEditor,
+    LoadBases
 )

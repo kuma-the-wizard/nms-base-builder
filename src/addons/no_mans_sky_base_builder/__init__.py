@@ -894,7 +894,7 @@ class SaveFilePath(bpy.types.AddonPreferences):
 
     # Define the data you want to persist
     nms_save_folder_path: bpy.props.StringProperty(
-        name="Save Dir",
+        name="",
         description="Folder where save files are stored",
         default="/"
     )
@@ -919,7 +919,7 @@ class SaveData(bpy.types.PropertyGroup):
 
     # there can be miltiple accounts on same device
     nms_account_selected: bpy.props.EnumProperty(
-        name="account",
+        name="",
         description="account from which save file will be loaded",
         items = lambda self, context: self.get_accounts_list(),
         update = lambda self, context: self.on_account_list_change(),
@@ -927,7 +927,7 @@ class SaveData(bpy.types.PropertyGroup):
     
     #save slot for that account
     nms_save_slot: bpy.props.EnumProperty(
-        name="save slot",
+        name="",
         description="Folder where save files are stored",
         items = lambda self, context: SaveData.enum_save_slots_list,
         update = lambda self, context: self.on_save_slot_list_change(),
