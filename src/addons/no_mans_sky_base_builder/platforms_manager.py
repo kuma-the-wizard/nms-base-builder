@@ -41,12 +41,9 @@ def get_lib_directory():
     
     # Blender python version
     python_version = f"cp{sys.version_info.major}{sys.version_info.minor}"
-    print("python version in blender is  : ",python_version)
-    
     libs_dir = os.path.join(
         addon_dir,
-        "libs",
-        python_version,
-        get_platform_folder()
+        "libs"
     )
+    
     return libs_dir

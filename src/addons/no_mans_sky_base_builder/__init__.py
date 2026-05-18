@@ -19,6 +19,7 @@ from bpy.types import Panel, PropertyGroup
 from numpy import isin
 
 # Add part to lz libs for different os
+print("Starting plugin")
 from . import platforms_manager
 libs_dir = platforms_manager.get_lib_directory()
 if libs_dir not in sys.path:

@@ -1,15 +1,10 @@
 {
-    "blender.addon.loadDirectory": "E:\\Base Builder Plugin\\Forked Base Builder Plugin\\nms-base-builder\\src\\addons\\no_mans_sky_base_builder",
-    "blender.executables": [
-        {
-            "name": "",
-            "path": "C:\\Program Files\\Blender Foundation\\Blender 4.5\\blender.exe",
-            "isDefault": false
-        },
-        {
-            "name": "",
-            "path": "C:\\Program Files\\Blender Foundation\\Blender 5.1\\blender.exe",
-            "isDefault": true
-        }
-    ],
+    //"blender.addon.loadDirectory": "E:\\Base Builder Plugin\\Forked Base Plugin 2\\nms-base-builder\\src\\addons\\no_mans_sky_base_builder",
+    // "blender.executables": [
+    //     {
+    //         "name": "",
+    //         "path": "C:\\Program Files\\Blender Foundation\\Blender 4.5\\blender.exe",
+    //         "isDefault": true
+    //     }
+    // ],
 }

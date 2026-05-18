@@ -5,6 +5,7 @@ from .utils import material as _material
 from bpy.types import Panel
 from .addon_state import preview_collections
 
+from .save_editor import check_dependencies
 
 # File Buttons Panel ---
 class NMS_PT_file_buttons_panel(Panel):
@@ -68,30 +69,35 @@ class NMS_PT_save_editor_panel(Panel):
         prefs = context.preferences.addons[__package__].preferences
         save_data = context.scene.nms_save_data
         
-        save_folder_box = layout.box()
-        sf_column = save_folder_box.column(align=True)
-        sf_column.label(text="Save Folder")
-        savefile_col = sf_column.row(align=True)
-        savefile_col.prop(prefs, "nms_save_folder_path")
-        savefile_col.operator( "object.nms_select_save_folder", text="", icon='FILE_FOLDER')
-        sf_column.prop(save_data, "nms_account_selected")
+        lz4_found =  check_dependencies.check_package("lz4")
+        
+        if not lz4_found:
+            print("lz4 not found")
+        else:
+            save_folder_box = layout.box()
+            sf_column = save_folder_box.column(align=True)
+            sf_column.label(text="Save Folder")
+            savefile_col = sf_column.row(align=True)
+            savefile_col.prop(prefs, "nms_save_folder_path")
+            savefile_col.operator( "object.nms_select_save_folder", text="", icon='FILE_FOLDER')
+            sf_column.prop(save_data, "nms_account_selected")
 
-        save_data_box = layout.box()
-        se_column = save_data_box.column(align=True)
-        se_column.label(text="Save Data")
-        se_column.prop(save_data, "nms_save_slot")
-        
-        se_column.separator()
-        
-        base_type_row = se_column.row(align=True)
-        base_type_row.label(text="Base Type")
-        base_type_row.prop(save_data, "nms_base_type",expand=True, text = "base type")
-        se_column.prop(save_data, "nms_base_index", text="")
-        
-        se_column.separator()
-        import_export_row = se_column.row(align=True)
-        import_export_row.operator("object.nms_import_base_from_save", icon="IMPORT", text = "Import")
-        import_export_row.operator("object.nms_export_base_to_save", icon="EXPORT", text = "Export")
+            save_data_box = layout.box()
+            se_column = save_data_box.column(align=True)
+            se_column.label(text="Save Data")
+            se_column.prop(save_data, "nms_save_slot")
+            
+            se_column.separator()
+            
+            base_type_row = se_column.row(align=True)
+            base_type_row.label(text="Base Type")
+            base_type_row.prop(save_data, "nms_base_type",expand=True, text = "base type")
+            se_column.prop(save_data, "nms_base_index", text="")
+            
+            se_column.separator()
+            import_export_row = se_column.row(align=True)
+            import_export_row.operator("object.nms_import_base_from_save", icon="IMPORT", text = "Import")
+            import_export_row.operator("object.nms_export_base_to_save", icon="EXPORT", text = "Export")
         
 
 # Base Property Panel ---
