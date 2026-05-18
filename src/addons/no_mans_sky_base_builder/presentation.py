@@ -67,17 +67,12 @@ class NMS_PT_save_editor_panel(Panel):
         save_data = context.scene.nms_save_data
         
         is_base_data_loaded = save_data.is_base_data_loaded()
-        lz4_found =  save_editor_dependencies.check_package("lz4")
+        is_save_folder_correct = save_data.is_save_folder_correct(context)
         
-        if not lz4_found:
-            print("lz4 not found")
-            enable_box = layout.box()
-            enable_box.label(text = "import/export directly from plugin")
-            enable_row = enable_box.row(align=True)
-            enable_row.operator("object.nms_enable_save_editor", icon = "PLUGIN")
-        else:
+        layout.prop(save_data,"check_plugin_enabled",  icon = "DISK_DRIVE")
+        
+        if save_data.check_plugin_enabled:
             # Select Save
-            layout.prop(save_data,"check_plugin_enabled")
             save_folder_box = layout.box()
             sf_column = save_folder_box.column(align=True)
             savefile_col = sf_column.row(align=True)
@@ -92,7 +87,7 @@ class NMS_PT_save_editor_panel(Panel):
             #Select Base
             save_data_box = layout.box()
             se_column = save_data_box.column(align = True)
-            se_column.enabled = is_base_data_loaded
+            se_column.enabled = is_base_data_loaded and is_save_folder_correct
             se_column.label(text="Save Data")
             base_type_row = se_column.row(align=True)
             base_type_row.prop(save_data, "nms_base_type",expand=True, text = "base type")

@@ -80,6 +80,10 @@ class SaveData(bpy.types.PropertyGroup):
         SaveData.enum_save_slots_list = self.get_save_slots_list()
         self.reset_save_slot()
         self.reset_base_list()
+        
+    def is_save_folder_correct(self,context):
+        save_path = context.scene.nms_save_folder_path
+        return str(save_path).endswith("/HelloGames/NMS")
     
     def get_accounts_list(self):
         default_account_list_item = ("Select Account", "Select Account", "No account selected")

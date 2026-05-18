@@ -14,8 +14,7 @@ class SelectSaveFolder(bpy.types.Operator):
     )
 
     def execute(self, context):
-        package_name = __package__.rsplit(".", 1)[0]
-        prefs = context.preferences.addons[package_name].preferences
+        prefs = context.scene
         save_file_identifier = "HelloGames\\NMS\\"
 
         print("folder is :", self.directory)
