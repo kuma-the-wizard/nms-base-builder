@@ -4,6 +4,7 @@ import subprocess
 import sys
 import webbrowser
 
+import blf
 import bpy
 import bpy.ops
 import bpy.utils
@@ -25,12 +26,16 @@ from .part_overrides import line
 from .utils import blend_utils, curve
 from .utils import material as _material
 from .utils import python as python_utils
-from .utils import mirror_utils
+from .mirroring import mirror_utils
 
 from .save_editor.save_manager import SaveManager
 from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel
 from .save_editor import save_editor_operators
 from .save_editor import save_editor_utils
+
+from .mirroring.mirror_tool import MirrorTool
+from .mirroring import mirror_operators
+from .mirroring.mirror_tool_presentation import NMS_PT_mirror_panel
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
@@ -1002,9 +1007,18 @@ class NMS_PT_snap_panel(Panel):
         mirror_col = mirror_box.column(align=True)
         mirror_col.label(text="Mirroring")
         mirror_op = mirror_col.operator("object.nms_mirror", icon="ARROW_LEFTRIGHT")
+        mirror_col.separator()
         mirror_op_x = mirror_col.operator(
             "object.nms_mirror_across_x", icon="ARROW_LEFTRIGHT"
         )
+        mirror_yz_row = mirror_col.row(align=True)
+        mirror_yz_row.operator(
+            "object.nms_mirror_across_x", icon="ARROW_LEFTRIGHT", text = "Mirror across Y"
+        )
+        mirror_yz_row.operator(
+            "object.nms_mirror_across_x", icon="ARROW_LEFTRIGHT", text = "Mirror across Z"
+        )
+        mirror_col.separator()
         flip_op = mirror_col.operator("object.nms_flip", icon="DECORATE_OVERRIDE")
 
         # Set Snap Operator assignments.
@@ -1686,6 +1700,33 @@ class MirrorAcrossX(bpy.types.Operator):
         nms_tool = scene.nms_base_tool
         nms_tool.mirror(across_x=True)
         return {"FINISHED"}
+    
+    
+class MirrorAcrossY(bpy.types.Operator):
+    """Mirror the object along the X axis."""
+
+    bl_idname = "object.nms_mirror_across_x"
+    bl_label = "Mirror Across X Axis"
+    bl_options = {"UNDO", "REGISTER"}
+
+    def execute(self, context):
+        scene = context.scene
+        nms_tool = scene.nms_base_tool
+        nms_tool.mirror(across_x=True)
+        return {"FINISHED"}
+    
+class MirrorAcrossZ(bpy.types.Operator):
+    """Mirror the object along the X axis."""
+
+    bl_idname = "object.nms_mirror_across_x"
+    bl_label = "Mirror Across X Axis"
+    bl_options = {"UNDO", "REGISTER"}
+
+    def execute(self, context):
+        scene = context.scene
+        nms_tool = scene.nms_base_tool
+        nms_tool.mirror(across_x=True)
+        return {"FINISHED"}
 
 
 class Flip(bpy.types.Operator):
@@ -2115,6 +2156,52 @@ def reset_save_editor_state(dummy):
         save_data.check_plugin_enabled = False
         
 
+last_active = None
+overlay_text = "No object selected"
+
+@persistent
+def active_object_watcher(scene, depsgraph):
+    global last_active
+    global overlay_text
+    active = bpy.context.view_layer.objects.active
+    if active != last_active:
+        last_active = active
+        if active:
+            overlay_text = (
+                f"Material        : {active.get('readonly:Material', '')}\n"
+                f"Color             : {active.get('readonly:Colour', '')}\n"
+                f"UserData      : {active.get('UserData', '')}\n"
+                f"Order             : {active.get('order', '')}\n"
+                f"Object            : {active.name}\n"
+            )
+            
+        else:
+            overlay_text = "No object selected"
+            
+    for window in bpy.context.window_manager.windows:
+        for area in window.screen.areas:
+            if area.type == 'VIEW_3D':
+                area.tag_redraw()
+
+
+
+def draw_object_details_callback():
+    font_id = 0
+    global overlay_text
+
+    blf.position(font_id, 20, 20, 0)
+    blf.size(font_id, 12)
+
+    y = 20
+    for line in overlay_text.split("\n"):
+        blf.position(font_id, 20, y, 0)
+        blf.draw(font_id, line)
+        y += 15
+        
+            
+            
+        
+
 class NMSAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = ADDON_ID
 
@@ -2160,7 +2247,6 @@ classes = (
     DuplicateAlongCurve,
     Delete,
     Mirror,
-    MirrorAcrossX,
     Flip,
     SaveAsPreset,
     LoadFancyUI,
@@ -2183,18 +2269,20 @@ classes = (
     ListEditOperator,
     ListBuildOperator,
     SaveManager,
+    MirrorTool,
     NMS_UL_actions_list,
     NMS_PT_file_buttons_panel,
     NMS_PT_save_editor_panel,
     NMS_PT_base_prop_panel,
-    NMS_PT_snap_panel,
+    NMS_PT_mirror_panel,
     NMS_PT_colour_panel,
     NMS_PT_logic_panel,
     NMS_PT_build_panel,
     NMSAddonPreferences
 )
 
-classes = classes  + save_editor_operators.classes
+classes = classes  + save_editor_operators.classes + mirror_operators.classes
+
 
 
 def register():
@@ -2227,8 +2315,12 @@ def register():
     bpy.types.Scene.col = bpy.props.CollectionProperty(type=PartCollection)
     bpy.types.Scene.col_idx = bpy.props.IntProperty(default=0)
     bpy.types.Scene.nms_save_data = bpy.props.PointerProperty(type=SaveManager)
+    bpy.types.Scene.nms_mirror_tool = bpy.props.PointerProperty(type=MirrorTool)
     bpy.app.handlers.load_post.append(reset_save_editor_state)
-
+    
+    if active_object_watcher not in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.append(active_object_watcher)
+        bpy.types.SpaceView3D.draw_handler_add(draw_object_details_callback,(),'WINDOW','POST_PIXEL')
 
 def unregister():
     for pcoll in preview_collections.values():
@@ -2238,6 +2330,9 @@ def unregister():
     for _class in reversed(classes):
         bpy.utils.unregister_class(_class)
     del bpy.types.Scene.nms_base_tool
+    
+    if active_object_watcher in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.remove(active_object_watcher)
 
 
 if __name__ == "__main__":

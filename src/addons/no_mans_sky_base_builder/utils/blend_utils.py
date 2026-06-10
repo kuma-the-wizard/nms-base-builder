@@ -163,3 +163,56 @@ def delete(bpy_object):
 
     bpy_object.select_set(True)
     bpy.ops.object.delete()
+    
+    
+def cleanup_scene(decimals = 3):
+    """
+    Removes duplicate objects based on:
+        - name
+        - world location
+        - world rotation
+        - world scale
+
+    Keeps the first object found and deletes subsequent duplicates.
+    """
+
+    seen_objects = {}
+    duplicates = []
+
+    for obj in bpy.data.objects:
+        location_vector, rotation_quaternion, scale_vector = obj.matrix_world.decompose()
+        
+        location = (
+            round(location_vector.x,decimals),
+            round(location_vector.y,decimals),
+            round(location_vector.z,decimals)
+        )
+        
+        rotation_euler = rotation_quaternion.to_euler("XYZ")
+        rotation = (
+            round(rotation_euler.x, decimals),
+            round(rotation_euler.y, decimals),
+            round(rotation_euler.z, decimals)
+        )
+        
+        scale = round(scale_vector.x, decimals)
+        
+
+        object_key = (
+            obj.get("ObjectID",obj.name),
+            location,
+            rotation,
+            scale,
+        )
+        
+        if object_key in seen_objects:
+            duplicates.append(obj)
+        else:
+            seen_objects[object_key] = obj
+
+    # Delete duplicates
+    for obj in duplicates:
+        bpy.data.objects.remove(obj, do_unlink=True)
+
+    print(f"Removed {len(duplicates)} duplicate objects")
+    return len(duplicates)
