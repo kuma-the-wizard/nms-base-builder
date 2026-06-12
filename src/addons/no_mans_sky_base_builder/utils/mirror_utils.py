@@ -62,15 +62,15 @@ def reflect_point_across(source,origin):
     return (2 * origin) - source
 
 #This function mirrors matrix world across x axis
-def mirror_matrix_world_universal(object_id, old_matrix_world, axis = None, center = (0,0,0)):
+def mirror_matrix_world_universal(object_id, old_matrix_world, axis = None, center = Vector((0.0, 0.0, 0.0))):
 
     #extract location,rotation and scale values from matrix world
     location, rotation_quaternion, scale = old_matrix_world.decompose()
 
     #mirror location  if across x is selected
-    location_x = reflect_point_across(location.x,center[0]) if axis == "X" else location.x
-    location_y = reflect_point_across(location.y,center[1]) if axis == "Y" else location.y
-    location_z = reflect_point_across(location.z,center[2]) if axis == "Z" else location.z
+    location_x = reflect_point_across(location.x,center.x) if axis == "X" else location.x
+    location_y = reflect_point_across(location.y,center.y) if axis == "Y" else location.y
+    location_z = reflect_point_across(location.z,center.z) if axis == "Z" else location.z
     position_values = (location_x, location_y, location_z)
     position_matrix = Matrix.Translation(Vector(position_values))
 
@@ -82,6 +82,8 @@ def mirror_matrix_world_universal(object_id, old_matrix_world, axis = None, cent
         rotation_values = (current_euler.x, -current_euler.y, -current_euler.z + math.pi)
     elif axis == "Z":
         rotation_values = (current_euler.x + math.pi, current_euler.y , current_euler.z + math.pi)
+    else:
+        rotation_values = (current_euler.x, -current_euler.y, -current_euler.z)
         
     
     rotation_euler = Euler(rotation_values, "XYZ")

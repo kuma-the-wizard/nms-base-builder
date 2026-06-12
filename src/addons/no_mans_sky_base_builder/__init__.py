@@ -26,16 +26,16 @@ from .part_overrides import line
 from .utils import blend_utils, curve
 from .utils import material as _material
 from .utils import python as python_utils
-from .mirroring import mirror_utils
+from .utils import mirror_utils
 
 from .save_editor.save_manager import SaveManager
 from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel
 from .save_editor import save_editor_operators
 from .save_editor import save_editor_utils
 
-from .mirroring.mirror_tool import MirrorTool
-from .mirroring import mirror_operators
-from .mirroring.mirror_tool_presentation import NMS_PT_mirror_panel
+from .tools.build_tool import BuildTool
+from .tools import build_tool_operators
+from .tools.build_tool_presentation import NMS_PT_mirror_panel
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
@@ -603,170 +603,8 @@ class NMSSettings(PropertyGroup):
                         ob.hide_select = hide_select
                     ob.select_set(False)
 
-    def delete(self):
-        """Delete the selected object and everything below."""
-        # Store selection.
-        selected_objects = bpy.context.selected_objects
-        # Validate
-        if not selected_objects:
-            ShowMessageBox(
-                message="Select an item to delete from the scene.", title="Delete"
-            )
-            return
 
-        for item in selected_objects:
-            blend_utils.delete(item)
-
-    def duplicate(self):
-        """Snaps one object to another based on selection."""
-        # Store selection.
-        selected_objects = bpy.context.selected_objects
-
-        # Validate
-        if not selected_objects:
-            ShowMessageBox(
-                message="Make sure you have an item selected.", title="Duplicate"
-            )
-            return
-
-        # Get Selected item.
-        target = blend_utils.get_current_selection()
-
-        if "ObjectID" not in target and "PresetID" not in target:
-            message = (
-                "This item can not be duplicated via the No Man's Sky tool. "
-                "Try using Blender hotkey instead (Shift-D)."
-            )
-            ShowMessageBox(message=message, title="Duplicate")
-            return
-
-        # Part
-        if "ObjectID" in target:
-            object_id = target["ObjectID"]
-            user_data = target["UserData"]
-            # Build Item.
-            new_item = BUILDER.add_part(object_id, user_data=user_data)
-            new_item.select()
-        if "PresetID" in target:
-            preset_id = target["PresetID"]
-            # Build Item.
-            new_item = BUILDER.add_preset(preset_id)
-            new_item.select()
-
-        # Build Rig if need to.
-        if hasattr(new_item, "build_rig"):
-            new_item.build_rig()
-        # Snap.
-        target = BUILDER.get_builder_object_from_bpy_object(target)
-        new_item.snap_to(target)
-
-    def duplicate_along_curve(self, distance_percentage):
-        """Snaps one object to another based on selection."""
-        selected_objects = bpy.context.selected_objects
-
-        if len(selected_objects) != 2:
-            message = (
-                "Make sure you have two items selected. Select the item to"
-                " duplicate, then the curve you want to snap to."
-            )
-            ShowMessageBox(message=message, title="Duplicate Along Curve")
-            return {"FINISHED"}
-
-        # Validate gap_distance.
-        range_message = "Please choose a value between 0 and 1."
-        if distance_percentage <= 0.0:
-            ShowMessageBox(message=range_message, title="Duplicate Along Curve")
-            return {"FINISHED"}
-
-        if distance_percentage >= 1.0:
-            ShowMessageBox(message=range_message, title="Duplicate Along Curve")
-            return {"FINISHED"}
-
-        # Figure out selection.
-        if "ObjectID" in selected_objects[0] or "PresetID" in selected_objects[0]:
-            curve_object = selected_objects[1]
-            dup_object = selected_objects[0]
-        else:
-            curve_object = selected_objects[0]
-            dup_object = selected_objects[1]
-
-        # Perform duplication along curve.
-        curve.duplicate_along_curve(
-            BUILDER, dup_object, curve_object, distance_percentage
-        )
-
-    def mirror(self, across_x=False):
-        """Mirror the object along X axis (if possible)."""
-        # Store selection.
-        selected_objects = bpy.context.selected_objects
-
-        # Validate
-        if not selected_objects:
-            ShowMessageBox(
-                message="Make sure you have an item selected.", title="Mirror"
-            )
-            return
-
-        # Get Selected item.
-        new_items = []
-        for target in selected_objects:
-            # Part
-            if "ObjectID" in target:
-                object_id = target["ObjectID"]
-                mirror_id = part.Part.get_mirror_part_id(object_id)
-                new_item = target
-                mirror_part_exist = False
-                if mirror_id in nice_name_dictionary.keys():
-                    # Build Item.
-                    new_item = BUILDER.mirror_part(target)
-                    mirror_part_exist = True
-
-                # mirror part across x axis
-                if across_x:
-                    mirrored_matrix_world = mirror_utils.mirror_matrix_world(object_id, new_item.matrix_world,True)
-                    new_item.matrix_world = mirrored_matrix_world
-                # mirror part on its location
-                else:
-                    # Apply mirroring fixes on parts that dont have a ingame asset to represent their mirror.
-                    if not mirror_part_exist:
-                        mirrored_matrix_world = mirror_utils.mirror_matrix_world(object_id, new_item.matrix_world, False)
-                        new_item.matrix_world = mirrored_matrix_world
-                        
-                if hasattr(new_item, "object"):
-                    new_items.append(new_item.object)
-                else:
-                    new_items.append(new_item)
-        blend_utils.select(new_items)
-        return {"FINISHED"}
-
-    def flip(self):
-        """Mirror the object along X axis (if possible)."""
-        # Store selection.
-        selected_objects = bpy.context.selected_objects
-        new_items = []
-        # Validate
-        if not selected_objects:
-            ShowMessageBox(message="Make sure you have an item selected.", title="Flip")
-            return
-
-        # Get Selected item.
-        for target in selected_objects:
-            # Part
-            if "ObjectID" in target:
-                object_id = target["ObjectID"]
-                mirror_id = part.Part.get_flip_part_id(object_id)
-                new_item = target
-                if mirror_id in nice_name_dictionary.keys():
-                    # Build Item.
-                    new_item = BUILDER.flip_part(target)
-                    new_items.append(new_item)
-
-                if hasattr(new_item, "object"):
-                    new_items.append(new_item.object)
-                else:
-                    new_items.append(new_item)
-
-        blend_utils.select(new_items)
+    
 
     def apply_colour(self, colour_index=0, material=0):
         """Gives an item a new colour."""
@@ -928,125 +766,6 @@ class NMS_PT_base_prop_panel(Panel):
         properties_column.prop(nms_tool, "string_userdata")
 
 
-# Snap Panel ---
-class NMS_PT_snap_panel(Panel):
-    bl_idname = "NMS_PT_snap_panel"
-    bl_label = "Tools"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "No Mans Sky Base Builder"
-    bl_context = "objectmode"
-
-    @classmethod
-    def poll(self, context):
-        return True
-
-    def draw(self, context):
-        layout = self.layout
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-
-        # Split into two columns of equal widths.
-        split = layout.split(factor=0.5)
-        tools_column, snap_column = (split.column(), split.column())
-
-        # Create Part Count Box.
-        part_box = tools_column.box()
-        splitter = part_box.split(factor=0.7)
-        splitter.label(text="Part Count:")
-        part_count = len([obj for obj in bpy.data.objects if "ObjectID" in obj])
-        splitter.label(text="{}".format(part_count))
-
-        tools_box = tools_column.box()
-        tools_col = tools_box.column(align=True)
-
-        tools_col.label(text="Visibility")
-        # Room Vis Button.
-        label = "Normal"
-        if nms_tool.room_vis_switch == 1:
-            label = "Ghosted"
-        elif nms_tool.room_vis_switch == 2:
-            label = "Invisible"
-
-        tools_col.operator("object.nms_toggle_room_visibility", icon="CUBE", text=label)
-
-        tools_col.label(text="Duplicate")
-        tools_col.operator("object.nms_duplicate", icon="DUPLICATE")
-        dup_along_curve = tools_col.operator(
-            "object.nms_duplicate_along_curve", icon="CURVE_DATA"
-        )
-        tools_col.label(text="Delete")
-        tools_col.operator("object.nms_delete", icon="CANCEL")
-
-        # Create Snapping box.
-        snap_box = snap_column.box()
-        snap_col = snap_box.column(align=True)
-        snap_col.label(text="Snap")
-        snap_op = snap_col.operator("object.nms_snap", icon="SNAP_ON")
-
-        target_row = snap_col.row(align=True)
-        target_row.label(text="Target")
-        snap_target_prev = target_row.operator(
-            "object.nms_snap", icon="TRIA_LEFT", text="Prev"
-        )
-        snap_target_next = target_row.operator(
-            "object.nms_snap", icon="TRIA_RIGHT", text="Next"
-        )
-
-        source_row = snap_col.row(align=True)
-        source_row.label(text="Source")
-        snap_source_prev = source_row.operator(
-            "object.nms_snap", icon="TRIA_LEFT", text="Prev"
-        )
-        snap_source_next = source_row.operator(
-            "object.nms_snap", icon="TRIA_RIGHT", text="Next"
-        )
-
-        # Corvette Mirror Tools
-        mirror_box = snap_column.box()
-        mirror_col = mirror_box.column(align=True)
-        mirror_col.label(text="Mirroring")
-        mirror_op = mirror_col.operator("object.nms_mirror", icon="ARROW_LEFTRIGHT")
-        mirror_col.separator()
-        mirror_op_x = mirror_col.operator(
-            "object.nms_mirror_across_x", icon="ARROW_LEFTRIGHT"
-        )
-        mirror_yz_row = mirror_col.row(align=True)
-        mirror_yz_row.operator(
-            "object.nms_mirror_across_x", icon="ARROW_LEFTRIGHT", text = "Mirror across Y"
-        )
-        mirror_yz_row.operator(
-            "object.nms_mirror_across_x", icon="ARROW_LEFTRIGHT", text = "Mirror across Z"
-        )
-        mirror_col.separator()
-        flip_op = mirror_col.operator("object.nms_flip", icon="DECORATE_OVERRIDE")
-
-        # Set Snap Operator assignments.
-        # Default
-        snap_op.prev_source = False
-        snap_op.next_source = False
-        snap_op.prev_target = False
-        snap_op.next_target = False
-        # Previous Target.
-        snap_target_prev.prev_source = False
-        snap_target_prev.next_source = False
-        snap_target_prev.prev_target = True
-        snap_target_prev.next_target = False
-        # Next Target.
-        snap_target_next.prev_source = False
-        snap_target_next.next_source = False
-        snap_target_next.prev_target = False
-        snap_target_next.next_target = True
-        # Previous Source.
-        snap_source_prev.prev_source = True
-        snap_source_prev.next_source = False
-        snap_source_prev.prev_target = False
-        snap_source_prev.next_target = False
-        # Next Source.
-        snap_source_next.prev_source = False
-        snap_source_next.next_source = True
-        snap_source_next.prev_target = False
-        snap_source_next.next_target = False
 
 
 # Colour Panel ---
@@ -1386,20 +1105,7 @@ class ExportObjectsData(bpy.types.Operator):
         return {"FINISHED"}
 
 
-# Tool Operators ---
-class ToggleRoom(bpy.types.Operator):
-    bl_idname = "object.nms_toggle_room_visibility"
-    bl_label = "Toggle Room Visibility: Normal"
-    bl_options = {
-        "UNDO",
-        "REGISTER",
-    }  # I think this must pass "UNDO" because it changes objects, but it probably doesn't interact correctly with the plugin?
 
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.toggle_room_visibility()
-        return {"FINISHED"}
 
 
 class SaveAsPreset(bpy.types.Operator):
@@ -1624,123 +1330,7 @@ class ListDeleteOperator(bpy.types.Operator):
         return context.window_manager.invoke_confirm(self, event)
 
 
-# Tool Operators ---
-class Duplicate(bpy.types.Operator):
-    """Duplicate the selected part."""
 
-    bl_idname = "object.nms_duplicate"
-    bl_label = "Duplicate"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.duplicate()
-        return {"FINISHED"}
-
-
-class Delete(bpy.types.Operator):
-    """Remove the selected part from the scene."""
-
-    bl_idname = "object.nms_delete"
-    bl_label = "Delete"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.delete()
-        return {"FINISHED"}
-
-
-class DuplicateAlongCurve(bpy.types.Operator):
-    """Duplicate the selected part along a Blender curve."""
-
-    bl_idname = "object.nms_duplicate_along_curve"
-    bl_label = "Duplicate Along Curve"
-    bl_options = {"UNDO", "REGISTER"}
-    distance_percentage: bpy.props.FloatProperty(
-        name="Distance Percentage Between Item."
-    )
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.duplicate_along_curve(distance_percentage=self.distance_percentage)
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)
-
-
-class Mirror(bpy.types.Operator):
-    """Mirror the object local to itself."""
-
-    bl_idname = "object.nms_mirror"
-    bl_label = "Mirror"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.mirror()
-        return {"FINISHED"}
-
-
-class MirrorAcrossX(bpy.types.Operator):
-    """Mirror the object along the X axis."""
-
-    bl_idname = "object.nms_mirror_across_x"
-    bl_label = "Mirror Across X Axis"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.mirror(across_x=True)
-        return {"FINISHED"}
-    
-    
-class MirrorAcrossY(bpy.types.Operator):
-    """Mirror the object along the X axis."""
-
-    bl_idname = "object.nms_mirror_across_x"
-    bl_label = "Mirror Across X Axis"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.mirror(across_x=True)
-        return {"FINISHED"}
-    
-class MirrorAcrossZ(bpy.types.Operator):
-    """Mirror the object along the X axis."""
-
-    bl_idname = "object.nms_mirror_across_x"
-    bl_label = "Mirror Across X Axis"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.mirror(across_x=True)
-        return {"FINISHED"}
-
-
-class Flip(bpy.types.Operator):
-    """Flip the object along the Y axis (Only available on certain Corvette pieces)"""
-
-    bl_idname = "object.nms_flip"
-    bl_label = "Flip"
-    bl_options = {"UNDO", "REGISTER"}
-
-    def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.flip()
-        return {"FINISHED"}
 
 
 class ApplyColour(bpy.types.Operator):
@@ -2164,39 +1754,14 @@ def active_object_watcher(scene, depsgraph):
     global last_active
     global overlay_text
     active = bpy.context.view_layer.objects.active
+    build_tool = scene.nms_build_tool
     if active != last_active:
         last_active = active
-        if active:
-            overlay_text = (
-                f"Material        : {active.get('readonly:Material', '')}\n"
-                f"Color             : {active.get('readonly:Colour', '')}\n"
-                f"UserData      : {active.get('UserData', '')}\n"
-                f"Order             : {active.get('order', '')}\n"
-                f"Object            : {active.name}\n"
-            )
-            
-        else:
-            overlay_text = "No object selected"
-            
-    for window in bpy.context.window_manager.windows:
-        for area in window.screen.areas:
-            if area.type == 'VIEW_3D':
-                area.tag_redraw()
-
-
-
-def draw_object_details_callback():
-    font_id = 0
-    global overlay_text
-
-    blf.position(font_id, 20, 20, 0)
-    blf.size(font_id, 12)
-
-    y = 20
-    for line in overlay_text.split("\n"):
-        blf.position(font_id, 20, y, 0)
-        blf.draw(font_id, line)
-        y += 15
+        if curve.is_bezier_or_nurbs_path(active) and active.get("has_linked_objects",False):
+            build_tool.active_curve_name = active.name
+            build_tool.show_gap_edit_field = True
+        else: 
+            build_tool.show_gap_edit_field = False
         
             
             
@@ -2243,11 +1808,6 @@ classes = (
     LogicBeatSwitch,
     ApplyColour,
     ApplyDefaultColour,
-    Duplicate,
-    DuplicateAlongCurve,
-    Delete,
-    Mirror,
-    Flip,
     SaveAsPreset,
     LoadFancyUI,
     GetMorePresets,
@@ -2257,7 +1817,6 @@ classes = (
     VisitPrefabDiscord,
     VisitGitHubRepo,
     OpenPresetFolder,
-    ToggleRoom,
     NewFile,
     SaveData,
     LoadData,
@@ -2269,7 +1828,7 @@ classes = (
     ListEditOperator,
     ListBuildOperator,
     SaveManager,
-    MirrorTool,
+    BuildTool,
     NMS_UL_actions_list,
     NMS_PT_file_buttons_panel,
     NMS_PT_save_editor_panel,
@@ -2281,7 +1840,7 @@ classes = (
     NMSAddonPreferences
 )
 
-classes = classes  + save_editor_operators.classes + mirror_operators.classes
+classes = classes  + save_editor_operators.classes + build_tool_operators.classes
 
 
 
@@ -2315,12 +1874,12 @@ def register():
     bpy.types.Scene.col = bpy.props.CollectionProperty(type=PartCollection)
     bpy.types.Scene.col_idx = bpy.props.IntProperty(default=0)
     bpy.types.Scene.nms_save_data = bpy.props.PointerProperty(type=SaveManager)
-    bpy.types.Scene.nms_mirror_tool = bpy.props.PointerProperty(type=MirrorTool)
+    bpy.types.Scene.nms_build_tool = bpy.props.PointerProperty(type=BuildTool)
     bpy.app.handlers.load_post.append(reset_save_editor_state)
     
     if active_object_watcher not in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.append(active_object_watcher)
-        bpy.types.SpaceView3D.draw_handler_add(draw_object_details_callback,(),'WINDOW','POST_PIXEL')
+        #bpy.types.SpaceView3D.draw_handler_add(draw_object_details_callback,(),'WINDOW','POST_PIXEL')
 
 def unregister():
     for pcoll in preview_collections.values():

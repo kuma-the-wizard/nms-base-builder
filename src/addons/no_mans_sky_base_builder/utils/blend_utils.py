@@ -4,6 +4,7 @@ import math
 
 import addon_utils
 import bpy
+from ..utils import blend_utils
 
 
 def load_plugin(plugin_name):
@@ -165,7 +166,7 @@ def delete(bpy_object):
     bpy.ops.object.delete()
     
     
-def cleanup_scene(decimals = 3):
+def find_duplicates(decimals = 4):
     """
     Removes duplicate objects based on:
         - name
@@ -206,13 +207,14 @@ def cleanup_scene(decimals = 3):
         )
         
         if object_key in seen_objects:
-            duplicates.append(obj)
+            duplicates.append(obj.get("object", obj))
         else:
             seen_objects[object_key] = obj
 
-    # Delete duplicates
+    # select duplicates
     for obj in duplicates:
-        bpy.data.objects.remove(obj, do_unlink=True)
+        blend_utils.select(duplicates)
+        #bpy.data.objects.remove(obj, do_unlink=True)
 
-    print(f"Removed {len(duplicates)} duplicate objects")
+    print(f"Selected {len(duplicates)} duplicate objects")
     return len(duplicates)
