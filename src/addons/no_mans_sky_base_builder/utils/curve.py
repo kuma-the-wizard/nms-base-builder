@@ -52,31 +52,50 @@ def get_spline_segment_lengths(spline, resolution=12):
 # get rotation and size for indivicual duplicate along curve according to nearest points.
 # calculate what radius and tilt should be if object is between points of different radius and tilt
 def get_curve_radius_tilt(curve_obj, factor):
-    
+    """
+    Calculates radius and tilt based on the actual physical arc-length of the curve.
+    """
     spline = curve_obj.data.splines[0]
-    # extract points from curve
     points = spline.bezier_points if spline.bezier_points else spline.points
-    
     count = len(points)
+    
     if count == 0:
         return 1.0, 0.0
-    position = factor * (count - 1)
+    if count == 1:
+        return points[0].radius, points[0].tilt
+
+    # Measure the real lengths of the segments
+    segment_lengths, total_length = get_spline_segment_lengths(spline, resolution=12)
     
-    # calculate index of points on curve between which current duplicate should lie
-    i0 = int(position)
-    i1 = min(i0 + 1, count - 1)
-
-    t = position - i0
+    if total_length == 0:
+        return points[0].radius, points[0].tilt
+        
+    # Find the target physical length based on the 0.0 - 1.0 factor
+    target_length = factor * total_length
     
-    # extract point p0 and p1 from curve
-    p0 = points[i0]
-    p1 = points[i1]
+    accumulated_length = 0.0
+    for i, seg_len in enumerate(segment_lengths):
+        if accumulated_length + seg_len >= target_length or i == len(segment_lengths) - 1:
+            # The target length falls exactly inside this segment.
+            # Calculate where we are inside THIS specific segment (0.0 to 1.0)
+            if seg_len == 0:
+                t = 0.0
+            else:
+                t = (target_length - accumulated_length) / seg_len
+                
+            p0 = points[i]
+            p1 = points[(i + 1) % count]
+            
+            # Interpolate radius and tilt using the true segment percentage
+            radius = (1.0 - t) * p0.radius + t * p1.radius
+            tilt = (1.0 - t) * p0.tilt + t * p1.tilt
+            
+            return radius, tilt
+            
+        accumulated_length += seg_len
 
-    # calculate tilt and radius of an imaginary point between these two points
-    radius = (1.0 - t) * p0.radius + t * p1.radius
-    tilt = (1.0 - t) * p0.tilt + t * p1.tilt
-
-    return radius, tilt
+    # Fallback to the last point
+    return points[-1].radius, points[-1].tilt
 
 # update tilt and scale of every duplicated object on curve
 def update_curve_duplicates(curve_obj):

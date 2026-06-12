@@ -27,7 +27,7 @@ class NMS_PT_mirror_panel(Panel):
         # Create Part Count Box.
         part_box = tools_column.box()
         splitter = part_box.split(factor=0.7)
-        splitter.label(text="Part Count:" , icon = "GEOMETRY_NODES")
+        splitter.label(text="Part Count:" )# , icon = "GEOMETRY_NODES"
         part_count = len([obj for obj in bpy.data.objects if "ObjectID" in obj])
         splitter.label(text="{}".format(part_count))
 
@@ -107,9 +107,9 @@ class NMS_PT_mirror_panel(Panel):
         
         
         if build_tool.show_gap_edit_field:
-            active_curve_box = layout.box()
+            active_curve_box = curve_box.box()
             active_curve_box_col = active_curve_box.column(align = True)
-            active_curve_box_col.label(text = "Edit Acive-Curve parameters", icon = "NORMALIZE_FCURVES")
+            active_curve_box_col.label(text = "Edit Active-Curve parameters", icon = "NORMALIZE_FCURVES")
             active_curve_box_col.label(text = f"Target : {build_tool.active_curve_name}")
             
             curve_params_split = active_curve_box_col.split(factor=0.5)
@@ -124,12 +124,17 @@ class NMS_PT_mirror_panel(Panel):
         
         mirroring_box = layout.box()
         mirroring_box_column = mirroring_box.column(align = True)
-        mirroring_box_column.label(text = "Mirroring", icon = "MOD_MIRROR")
-        mirroring_box_column.prop(build_tool,"check_show_advanced_options", text = "Show advanced options")
+        mirroring_box_column_label_row = mirroring_box_column.row(align = True)
+        mirroring_box_column_label_row.label(text = "Mirroring", icon = "MOD_MIRROR")
+        
         
         
         if not build_tool.check_show_advanced_options:
+            
+            mirroring_box_column_label_row.prop(build_tool,"check_show_advanced_options", text = "Show more options", icon = "OPTIONS")
+            
             #show simple options if advanced mirroring is unchecked
+            mirroring_box_column.separator()
             mirroring_box_column.operator( "object.nms_universal_mirror_x", icon="ARROW_LEFTRIGHT" , text = "Mirror across X" )
             mirror_xyz_row = mirroring_box_column.row(align=True)
             mirror_xyz_row.operator("object.nms_universal_mirror_y", icon="CURVE_PATH", text = "Mirror across Y")
@@ -137,7 +142,9 @@ class NMS_PT_mirror_panel(Panel):
         
         else :
             # show advanced options
-            mirroring_box_column.separator()
+            #mirroring_box_column.separator()
+            
+            mirroring_box_column_label_row.prop(build_tool,"check_show_advanced_options", text = "Hide more options", icon = "OPTIONS")
             
             # select center of reflection
             mirroring_box_column.label(text = "Center of Reflection")
@@ -157,10 +164,10 @@ class NMS_PT_mirror_panel(Panel):
                 mirroring_box_column.prop(build_tool, "target_object", text = "")
                 mirroring_box_column.separator()
                 
-            #check to auto duplicate objects before mirroring
-            mirroring_box_column.prop(build_tool,"check_auto_duplicate")
             # perform mirror button
             mirroring_box_column.operator("object.nms_advanced_mirror", icon = "MOD_MIRROR", text = "Perform Mirror")
+            #check to auto duplicate objects before mirroring
+            mirroring_box_column.prop(build_tool,"check_auto_duplicate")
 
         # Set Snap Operator assignments.
         # Default
