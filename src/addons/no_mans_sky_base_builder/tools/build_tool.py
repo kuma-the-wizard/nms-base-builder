@@ -94,13 +94,13 @@ class BuildTool(bpy.types.PropertyGroup):
         min=1,       # Absolute lowest value allowed
         max=1000,      # Absolute highest value allowed
         soft_min=5,  # Slider UI floor
-        soft_max=200  # Slider UI ceiling
+        soft_max=500  # Slider UI ceiling
     )
     
     active_curve_radius_multiplier: bpy.props.FloatProperty(
         name="Overall Radius",
         default = 1.0,
-        update = lambda self, context: self.on_curve_radius_multiplier_change(),
+        update = lambda self, context: self.on_curve_parameter_change(),
         
         min=0.0,       # Absolute lowest value allowed
         max=100.0,      # Absolute highest value allowed
@@ -138,17 +138,27 @@ class BuildTool(bpy.types.PropertyGroup):
     def on_curve_radius_multiplier_change(self):
         active = bpy.context.view_layer.objects.active
         curve_obj = self.get_curve_or_linked_curve(active)
-        if curve_obj:
+        
+        if curve_obj is None: 
+            return
+        
+        original_object = curve_obj.get("original_object",None)
+        if curve_obj and original_object:
             curve.edit_radius_multiplier(curve_obj, self.active_curve_radius_multiplier)
         
     def on_curve_parameter_change(self):
         active = bpy.context.view_layer.objects.active
         curve_obj = self.get_curve_or_linked_curve(active)
-        last_object = curve_obj.get("last_object",None)
-        if curve_obj and last_object:
+        
+        if curve_obj is None: 
+            return
+        
+        original_object = curve_obj.get("original_object",None)
+        print(f"  {self.active_curve_number_of_objects},    {self.active_curve_radius_multiplier}")
+        if curve_obj and original_object:
             curve.duplicate_along_curve(
                 BUILDER, 
-                last_object,
+                original_object,
                 curve_obj,
                 self.active_curve_number_of_objects,
                 self.active_curve_radius_multiplier
@@ -293,15 +303,17 @@ class BuildTool(bpy.types.PropertyGroup):
             return {"FINISHED"}
 
         # Perform duplication along curve.
+        
+        curve_object.show_in_front = True
+        self.active_curve_radius_multiplier = radius_multiplier
+        self.active_curve_number_of_objects = number_of_objects
+        self.active_curve_name = curve_object.name
+        self.show_gap_edit_field = True
+        
         curve.duplicate_along_curve(
             BUILDER, dup_object, curve_object, number_of_objects,radius_multiplier
         )
-        
         blend_utils.select(curve_object)
-        self.active_curve_radius_multiplier = 1.0
-        self.active_curve_name = curve_object.name
-        self.active_curve_number_of_objects = curve_object.get("objects_count",10)
-        self.show_gap_edit_field = True
         
         
 
@@ -377,31 +389,7 @@ class BuildTool(bpy.types.PropertyGroup):
         if curve.is_bezier_or_nurbs_path(obj) and obj.get("has_linked_objects",False):
             self.selected_curve_object_is_parent = True
             return obj
-        elif obj.get("curve_parent",None) and obj.get("curve_parent_ref",None):
-            parent_curve = obj.get("curve_parent_ref",None)
-            self.selected_curve_object_is_parent = False
-            return parent_curve
         
         self.check_show_advanced_options = False
         return None
-    
-    def toggle_curve_link(self):
-        active_object = bpy.context.active_object
-        curve_obj = self.get_curve_or_linked_curve(active_object)
-        if curve_obj.get("children_detached", False) and curve_obj.get("paused", False):
-            self.check_pause_curve_link = False
-            curve.reattach_curve_children(curve_obj)
-            #curve_obj.hide_set(False)
-            curve_obj.show_in_front = True
-            curve_obj.hide_select = False
-            blend_utils.select(curve_obj)
-            print("attaching")
-        else: 
-            self.check_pause_curve_link = True
-            curve.temporarily_detach_curve_children(curve_obj)
-            curve.select_parent_curve(curve_obj)
-            #curve_obj.hide_set(True)
-            curve_obj.show_in_front = False
-            curve_obj.hide_select = True
-            print("detaching")
             

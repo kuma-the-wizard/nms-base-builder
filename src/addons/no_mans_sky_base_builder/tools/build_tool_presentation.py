@@ -91,39 +91,20 @@ class NMS_PT_mirror_panel(Panel):
             active_curve_box_col = active_curve_box.column(align = False)
             active_curve_box_col.label(text = "Edit Active-Curve parameters", icon = "NORMALIZE_FCURVES")
             
+            active_curve_box_col.label(text = f"Target : {build_tool.active_curve_name}")
+            
             curve_params_split = active_curve_box_col.split(factor=0.5)
             curve_gap_row, curve_radius_row = (curve_params_split.column(align = True), curve_params_split.column(align = True))
             
-            curve_gap_row.label(text = f"Target : {build_tool.active_curve_name}")
+            curve_gap_row.label(text = "Number of Objects")
+            curve_gap_row.label(text = "Overall Radius")
+            curve_radius_row.alert = True
+            curve_radius_row.prop(build_tool,"active_curve_number_of_objects",text = "")
+            curve_radius_row.prop(build_tool,"active_curve_radius_multiplier",text = "")
             
-            
-            if not build_tool.check_pause_curve_link:
-                
-                curve_gap_row.separator()
-                curve_gap_row.label(text = "Number of Objects")
-                curve_gap_row.label(text = "Overall Radius")
-                
-                curve_radius_row.label(text = "")
-                curve_radius_row.separator()
-                curve_radius_row.alert = True
-                curve_radius_row.prop(build_tool,"active_curve_number_of_objects",text = "")
-                curve_radius_row.prop(build_tool,"active_curve_radius_multiplier",text = "")
-                
-                show_box_buttons_row = active_curve_box_col.row(align=True)
-                show_box_buttons_row.operator("object.nms_curve_break_apart", icon="UNLINKED",text = "Unlink Curve")
-                show_box_buttons_row.operator("object.nms_pause_curve", icon="PAUSE",text = "Pause curve link")
-                
-                #if build_tool.selected_curve_object_is_parent:
-                #    show_box_buttons_row.operator("object.nms_select_children_of_curve", icon="SEQ_LUMA_WAVEFORM",text = "Select Children Objects")
-                #else :
-                #    show_box_buttons_row.operator("object.nms_selecte_object_parent_curve", icon="MOD_ENVELOPE",text = "Select Parent Curve")
+            show_box_buttons_row = active_curve_box_col.row(align=True)
+            show_box_buttons_row.operator("object.nms_curve_break_apart", icon="UNLINKED",text = "Unlink Curve")
                     
-                
-            else : 
-                curve_radius_row.operator("object.nms_pause_curve", icon="PLAY",text = "Resume curve link")
-                #active_curve_box_col.operator("object.nms_selecte_object_parent_curve", icon="MOD_ENVELOPE",text = "Select Parent Curve")
-            
-        
         mirroring_box = layout.box()
         mirroring_box_column = mirroring_box.column(align = True)
         mirroring_box_column_label_row = mirroring_box_column.row(align = True)

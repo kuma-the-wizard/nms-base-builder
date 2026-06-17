@@ -46,7 +46,7 @@ def get_spline_segment_lengths(spline, resolution=12):
 
 # get rotation and size for indivicual duplicate along curve according to nearest points.
 # calculate what radius and tilt should be if object is between points of different radius and tilt
-def get_curve_radius_tilt(curve_obj, factor):
+def get_curve_radius_tilt(curve_obj, factor, segment_lengths, total_length):
     """
     Calculates radius and tilt based on the actual physical arc-length of the curve.
     """
@@ -58,9 +58,6 @@ def get_curve_radius_tilt(curve_obj, factor):
         return 1.0, 0.0
     if count == 1:
         return points[0].radius, points[0].tilt
-
-    # Measure the real lengths of the segments
-    segment_lengths, total_length = get_spline_segment_lengths(spline, resolution=12)
     
     if total_length == 0:
         return points[0].radius, points[0].tilt
@@ -93,42 +90,29 @@ def get_curve_radius_tilt(curve_obj, factor):
     return points[-1].radius, points[-1].tilt
 
 
-def update_obj_transformations(obj, curve_obj):
-    
+def update_obj_transformations(
+    obj, 
+    curve_obj,
+    segment_lengths,
+    total_length,
+):
     radius_multiplier = curve_obj.get("radius_multiplier", 1.0)
     factor = obj.get("curve_factor")
     if factor is None:
         return
     
-    radius, tilt = get_curve_radius_tilt(curve_obj, factor)
-    base_scale = obj.get("base_scale")
+    radius, tilt = get_curve_radius_tilt(curve_obj, factor, segment_lengths, total_length)
+    scale = radius * radius_multiplier 
     
-    if base_scale:
-        # 1. Detect if the user manually scaled the object in the viewport
-        last_applied = obj.get("last_applied_scale")
-        
-        if obj.get("new_object",True):
-            obj["new_object"] = False
-        elif last_applied is not None:
-            # If the current scale differs from what the script last applied, the user scaled it!
-            if abs(obj.scale.x - last_applied) > 0.001:
-                denom = radius * radius_multiplier
-                # Prevent division by zero just in case the curve radius is exactly 0
-                if denom != 0.0:
-                    # Update base_scale so your manual size is maintained relative to the curve
-                    new_base = obj.scale.x / denom
-                    obj["base_scale"] = (new_base, new_base, new_base)
-                    base_scale = obj["base_scale"]
-        
-        # 2. Apply the final calculated scale
-        # nms objects cannot have non uniform scale
-        scale = base_scale[0] * radius * radius_multiplier 
-        obj.scale.x = scale
-        obj.scale.y = scale
-        obj.scale.z = scale
-        
-        # 3. Save this scale to compare against during the next update
-        obj["last_applied_scale"] = scale
+    #print(f" scale is {scale},    radius is {radius} , radius multiplier is {radius_multiplier}")
     
-    #obj.rotation_mode = 'XYZ'
-    #obj.rotation_euler.y = tilt
+    obj.scale.x = scale
+    obj.scale.y = scale
+    obj.scale.z = scale
+    
+    obj.rotation_euler.x = 0.0
+    obj.rotation_euler.y = 0.0
+    obj.rotation_euler.z = 0.0
+    
+    obj.location = (0.0, 0.0, 0.0)
+    

@@ -157,7 +157,7 @@ class DuplicateAlongCurve(bpy.types.Operator):
         min=1,       # Absolute lowest value allowed
         max=1000,      # Absolute highest value allowed
         soft_min=5,  # Slider UI floor
-        soft_max=200  # Slider UI ceiling
+        soft_max=500  # Slider UI ceiling
     )
     
     overall_Radius: bpy.props.FloatProperty(
@@ -294,21 +294,6 @@ class ShowCurveToolInfo(bpy.types.Operator):
 
         return {'FINISHED'}
     
-class PauseCurve(bpy.types.Operator):
-    """Break apart objects linked to curve."""
-
-    bl_idname = "object.nms_pause_curve"
-    bl_label = "Break Curve"
-    bl_options = {"UNDO", "REGISTER"}
-    bl_description = "Break apart objects from curve and make them independent"
-
-    def execute(self, context):
-        scene = context.scene
-        build_tool = scene.nms_build_tool
-        build_tool.toggle_curve_link()
-        return {'FINISHED'}
-    
-    
     
 classes = (
     MirrorAcrossX,
@@ -323,7 +308,6 @@ classes = (
     SelectObjectParentCurve,
     SelectChildrenOfCurve,
     ShowCurveToolInfo,
-    PauseCurve,
     
     Delete,
     Mirror,
