@@ -122,19 +122,34 @@ class BuildTool(bpy.types.PropertyGroup):
         #update = lambda self, context: self.on_show_gap_edit_field_change(),
     )
     
+    check_pause_curve_link : bpy.props.BoolProperty(
+        name="Pause curve link",
+        default=False,
+        options={'SKIP_SAVE'},
+    ) 
+    
+    selected_curve_object_is_parent: bpy.props.BoolProperty(
+        name="Is parent of Child",
+        default=False,
+        options={'SKIP_SAVE'},
+    )
+    
         
     def on_curve_radius_multiplier_change(self):
         active = bpy.context.view_layer.objects.active
-        if curve.is_bezier_or_nurbs_path(active) and active.get("has_linked_objects",False):
-            curve.edit_radius_multiplier(active, self.active_curve_radius_multiplier)
+        curve_obj = self.get_curve_or_linked_curve(active)
+        if curve_obj:
+            curve.edit_radius_multiplier(curve_obj, self.active_curve_radius_multiplier)
         
     def on_curve_parameter_change(self):
         active = bpy.context.view_layer.objects.active
-        if curve.is_bezier_or_nurbs_path(active) and active.get("has_linked_objects",False):
+        curve_obj = self.get_curve_or_linked_curve(active)
+        last_object = curve_obj.get("last_object",None)
+        if curve_obj and last_object:
             curve.duplicate_along_curve(
                 BUILDER, 
-                active.get("original_object",None), 
-                active,
+                last_object,
+                curve_obj,
                 self.active_curve_number_of_objects,
                 self.active_curve_radius_multiplier
             )
@@ -282,6 +297,12 @@ class BuildTool(bpy.types.PropertyGroup):
             BUILDER, dup_object, curve_object, number_of_objects,radius_multiplier
         )
         
+        blend_utils.select(curve_object)
+        self.active_curve_radius_multiplier = 1.0
+        self.active_curve_name = curve_object.name
+        self.active_curve_number_of_objects = curve_object.get("objects_count",10)
+        self.show_gap_edit_field = True
+        
         
 
     def delete(self):
@@ -340,3 +361,47 @@ class BuildTool(bpy.types.PropertyGroup):
         # Snap.
         target = BUILDER.get_builder_object_from_bpy_object(target)
         new_item.snap_to(target)
+        
+    def show_curve_edit_options(self,curve_obj):
+        self.show_gap_edit_field = True
+        
+        self.active_curve_name = curve_obj.name
+        self.active_curve_number_of_objects = curve_obj.get("objects_count",10)
+        self.active_curve_radius_multiplier = curve_obj.get("radius_multiplier",1.0)
+        
+
+    def hide_curve_edit_options(self):
+        self.show_gap_edit_field = False
+        
+    def get_curve_or_linked_curve(self,obj):
+        if curve.is_bezier_or_nurbs_path(obj) and obj.get("has_linked_objects",False):
+            self.selected_curve_object_is_parent = True
+            return obj
+        elif obj.get("curve_parent",None) and obj.get("curve_parent_ref",None):
+            parent_curve = obj.get("curve_parent_ref",None)
+            self.selected_curve_object_is_parent = False
+            return parent_curve
+        
+        self.check_show_advanced_options = False
+        return None
+    
+    def toggle_curve_link(self):
+        active_object = bpy.context.active_object
+        curve_obj = self.get_curve_or_linked_curve(active_object)
+        if curve_obj.get("children_detached", False) and curve_obj.get("paused", False):
+            self.check_pause_curve_link = False
+            curve.reattach_curve_children(curve_obj)
+            #curve_obj.hide_set(False)
+            curve_obj.show_in_front = True
+            curve_obj.hide_select = False
+            blend_utils.select(curve_obj)
+            print("attaching")
+        else: 
+            self.check_pause_curve_link = True
+            curve.temporarily_detach_curve_children(curve_obj)
+            curve.select_parent_curve(curve_obj)
+            #curve_obj.hide_set(True)
+            curve_obj.show_in_front = False
+            curve_obj.hide_select = True
+            print("detaching")
+            

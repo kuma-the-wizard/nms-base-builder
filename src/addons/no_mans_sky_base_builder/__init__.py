@@ -1749,6 +1749,8 @@ def reset_save_editor_state(dummy):
 last_active = None
 overlay_text = "No object selected"
 
+
+    
 @persistent
 def active_object_watcher(scene, depsgraph):
     global last_active
@@ -1757,11 +1759,11 @@ def active_object_watcher(scene, depsgraph):
     build_tool = scene.nms_build_tool
     if active != last_active:
         last_active = active
-        if curve.is_bezier_or_nurbs_path(active) and active.get("has_linked_objects",False):
-            build_tool.active_curve_name = active.name
-            build_tool.show_gap_edit_field = True
+        curve_obj = build_tool.get_curve_or_linked_curve(active)
+        if curve_obj:
+            build_tool.show_curve_edit_options(curve_obj)
         else: 
-            build_tool.show_gap_edit_field = False
+            build_tool.hide_curve_edit_options()
         
             
             
@@ -1780,9 +1782,7 @@ class NMSAddonPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
         layout.prop(self, "nms_save_folder_path")
-
-
-
+        
 
 # We can store multiple preview collections here,
 # however in this example we only store "main"
@@ -1879,7 +1879,8 @@ def register():
     
     if active_object_watcher not in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.append(active_object_watcher)
-        #bpy.types.SpaceView3D.draw_handler_add(draw_object_details_callback,(),'WINDOW','POST_PIXEL')
+        
+    
 
 def unregister():
     for pcoll in preview_collections.values():

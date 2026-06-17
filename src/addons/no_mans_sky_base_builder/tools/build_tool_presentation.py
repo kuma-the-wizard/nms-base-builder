@@ -46,6 +46,7 @@ class NMS_PT_mirror_panel(Panel):
         tools_col.label(text="Duplicate")
         tools_col.operator("object.nms_duplicate", icon="DUPLICATE")
         tools_col.operator("object.nms_select_duplicates",icon = "BRUSH_DATA", text = "Find Duplicates")
+        tools_col.operator("object.nms_duplicate_along_curve", icon="MOD_DASH")
         tools_col.label(text="Delete")
         tools_col.operator("object.nms_delete", icon="TRASH")
         
@@ -85,42 +86,43 @@ class NMS_PT_mirror_panel(Panel):
         mirror_col.operator("object.nms_flip", icon="DECORATE_OVERRIDE")
         
         #curve tools
-        curve_box = layout.box()
-        curve_col = curve_box.column(align=True)
-    
-        curve_label_row = curve_col.row()
-        curve_label_row.label(text = "Curve tool", icon = "MOD_DASH")
-
-        curve_col.separator()
-        dupe_along_curve_row = curve_col.row(align = True)
-        dupe_along_curve_row.operator("object.nms_duplicate_along_curve", icon="PARTICLE_POINT")
-        curve_label_info_row = dupe_along_curve_row.row(align = False)
-        curve_label_info_row.scale_x = 0.5
-        curve_label_info_row.operator("object.nms_show_curve_info_popup", text="Info", icon = "HELP")
-        curve_col.separator()
-        curve_create_row = curve_col.row(align=True)
-        curve_create_row.operator("object.nms_create_curve", icon="CURVE_BEZCURVE",text = "Create Curve")
-        curve_create_row.operator("object.nms_curve_break_apart", icon="UNLINKED",text = "Unlink Curve")
-        select_curve_col =  curve_col.row(align=True)
-        select_curve_col.operator("object.nms_selecte_object_parent_curve", icon="MOD_ENVELOPE",text = "Select Parent Curve")
-        select_curve_col.operator("object.nms_select_children_of_curve", icon="SEQ_LUMA_WAVEFORM",text = "Select Childern of Curve")
-        
-        
         if build_tool.show_gap_edit_field:
-            active_curve_box = curve_box.box()
-            active_curve_box_col = active_curve_box.column(align = True)
+            active_curve_box = layout.box().box()
+            active_curve_box_col = active_curve_box.column(align = False)
             active_curve_box_col.label(text = "Edit Active-Curve parameters", icon = "NORMALIZE_FCURVES")
-            active_curve_box_col.label(text = f"Target : {build_tool.active_curve_name}")
             
             curve_params_split = active_curve_box_col.split(factor=0.5)
             curve_gap_row, curve_radius_row = (curve_params_split.column(align = True), curve_params_split.column(align = True))
             
-            curve_gap_row.label(text = "Number of Objects")
-            curve_gap_row.label(text = "Overall Radius")
+            curve_gap_row.label(text = f"Target : {build_tool.active_curve_name}")
             
-            curve_radius_row.alert = True
-            curve_radius_row.prop(build_tool,"active_curve_number_of_objects",text = "")
-            curve_radius_row.prop(build_tool,"active_curve_radius_multiplier",text = "")
+            
+            if not build_tool.check_pause_curve_link:
+                
+                curve_gap_row.separator()
+                curve_gap_row.label(text = "Number of Objects")
+                curve_gap_row.label(text = "Overall Radius")
+                
+                curve_radius_row.label(text = "")
+                curve_radius_row.separator()
+                curve_radius_row.alert = True
+                curve_radius_row.prop(build_tool,"active_curve_number_of_objects",text = "")
+                curve_radius_row.prop(build_tool,"active_curve_radius_multiplier",text = "")
+                
+                show_box_buttons_row = active_curve_box_col.row(align=True)
+                show_box_buttons_row.operator("object.nms_curve_break_apart", icon="UNLINKED",text = "Unlink Curve")
+                show_box_buttons_row.operator("object.nms_pause_curve", icon="PAUSE",text = "Pause curve link")
+                
+                #if build_tool.selected_curve_object_is_parent:
+                #    show_box_buttons_row.operator("object.nms_select_children_of_curve", icon="SEQ_LUMA_WAVEFORM",text = "Select Children Objects")
+                #else :
+                #    show_box_buttons_row.operator("object.nms_selecte_object_parent_curve", icon="MOD_ENVELOPE",text = "Select Parent Curve")
+                    
+                
+            else : 
+                curve_radius_row.operator("object.nms_pause_curve", icon="PLAY",text = "Resume curve link")
+                #active_curve_box_col.operator("object.nms_selecte_object_parent_curve", icon="MOD_ENVELOPE",text = "Select Parent Curve")
+            
         
         mirroring_box = layout.box()
         mirroring_box_column = mirroring_box.column(align = True)
@@ -131,20 +133,20 @@ class NMS_PT_mirror_panel(Panel):
         
         if not build_tool.check_show_advanced_options:
             
-            mirroring_box_column_label_row.prop(build_tool,"check_show_advanced_options", text = "Show more options", icon = "OPTIONS")
+            mirroring_box_column_label_row.prop(build_tool,"check_show_advanced_options", text = "Show more options") # icon = "OPTIONS"
             
             #show simple options if advanced mirroring is unchecked
             mirroring_box_column.separator()
             mirroring_box_column.operator( "object.nms_universal_mirror_x", icon="ARROW_LEFTRIGHT" , text = "Mirror across X" )
-            mirror_xyz_row = mirroring_box_column.row(align=True)
-            mirror_xyz_row.operator("object.nms_universal_mirror_y", icon="CURVE_PATH", text = "Mirror across Y")
-            mirror_xyz_row.operator("object.nms_universal_mirror_z", icon="EMPTY_SINGLE_ARROW", text = "Mirror across Z")
+            #mirror_xyz_row = mirroring_box_column.row(align=True)
+            #mirror_xyz_row.operator("object.nms_universal_mirror_y", icon="CURVE_PATH", text = "Mirror across Y")
+            #mirror_xyz_row.operator("object.nms_universal_mirror_z", icon="EMPTY_SINGLE_ARROW", text = "Mirror across Z")
         
         else :
             # show advanced options
             #mirroring_box_column.separator()
             
-            mirroring_box_column_label_row.prop(build_tool,"check_show_advanced_options", text = "Hide more options", icon = "OPTIONS")
+            mirroring_box_column_label_row.prop(build_tool,"check_show_advanced_options", text = "Hide more options")
             
             # select center of reflection
             mirroring_box_column.label(text = "Center of Reflection")
