@@ -100,7 +100,7 @@ class BuildTool(bpy.types.PropertyGroup):
     active_curve_radius_multiplier: bpy.props.FloatProperty(
         name="Overall Radius",
         default = 1.0,
-        update = lambda self, context: self.on_curve_parameter_change(),
+        update = lambda self, context: self.on_curve_radius_multiplier_change(),
         
         min=0.0,       # Absolute lowest value allowed
         max=100.0,      # Absolute highest value allowed
@@ -130,7 +130,7 @@ class BuildTool(bpy.types.PropertyGroup):
     
     selected_curve_object_is_parent: bpy.props.BoolProperty(
         name="Is parent of Child",
-        default=False,
+        default=True,
         options={'SKIP_SAVE'},
     )
     
@@ -313,8 +313,8 @@ class BuildTool(bpy.types.PropertyGroup):
         curve.duplicate_along_curve(
             BUILDER, dup_object, curve_object, number_of_objects,radius_multiplier
         )
+        curve.lock_all_objects(curve_object)
         blend_utils.select(curve_object)
-        
         
 
     def delete(self):
@@ -387,9 +387,17 @@ class BuildTool(bpy.types.PropertyGroup):
         
     def get_curve_or_linked_curve(self,obj):
         if curve.is_bezier_or_nurbs_path(obj) and obj.get("has_linked_objects",False):
-            self.selected_curve_object_is_parent = True
             return obj
-        
-        self.check_show_advanced_options = False
+        elif "curve_parent" in obj and "curve_parent_ref" in obj:
+            return obj["curve_parent_ref"]
         return None
-            
+    
+    def select_parent_curve(self):
+        self.selected_curve_object_is_parent = True
+        active_object = bpy.context.active_object
+        curve.select_parent_curve(active_object)
+        
+    def select_children_of_curve(self):
+        self.selected_curve_object_is_parent = False
+        active_object = bpy.context.active_object
+        curve.select_children_of_curve(active_object)

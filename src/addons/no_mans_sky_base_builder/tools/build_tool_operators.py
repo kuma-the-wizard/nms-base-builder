@@ -173,7 +173,7 @@ class DuplicateAlongCurve(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         build_tool = scene.nms_build_tool
-        build_tool.duplicate_along_curve(self.number_of_objects, self.overall_Radius )
+        build_tool.duplicate_along_curve(self.number_of_objects, self.overall_Radius)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -249,8 +249,9 @@ class SelectObjectParentCurve(bpy.types.Operator):
     bl_description = "Select parent curve of object selected"
 
     def execute(self, context):
-        active_object = bpy.context.active_object
-        curve.select_parent_curve(active_object)
+        scene = context.scene
+        build_tool = scene.nms_build_tool
+        build_tool.select_parent_curve()
         return {"FINISHED"}
     
 class SelectChildrenOfCurve(bpy.types.Operator):
@@ -262,8 +263,9 @@ class SelectChildrenOfCurve(bpy.types.Operator):
     bl_description = "Select duplicated objects linked to a curve"
 
     def execute(self, context):
-        active_object = bpy.context.active_object
-        curve.select_children_of_curve(active_object)
+        scene = context.scene
+        build_tool = scene.nms_build_tool
+        build_tool.select_children_of_curve()
         return {"FINISHED"}
     
 
@@ -293,7 +295,7 @@ class ShowCurveToolInfo(bpy.types.Operator):
         )
 
         return {'FINISHED'}
-    
+
     
 classes = (
     MirrorAcrossX,

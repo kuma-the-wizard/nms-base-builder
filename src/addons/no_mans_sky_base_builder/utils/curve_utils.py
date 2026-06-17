@@ -110,9 +110,9 @@ def update_obj_transformations(
     obj.scale.y = scale
     obj.scale.z = scale
     
-    obj.rotation_euler.x = 0.0
-    obj.rotation_euler.y = 0.0
-    obj.rotation_euler.z = 0.0
+    #obj.rotation_euler.x = 0.0
+    #obj.rotation_euler.y = 0.0
+    #obj.rotation_euler.z = 0.0
     
     obj.location = (0.0, 0.0, 0.0)
     

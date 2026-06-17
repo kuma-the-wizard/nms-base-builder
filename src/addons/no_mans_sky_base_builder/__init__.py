@@ -1760,10 +1760,10 @@ def active_object_watcher(scene, depsgraph):
     if active != last_active:
         last_active = active
         curve_obj = build_tool.get_curve_or_linked_curve(active)
-        if curve_obj:
+        if curve_obj and  active in bpy.context.selected_objects:
             build_tool.show_curve_edit_options(curve_obj)
-        #else: 
-            #build_tool.hide_curve_edit_options()
+        else: 
+            build_tool.hide_curve_edit_options()
         
             
             

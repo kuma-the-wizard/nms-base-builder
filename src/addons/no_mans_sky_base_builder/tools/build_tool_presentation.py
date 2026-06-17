@@ -46,9 +46,9 @@ class NMS_PT_mirror_panel(Panel):
         tools_col.label(text="Duplicate")
         tools_col.operator("object.nms_duplicate", icon="DUPLICATE")
         tools_col.operator("object.nms_select_duplicates",icon = "BRUSH_DATA", text = "Find Duplicates")
+        tools_col.label(text="Curve")
         tools_col.operator("object.nms_duplicate_along_curve", icon="MOD_DASH")
-        tools_col.label(text="Delete")
-        tools_col.operator("object.nms_delete", icon="TRASH")
+        tools_col.operator("object.nms_create_curve", icon="CURVE_BEZCURVE", text = "create curve")
         
 
         # Create Snapping box.
@@ -85,6 +85,10 @@ class NMS_PT_mirror_panel(Panel):
         mirror_col.operator("object.nms_mirror", icon="ARROW_LEFTRIGHT")
         mirror_col.operator("object.nms_flip", icon="DECORATE_OVERRIDE")
         
+        delete_col = snap_column.box().column(align = True)
+        delete_col.label(text="Delete")
+        delete_col.operator("object.nms_delete", icon="TRASH")
+        
         #curve tools
         if build_tool.show_gap_edit_field:
             active_curve_box = layout.box().box()
@@ -93,17 +97,24 @@ class NMS_PT_mirror_panel(Panel):
             
             active_curve_box_col.label(text = f"Target : {build_tool.active_curve_name}")
             
-            curve_params_split = active_curve_box_col.split(factor=0.5)
-            curve_gap_row, curve_radius_row = (curve_params_split.column(align = True), curve_params_split.column(align = True))
-            
-            curve_gap_row.label(text = "Number of Objects")
-            curve_gap_row.label(text = "Overall Radius")
-            curve_radius_row.alert = True
-            curve_radius_row.prop(build_tool,"active_curve_number_of_objects",text = "")
-            curve_radius_row.prop(build_tool,"active_curve_radius_multiplier",text = "")
-            
-            show_box_buttons_row = active_curve_box_col.row(align=True)
-            show_box_buttons_row.operator("object.nms_curve_break_apart", icon="UNLINKED",text = "Unlink Curve")
+            if build_tool.selected_curve_object_is_parent:
+                
+                curve_params_split = active_curve_box_col.split(factor=0.5)
+                curve_gap_row, curve_radius_row = (curve_params_split.column(align = True), curve_params_split.column(align = True))
+                
+                curve_gap_row.label(text = "Number of Objects")
+                curve_gap_row.label(text = "Objects Size")
+                curve_radius_row.alert = True
+                curve_radius_row.prop(build_tool,"active_curve_number_of_objects",text = "")
+                curve_radius_row.prop(build_tool,"active_curve_radius_multiplier",text = "")
+                active_curve_box_col.separator()
+                show_box_buttons_row = active_curve_box_col.row(align = True)
+                show_box_buttons_row.operator("object.nms_curve_break_apart", icon="UNLINKED",text = "Unlink Curve")
+                show_box_buttons_row.operator("object.nms_select_children_of_curve", icon="MOD_OUTLINE",text = "Select Children")
+                
+            else :
+                show_box_buttons_row = active_curve_box_col.row(align = True)
+                show_box_buttons_row.operator("object.nms_selecte_object_parent_curve", icon="MOD_ENVELOPE",text = "Select Parent")
                     
         mirroring_box = layout.box()
         mirroring_box_column = mirroring_box.column(align = True)
