@@ -97,9 +97,10 @@ class NMS_PT_tools_panel(Panel):
             active_curve_box_col = active_curve_box.column(align = False)
             active_curve_box_col.label(text = "Edit Active-Curve parameters", icon = "NORMALIZE_FCURVES")
             
-            active_curve_box_col_label_split = active_curve_box_col.split(factor = 0.8)
+            active_curve_box_col_label_split = active_curve_box_col.split(factor = 0.7)
             active_curve_box_col_label, active_curve_box_col_delete = (active_curve_box_col_label_split.column(), active_curve_box_col_label_split.column())
             active_curve_box_col_label.label(text = f"Target : {build_tool.active_curve_name}")
+            active_curve_box_col_delete.operator("object.nms_curve_delete", icon="TRASH",text = "Delete Curve and Children")
             #active_curve_box_col.separator()
             
             if build_tool.selected_curve_object_is_parent:
@@ -116,8 +117,6 @@ class NMS_PT_tools_panel(Panel):
                 show_box_buttons_row.operator("object.nms_curve_break_apart", icon="UNLINKED",text = "Unlink Curve")
                 show_box_buttons_row.operator("object.nms_select_children_of_curve", icon="MOD_OUTLINE",text = "Select Children")
                 show_box_morror_delete_row = active_curve_box_col.row(align = True)
-                show_box_morror_delete_row.operator("object.nms_curve_delete", icon="TRASH",text = "Delete Curve and Children")
-                show_box_morror_delete_row.operator("object.nms_curve_mirror", icon="MOD_MIRROR",text = "Mirror Curve")
                 
             else :
                 show_box_buttons_row = active_curve_box_col.row(align = True)

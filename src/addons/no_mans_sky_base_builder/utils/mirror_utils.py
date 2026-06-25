@@ -100,7 +100,8 @@ def mirror_matrix_world_universal(object_id, old_matrix_world, axis = None, cent
     matrix_world = position_matrix @ rotation_matrix @ scale_matrix
     
     #correct anomalies in mirroring
-    matrix_world = mirror_correction(object_id, matrix_world)
+    if object_id is not None:
+        matrix_world = mirror_correction(object_id, matrix_world)
 
     return matrix_world
 
@@ -139,3 +140,4 @@ def mirror_correction(object_id, matrix_world):
         return matrix_world @ y_rot_180
 
     return matrix_world
+

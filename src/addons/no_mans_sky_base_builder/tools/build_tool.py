@@ -161,11 +161,11 @@ class BuildTool(bpy.types.PropertyGroup):
                 None,
                 curve_obj,
                 self.active_curve_number_of_objects,
-                self.active_curve_radius_multiplier
+                curve_obj.get("radius_multiplier",1.0)
             )
     
     def mirror(self, axis = None, center = None, change_orientation = False):
-        """Mirror the object along X axis (if possible)."""
+        """Mirror the object acording to parameters provided"""
         # Store selection.
         selected_objects = bpy.context.selected_objects
 
@@ -180,7 +180,7 @@ class BuildTool(bpy.types.PropertyGroup):
         new_items = []
         for target in selected_objects:
             # Part
-            if "ObjectID" in target:
+            if "ObjectID" in target :
                 object_id = target["ObjectID"]
                 mirror_id = part.Part.get_mirror_part_id(object_id)
                 
@@ -191,9 +191,8 @@ class BuildTool(bpy.types.PropertyGroup):
                 else :
                     new_item = target
                 
-                mirror_part_exist =  mirror_id in nice_name_dictionary.keys()
-                
                 # Build Item.
+                mirror_part_exist =  mirror_id in nice_name_dictionary.keys()
                 if mirror_part_exist:
                     new_item = BUILDER.mirror_part(target)
 
@@ -208,6 +207,24 @@ class BuildTool(bpy.types.PropertyGroup):
                     new_items.append(new_item.object)
                 else:
                     new_items.append(new_item)
+                   
+            # mirror if object is a custom nms curve
+            elif curve.is_bezier_or_nurbs_path(target) and "has_linked_objects" in target:
+                if not target["has_linked_objects"]:
+                    continue
+                
+                # Duplicate the object and its data block so they don't share identical vertices
+                if self.check_auto_duplicate:
+                    new_curve_obj = target.copy()
+                    new_curve_obj.data = target.data.copy()
+                    new_curve_obj["unique_id"] = str(uuid.uuid4())
+                    bpy.context.collection.objects.link(new_curve_obj)
+                else:
+                    new_curve_obj = target
+                    
+                curve.mirror_curve(new_curve_obj, axis, center)
+                new_items.append(new_curve_obj)
+                
         blend_utils.select(new_items)
         return {"FINISHED"}
     
@@ -431,6 +448,7 @@ class BuildTool(bpy.types.PropertyGroup):
     def hide_curve_edit_options(self):
         #if not self.show_gap_edit_field:
         self.show_gap_edit_field = False
+        self.active_curve_name = ""
 
     
     def select_parent_curve(self):

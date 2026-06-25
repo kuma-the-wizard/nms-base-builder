@@ -1750,8 +1750,6 @@ def reset_save_editor_state(dummy):
     global previous_objects
     previous_objects = set(bpy.data.objects)
     
-    print(" previous objects are ", len(previous_objects))
-    
     for scene in bpy.data.scenes:
         save_data = scene.nms_save_data
         save_data.check_plugin_enabled = False
@@ -1760,6 +1758,7 @@ def reset_save_editor_state(dummy):
 last_active = None
 overlay_text = "No object selected"
 previous_objects = set()
+known_curves = set()
 
 # keep track of active object to display or hide additional options related to that object
 @persistent
@@ -1793,8 +1792,10 @@ def curve_duplicate_handler(scene, depsgraph):
      
     for curve_obj in updated_curves:
         build_tool = scene.nms_build_tool
-        new_radius_multiplier = build_tool.active_curve_radius_multiplier
-        curve.update_curve_duplicates(curve_obj, new_radius_multiplier)
+        if curve_obj.name == build_tool.active_curve_name:
+            #new_radius_multiplier = build_tool.active_curve_radius_multiplier
+            new_radius_multiplier = curve_obj["radius_multiplier"]
+            curve.update_curve_duplicates(curve_obj, new_radius_multiplier)
 
 def scene_watcher(scene, depsgraph):
     global previous_objects
@@ -1809,20 +1810,25 @@ def scene_watcher(scene, depsgraph):
                 previous_curves.append(obj)
         except ReferenceError:
             pass
+        
+        try:
+            if "curve_parent" in obj:
+                if bpy.data.objects.get(obj["curve_parent"]) is None:
+                    print("deleted : ", obj.name)
+                    bpy.data.objects.remove(obj, do_unlink=True)
+        except ReferenceError:
+            pass
     
     if new_objects is None or len(new_objects) == 0:
         previous_objects = current
         return
-
+    
     if previous_curves is not None and len(previous_curves) > 0:
         for new_curve in new_objects:
             if "has_linked_objects" in new_curve and curve.is_bezier_or_nurbs_path(new_curve):
                 new_uuid = new_curve["unique_id"]
-                matching_curve = next(
-                    (o for o in previous_curves if o["unique_id"] == new_uuid),
-                    None
-                )
                 
+                matching_curve = next((o for o in previous_curves if o["unique_id"] == new_uuid), None)
                 if matching_curve is None:
                     continue
                 
@@ -1831,9 +1837,7 @@ def scene_watcher(scene, depsgraph):
                     continue
                 
                 curve.sync_curves(new_curve, matching_curve)
-
     previous_objects = current
-        
             
 
 class NMSAddonPreferences(bpy.types.AddonPreferences):
