@@ -276,6 +276,10 @@ def import_paticular_base_from_save(base_identifier,  save_slot):
     # fist see if base actially exists or not
     searched_base = save_file.search_base_with_identifier(base_identifier)
     if searched_base is None:
+        message = (
+            "Error importing base"
+        )
+        ShowMessageBox(message = message, title="Export Failed", icon = "WARNING_LARGE")
         return None
         
     #return bases after translating it to engish

@@ -1,4 +1,3 @@
-import bpy
 from mathutils.geometry import interpolate_bezier
 
 def build_curve_eval_data(curve_obj, resolution=64):
@@ -99,11 +98,14 @@ def get_exact_radius_tilt(eval_data, total_length, factor):
             
     return eval_data[-1][1], eval_data[-1][2]
 
+
 def update_obj_transformations(obj, curve_obj, eval_data, total_length):
     factor = obj.get("curve_factor")
     
     if factor is None:
         return
+    
+    curve_scale_multiplier = curve_obj.scale.x/curve_obj["initial_curve_scale"]
         
     radius_multiplier = curve_obj.get("radius_multiplier", 1.0)
     
@@ -111,18 +113,23 @@ def update_obj_transformations(obj, curve_obj, eval_data, total_length):
     radius, tilt = get_exact_radius_tilt(eval_data, total_length, factor)
     
     # 2. Reverted to strict dictionary access (matches your original code exactly)
-    base_scale = obj["base_scale"]
     
-    scale = radius * radius_multiplier * base_scale
-    
-    # 3. BLENDER BUG FIX: Clamp scale to a microscopic value above zero. 
-    # This prevents the matrix inversion bug that snaps objects to the world origin.
-    if scale < 0.00001:
-        scale = 0.00001
-    
-    obj.scale.x = scale
-    obj.scale.y = scale
-    obj.scale.z = scale
+    if curve_obj.get("parent_selected",True):
+        base_scale = obj["base_scale"]
+        obj["radius"] = radius
+        
+        scale = radius * radius_multiplier * base_scale * curve_scale_multiplier
+        
+        # Clamp scale to a microscopic value above zero. 
+        # This prevents the matrix inversion that snaps objects to the world origin.
+        if scale < 0.00001:
+            scale = 0.00001
+        
+        obj.scale.x = scale
+        obj.scale.y = scale
+        obj.scale.z = scale
+    #else:
+        #obj["base_scale"] = obj.scale.x/(radius * radius_multiplier)
     
     # Keep local location zeroed (assuming a Follow Path constraint or Curve Mod handles actual position)
     #obj.location = (0.0, 0.0, 0.0)
@@ -130,9 +137,8 @@ def update_obj_transformations(obj, curve_obj, eval_data, total_length):
     
 def mirror_curve_data(curve_obj, axis='X'):
     """
-    Purely mathematically mirrors a curve's points, handles, and tilt 
-    along the specified local axis ('X', 'Y', or 'Z') without using 
-    modifiers or object-level scale.
+    mirrors a curve's points, handles, and tilt 
+    along the specified local axis ('X', 'Y', or 'Z')
     """
     if not curve_obj or curve_obj.type != 'CURVE':
         raise TypeError("Please provide a valid curve object.")
@@ -144,7 +150,7 @@ def mirror_curve_data(curve_obj, axis='X'):
     
     axis_idx = {'X': 0, 'Y': 1, 'Z': 2}[axis]
     
-    # We operate directly on the curve's datablock
+    # operate on the curve's datablock
     curve_data = curve_obj.data
     
     for spline in curve_data.splines:
@@ -158,14 +164,61 @@ def mirror_curve_data(curve_obj, axis='X'):
                 bp.handle_right[axis_idx] *= -1.0
                 
                 # Invert tilt to maintain geometric symmetry on swept paths
-                # Mirroring across any single axis flips the chirality, so tilt must invert
                 bp.tilt *= -1.0
                 
         elif spline.type in {'NURBS', 'POLY'}:
             for pt in spline.points:
-                # NURBS/POLY points use a 4D vector (x, y, z, w) for co.
-                # Indexing [0], [1], or [2] safely avoids touching the 'w' weight component.
                 pt.co[axis_idx] *= -1.0
                 
                 # Invert tilt
                 pt.tilt *= -1.0
+                
+
+def normalise_curve_scale(curve_obj):
+    """This prevents explosion of position transformations by resetting object scale to 1 without applying"""
+    if curve_obj.type != 'CURVE':
+        print(f"'{curve_obj.name}' is not a curve object.")
+        return
+    
+    # Optimization: Skip if already normalized
+    if curve_obj.scale[:] == (1.0, 1.0, 1.0):
+        return
+    
+    # Get current scale
+    scale_x, scale_y, scale_z = curve_obj.scale
+    
+    # Scale all curve data points
+    for spline in curve_obj.data.splines:
+        
+        # Handle Bezier curves
+        if spline.type == 'BEZIER':
+            for point in spline.bezier_points:
+                # 1. Scale the main control point
+                point.co.x *= scale_x
+                point.co.y *= scale_y
+                point.co.z *= scale_z
+                
+                # 2. CRITICAL FIX: Scale the left handle
+                point.handle_left.x *= scale_x
+                point.handle_left.y *= scale_y
+                point.handle_left.z *= scale_z
+                
+                # 3. CRITICAL FIX: Scale the right handle
+                point.handle_right.x *= scale_x
+                point.handle_right.y *= scale_y
+                point.handle_right.z *= scale_z
+                
+        # Handle NURBS and Poly curves
+        else:
+            for point in spline.points:
+                # Note: NURBS points are 4D (x, y, z, w). 
+                # Scaling x, y, and z is correct; the weight (w) remains untouched.
+                point.co.x *= scale_x
+                point.co.y *= scale_y
+                point.co.z *= scale_z
+    
+    # Reset object scale to 1
+    curve_obj.scale = (1, 1, 1)
+
+# --- Example Usage ---
+# normalise_curve_scale(bpy.context.active_object)

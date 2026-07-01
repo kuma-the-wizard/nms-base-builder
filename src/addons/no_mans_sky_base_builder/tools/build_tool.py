@@ -69,6 +69,8 @@ class BuildTool(bpy.types.PropertyGroup):
         default = 'World Origin'
     )
     
+    # when object is selected in advanced mirroring options
+    # this stores reference to that object
     target_object: bpy.props.PointerProperty(
         name="Target Object",
         type=bpy.types.Object,
@@ -76,64 +78,6 @@ class BuildTool(bpy.types.PropertyGroup):
         description = "This object's origin will be take in to account for center of reflection"
     )
     
-    active_curve_gap_percentage : bpy.props.FloatProperty(
-        name="Number of Objects",
-        default = 0.3,
-        update = lambda self, context: self.on_curve_parameter_change(),
-        
-        min=0.0,       # Absolute lowest value allowed
-        max=1.0,      # Absolute highest value allowed
-        soft_min=0.01,  # Slider UI floor
-        soft_max=0.5   # Slider UI ceiling
-    )
-    
-    active_curve_number_of_objects: bpy.props.IntProperty(
-        name="Number of Objects",
-        default = 10,
-        update = lambda self, context: self.on_curve_parameter_change(),
-        
-        min=1,       # Absolute lowest value allowed
-        max=1000,      # Absolute highest value allowed
-        soft_min=5,  # Slider UI floor
-        soft_max=500  # Slider UI ceiling
-    )
-    
-    active_curve_radius_multiplier: bpy.props.FloatProperty(
-        name="Overall Radius",
-        default = 1.0,
-        update = lambda self, context: self.on_curve_radius_multiplier_change(),
-        
-        min=0.0,       # Absolute lowest value allowed
-        max=100.0,      # Absolute highest value allowed
-        soft_min=0.01,  # Slider UI floor
-        soft_max=5.0   # Slider UI ceiling
-    )
-    
-    active_curve_name: bpy.props.StringProperty(
-        name="active curve name",
-        default = "",
-        options={'SKIP_SAVE'},
-    )
-    
-    
-    show_gap_edit_field : bpy.props.BoolProperty(
-        name="Show gap edit field",
-        default=False,
-        options={'SKIP_SAVE'},
-        #update = lambda self, context: self.on_show_gap_edit_field_change(),
-    )
-    
-    check_pause_curve_link : bpy.props.BoolProperty(
-        name="Pause curve link",
-        default=False,
-        options={'SKIP_SAVE'},
-    ) 
-    
-    selected_curve_object_is_parent: bpy.props.BoolProperty(
-        name="Is parent of Child",
-        default=True,
-        options={'SKIP_SAVE'},
-    )
     
         
     def on_curve_radius_multiplier_change(self):
@@ -157,14 +101,13 @@ class BuildTool(bpy.types.PropertyGroup):
         original_object_id = curve_obj.get("dup_ObjectID",None)
         if curve_obj and original_object_id:
             curve.duplicate_along_curve(
-                BUILDER, 
                 None,
                 curve_obj,
                 self.active_curve_number_of_objects,
                 curve_obj.get("radius_multiplier",1.0)
             )
     
-    def mirror(self, axis = None, center = None, change_orientation = False):
+    def mirror(self, axis = None, center = None, change_orientation = False, auto_duplicate = False):
         """Mirror the object acording to parameters provided"""
         # Store selection.
         selected_objects = bpy.context.selected_objects
@@ -172,7 +115,8 @@ class BuildTool(bpy.types.PropertyGroup):
         # Validate
         if not selected_objects:
             ShowMessageBox(
-                message="Make sure you have an item selected.", title="Mirror"
+                message="Make sure you have an item selected.", 
+                title="Mirror"
             )
             return
 
@@ -184,10 +128,8 @@ class BuildTool(bpy.types.PropertyGroup):
                 object_id = target["ObjectID"]
                 mirror_id = part.Part.get_mirror_part_id(object_id)
                 
-                if self.check_auto_duplicate:
-                    new_item = target.copy()
-                    new_item.data = target.data.copy()
-                    bpy.context.collection.objects.link(new_item)
+                if auto_duplicate and not change_orientation:
+                    new_item = blend_utils.duplicate_part(target)
                 else :
                     new_item = target
                 
@@ -213,17 +155,10 @@ class BuildTool(bpy.types.PropertyGroup):
                 if not target["has_linked_objects"]:
                     continue
                 
-                # Duplicate the object and its data block so they don't share identical vertices
-                if self.check_auto_duplicate:
-                    new_curve_obj = target.copy()
-                    new_curve_obj.data = target.data.copy()
-                    new_curve_obj["unique_id"] = str(uuid.uuid4())
-                    bpy.context.collection.objects.link(new_curve_obj)
-                else:
-                    new_curve_obj = target
-                    
-                curve.mirror_curve(new_curve_obj, axis, center)
-                new_items.append(new_curve_obj)
+                should_auto_duplicate = auto_duplicate and not change_orientation
+                new_curve_obj = curve.mirror_curve(target, axis, center, should_auto_duplicate)
+                if new_curve_obj is not None:
+                    new_items.append(new_curve_obj)
                 
         blend_utils.select(new_items)
         return {"FINISHED"}
@@ -231,10 +166,10 @@ class BuildTool(bpy.types.PropertyGroup):
     # called my Perform Mirror button in advanced mirroring options
     def advanced_mirror(self):
         mirror_direction = self.mirror_direction
-        
+        auto_duplicate = self.check_auto_duplicate
         # Only mirroring direction is needed if world origin is take as center of reflection
         if self.center_of_reflection == "World Origin":
-            self.mirror(axis = mirror_direction, center = Vector((0,0,0)))
+            self.mirror(axis = mirror_direction, center = Vector((0,0,0)), auto_duplicate = auto_duplicate)
         # gather location of active object and use that as center of reflection
         elif self.center_of_reflection == "3D cursor":
             cursor_location = bpy.context.scene.cursor.location
@@ -243,7 +178,7 @@ class BuildTool(bpy.types.PropertyGroup):
                 cursor_location.y,
                 cursor_location.z
             ))
-            self.mirror(axis = mirror_direction, center = center)
+            self.mirror(axis = mirror_direction, center = center, auto_duplicate = auto_duplicate)
         # target object's origin will be passed here for center of reflection
         elif self.center_of_reflection == "Object":
             if self.target_object:
@@ -252,7 +187,7 @@ class BuildTool(bpy.types.PropertyGroup):
                     self.target_object.location.y,
                     self.target_object.location.z
                 ))
-                self.mirror(axis = mirror_direction, center = center)
+                self.mirror(axis = mirror_direction, center = center, auto_duplicate = auto_duplicate)
             else:
                 ShowMessageBox(
                     message="Make sure you have target object selected", title="Object Mirror"
@@ -316,20 +251,23 @@ class BuildTool(bpy.types.PropertyGroup):
             return {"FINISHED"}
         
         curve_object["unique_id"] = str(uuid.uuid4())
+        curve_object["parent_selected"] = True
         curve_object.show_in_front = True
+        self.selected_curve_object_is_parent = True
         self.active_curve_radius_multiplier = radius_multiplier
         self.active_curve_number_of_objects = number_of_objects
         self.active_curve_name = curve_object.name
         self.show_gap_edit_field = True
         
         # Perform duplication along curve.
-        curve.duplicate_along_curve(
-            BUILDER, dup_object, curve_object, number_of_objects,radius_multiplier
-        )
+        curve.duplicate_along_curve( dup_object, curve_object, number_of_objects, radius_multiplier )
         
         # lock all objects on curve so that only curve is selectable
         curve.lock_all_objects(curve_object)
         blend_utils.select(curve_object)
+        
+        properties = bpy.context.scene.nms_properties
+        properties.set_active_obect(curve_object)
         
 
     def delete(self):
@@ -436,27 +374,3 @@ class BuildTool(bpy.types.PropertyGroup):
                 next_target=next_target,
                 prev_target=prev_target,
             )
-        
-    def show_curve_edit_options(self,curve_obj):
-        #if not self.show_gap_edit_field:
-        self.show_gap_edit_field = True
-        self.active_curve_name = curve_obj.name
-        self.active_curve_number_of_objects = curve_obj.get("objects_count",10)
-        self.active_curve_radius_multiplier = curve_obj.get("radius_multiplier",1.0)
-        
-
-    def hide_curve_edit_options(self):
-        #if not self.show_gap_edit_field:
-        self.show_gap_edit_field = False
-        self.active_curve_name = ""
-
-    
-    def select_parent_curve(self):
-        self.selected_curve_object_is_parent = True
-        active_object = bpy.context.active_object
-        curve.select_parent_curve(active_object)
-        
-    def select_children_of_curve(self):
-        self.selected_curve_object_is_parent = False
-        active_object = bpy.context.active_object
-        curve.select_children_of_curve(active_object)

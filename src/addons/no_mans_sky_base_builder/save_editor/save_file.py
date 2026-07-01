@@ -142,6 +142,23 @@ class SaveFile:
         key_base_list = SaveTranslation.base_context if save_type == "Main" else SaveTranslation.expedition_context
         return data[key_base_list][SaveTranslation.player_state_data][SaveTranslation.freighter_name]
     
+    def get_name_from_ship_owsership(self, user_data):
+        data = self.json_data
+        save_type = data[SaveTranslation.active_context]
+        key_base_list = SaveTranslation.base_context if save_type == "Main" else SaveTranslation.expedition_context
+        ship_ownsership = data[key_base_list][SaveTranslation.player_state_data][SaveTranslation.ship_ownership]
+        return ship_ownsership[user_data][SaveTranslation.base_name]
+    
+    def get_base_name(self, base):
+        
+        if base[SaveTranslation.base_type][SaveTranslation.persistent_base_types] == BaseType.FREIGHTER:
+            base_name = self.get_freighter_name()
+        else:
+            base_name = base[SaveTranslation.base_name]
+            if base_name == "Default":
+                base_name = self.get_name_from_ship_owsership(base[SaveTranslation.user_data])
+                
+        return base_name
     
     # first check if base exist at an index, if not check for in in bases list
     def search_base_with_identifier(self, base_identifier: BaseData):
@@ -181,12 +198,7 @@ class SaveFile:
                     return in_bases_list[0]
                 elif len(in_bases_list) > 1 :
                     ShowMessageBox(message="Multiple bases.corvettes with same name found, try repinnig base/corvette")
-                else:
-                    message = (
-                        "Base couldn't be saved, \n"
-                        "Re-pinning may resolve this issue."
-                    )
-                    ShowMessageBox(message = message, title="Export Failed", icon = "WARNING_LARGE")
+
         # reaching here means base doesnt exist
         return None
     
@@ -195,9 +207,12 @@ class SaveFile:
     def matches_base(self, base, identifier : BaseData):
         data = self.json_data
         if base[SaveTranslation.base_type][SaveTranslation.persistent_base_types] == BaseType.FREIGHTER:
-            base_name = self.get_freighter_name(data)
+            base_name = self.get_freighter_name()
         else:
-            base_name = base[SaveTranslation.base_name] 
+            base_name = base[SaveTranslation.base_name]
+            
+        if base_name == "Default":
+            base_name = self.get_name_from_ship_owsership(base[SaveTranslation.user_data])
             
         base_tuple = (
             base_name ,
