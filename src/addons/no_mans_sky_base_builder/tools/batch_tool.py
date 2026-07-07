@@ -152,6 +152,7 @@ class BatchTool(bpy.types.PropertyGroup):
         return len(replaced_objects_list)
     
     
+    
     def select_same_colored_objects(self):
         """Selects objects with same UserData, for easy experimentation with colors"""
         

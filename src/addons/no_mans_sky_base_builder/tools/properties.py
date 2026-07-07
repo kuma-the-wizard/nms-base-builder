@@ -66,7 +66,6 @@ class Properties(bpy.types.PropertyGroup):
     
     active_object = None
     
-    
     def on_curve_radius_multiplier_change(self):
         active = bpy.context.view_layer.objects.active
         curve_obj = curve.get_curve_or_linked_curve(active)

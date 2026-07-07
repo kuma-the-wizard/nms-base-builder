@@ -453,29 +453,20 @@ def sync_curves(target_curve, source_curve, do_mirror = False, axis = None, from
             if axis is not None and axis == "Z":
                 target.rotation_euler.x += math.pi
                 target.rotation_euler.z += math.pi
-    
-    
-    
+
     # Refresh evaluation data for the newly synced children
     update_curve_children(target_curve, radius_multiplier)
     
-# scale of a child object of curve is mix of multiple products
-# base scale is scale of object before getting influenced by curve's points
+
 def calculate_base_scale(curve, obj):
     curve_scale_multiplier = curve.scale.x/curve["initial_curve_scale"]
     radius_multiplier = curve["radius_multiplier"]
     point_radius = obj["radius"]
     return obj.scale.x/( point_radius* radius_multiplier * curve_scale_multiplier )
 
-# change color of objects on curve
-def apply_color(curve_obj, user_data):
-    
-    if curve_obj is None:
-        return None
-    
-    if "has_linked_objects" in curve_obj and is_bezier_or_nurbs_path(curve_obj):
-        curve_obj["dup_UserData"] = user_data
-        for child_obj in bpy.context.scene.objects:
-            if "curve_parent" in child_obj and child_obj["curve_parent"] == curve_obj.name:
-                material.restore_material(child_obj, user_data)
-                break
+
+def apply_color(curve, user_data):
+    for child_obj in bpy.context.scene.objects:
+        if "curve_parent" in child_obj and child_obj["curve_parent"] == curve.name:
+            material.restore_material(child_obj, user_data)
+            break
