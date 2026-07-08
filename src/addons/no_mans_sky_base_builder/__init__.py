@@ -16,7 +16,7 @@ from bpy.props import (BoolProperty, EnumProperty, FloatProperty, IntProperty,
 from bpy.types import Panel, PropertyGroup
 from numpy import isin
 
-from . import builder, icons, part, preset
+from . import builder, icons, part, preset, group
 from .part_overrides import line
 from .save_editor import save_editor_operators, save_editor_utils
 from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel
@@ -924,7 +924,8 @@ class NMS_PT_build_panel(Panel):
         scene = context.scene
         nms_tool = scene.nms_base_tool
         
-        main_col = layout.box().column(align = True)
+        build_column = layout.column(align = True)
+        main_col = build_column.box().column(align = True)
         col = main_col.column(align=True)
         col.label(text = "Asset Browser")
         col.operator("object.nms_launch_asset_browser", icon = "DESKTOP" )# icon="COLLECTION_COLOR_03"
@@ -937,6 +938,12 @@ class NMS_PT_build_panel(Panel):
         row = presets_box.row(align=True)
         row.operator("object.nms_get_more_presets", icon="WORLD_DATA")
         row.operator("object.nms_open_preset_folder", icon="FILE_FOLDER")
+        
+        presets_v2_col = main_col
+        presets_v2_col.label(text = "Grouping")
+        presets_v2_row = presets_v2_col.row(align = True)
+        presets_v2_row.operator("object.nms_group_objects", text = "Group", icon = "OUTLINER_OB_POINTCLOUD" )
+        presets_v2_row.operator("object.nms_ungroup_objects", text = "Ungroup",  icon = "OUTLINER_DATA_POINTCLOUD")
         
 class NMS_PT_nms_legacy_asset_browser(Panel):
     bl_label = "Legacy Asset Browser";  
@@ -1862,6 +1869,64 @@ class SplitPreset(bpy.types.Operator):
         self.report({"INFO"}, f"Prefabs split: {len(names)}, parts: {total}")
         return {"FINISHED"}
     
+class GroupObjects(bpy.types.Operator):
+    """Split the selected preset into individual parts"""
+
+    bl_idname = "object.nms_group_objects"
+    bl_label = "Group Objects together"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    origin_type: bpy.props.EnumProperty(
+        name="Select Origin",
+        description="Choose how to group the objects",
+        items=[
+            ("active", "Active Object", "User active object in viewport as origin of Group" ),#"CON_PIVOT",0
+            ("cursor", "3d Cursor", "User 3d cursor in viewport as origin of Group" ) # "CURSOR",1
+        ],
+        default='active',
+    )
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def execute(self, context):
+        selected_objects = context.selected_objects
+        
+        if not selected_objects:
+            return {"FINISHED"}
+        
+        if self.origin_type == "active":
+            active_object = context.active_object
+            mesh_origin = active_object.location
+        else:
+            mesh_origin = context.scene.cursor.location
+        group.Group.group_objects(selected_objects, mesh_origin)
+        return {"FINISHED"}
+
+    def draw(self, context):
+        layout = self.layout
+        type_row = layout.row(align = True)
+        layout.label(text = "This point will act as transformations pivot point")
+        type_row.prop(self, "origin_type")
+    
+class UngroupObjects(bpy.types.Operator):
+    """Split the selected preset into individual parts"""
+
+    bl_idname = "object.nms_ungroup_objects"
+    bl_label = "Ungroup Objects"
+
+    def execute(self, context):
+        selected_objects = bpy.context.selected_objects
+        restored_obejcts_collection = []
+        for item in selected_objects:
+            if "GroupID" in item:
+                restored_obejcts = group.Group.ungroup_objects(BUILDER,item)
+                if restored_obejcts is not None:
+                    restored_obejcts_collection += restored_obejcts
+        blend_utils.select(restored_obejcts_collection)
+        return {"FINISHED"}
+    
+    
 
 
 # Track  curve objects
@@ -2034,7 +2099,10 @@ classes = (
     NMSAddonPreferences,
     
     SwitchWorkspace,
-    SplitPreset
+    SplitPreset,
+    
+    GroupObjects,
+    UngroupObjects
 )
 
 classes = classes  + save_editor_operators.classes + build_tool_operators.classes + batch_tool_operators.classes

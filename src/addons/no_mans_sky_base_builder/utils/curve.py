@@ -1,4 +1,3 @@
-import inspect
 import math
 import os
 import uuid
@@ -92,9 +91,6 @@ def duplicate_along_curve( bpy_object, curve, number_of_duplicates=10, radius_mu
             if len(existing_objs) == 0:
                 
                 if bpy_object is None:
-                    caller = inspect.stack()[1]
-                    print("Called by:", caller.function)
-                    print("bulding new object")
                     new_item = BUILDER.add_part(object_id, user_data=user_data)
                     new_obj = new_item.object
                 else:
@@ -220,14 +216,6 @@ def apply_curve_transforms_and_detach(curve):
     if "unique_id" in curve:
         del curve["unique_id"]
         
-    if "parent_col" in curve:
-        parent_col = curve["parent_col"]
-        collection_utils.rename_to_unliked(parent_col)
-        del curve["parent_col"]
-        
-    if "master_col" in curve:
-        del curve["master_col"]
-     
     return curve, duplicates
 
 # make all objects linked ao a curve unselectable
@@ -312,9 +300,6 @@ def delete_curve_and_children(curve):
             bpy.data.objects.remove(obj, do_unlink=True)
             deleted_count += 1
     
-    # delete colelction containing children and curve     
-    collection_utils.delete_collection(curve["parent_col"])
-    
     # try deleting the curve if it is outside collection
     try:
         bpy.data.objects.remove(curve, do_unlink=True)
@@ -364,11 +349,8 @@ def mirror_curve(curve_obj, axis = "Z", center = None, auto_duplicate = False):
         new_curve_obj = curve_obj.copy()
         new_curve_obj.data = curve_obj.data.copy()
         new_curve_obj["unique_id"] = str(uuid.uuid4())
-        if "parent_col" in curve_obj and curve_obj.get("parent_col") is not None:
-            collection = curve_obj["parent_col"]
-            collection.objects.link(new_curve_obj)
-        else:
-            bpy.context.collection.objects.link(new_curve_obj)
+        parent_collection = collection_utils.get_parent_collection(curve_obj)
+        parent_collection.objects.link(new_curve_obj)
     else:
         new_curve_obj = curve_obj
                     

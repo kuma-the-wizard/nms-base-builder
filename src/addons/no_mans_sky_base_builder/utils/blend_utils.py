@@ -4,7 +4,6 @@ import math
 
 import addon_utils
 import bpy
-from ..utils import blend_utils
 
 
 def load_plugin(plugin_name):
@@ -211,7 +210,7 @@ def find_duplicates(decimals = 4):
 
     # select duplicates
     for obj in duplicates:
-        blend_utils.select(duplicates)
+        select(duplicates)
 
     print(f"Selected {len(duplicates)} duplicate objects")
     return len(duplicates)
@@ -225,3 +224,131 @@ def duplicate_part(target):
     for collection in target.users_collection:
         collection.objects.link(new_item)
     return target
+
+def parent_objects(parent, children):
+    """
+    Parent one or more objects to a parent object without moving them.
+    Args:
+        parent (bpy.types.Object):
+            The parent object.
+        children (bpy.types.Object | Iterable[bpy.types.Object]):
+            A single object or a list of objects to parent.
+    """
+
+    # Allow a single object to be passed.
+    if isinstance(children, bpy.types.Object):
+        children = [children]
+
+    for child in children:
+
+        # Skip the parent itself.
+        if child == parent:
+            continue
+
+        # Save the current world transform.
+        world_matrix = child.matrix_world.copy()
+
+        # Set the parent.
+        child.parent = parent
+
+        # Keep the child in the same position.
+        child.matrix_parent_inverse = parent.matrix_world.inverted()
+        child.matrix_world = world_matrix
+        
+def unparent_objects(parent):
+    """
+    Unparent all direct children of an object without moving them.
+    Args:
+        parent (bpy.types.Object): The parent object.
+    Returns:
+        list[bpy.types.Object]: A list of the objects that were unparented.
+    """
+    # Force evaluation of children into a static list.
+    # Otherwise, modifying child.parent alters parent.children mid-loop!
+    children_list = list(parent.children)
+
+    for child in parent.children:
+        # Save the current world transform so it doesn't jump
+        world_matrix = child.matrix_world.copy()
+
+        # Clear the parent
+        child.parent = None
+
+        # Reapply the world transform in global space
+        child.matrix_world = world_matrix
+
+    return children_list
+        
+def change_object_visibility(objects, is_visibe = False):
+    """
+    Hide or show one or more objects in the viewport and renders.
+
+    Args:
+        objects (bpy.types.Object | Iterable[bpy.types.Object]):
+            A single object or a list of objects.
+
+        hide (bool):
+            True to hide the objects, False to show them.
+    """
+
+    # Allow a single object to be passed.
+    if isinstance(objects, bpy.types.Object):
+        objects = [objects]
+
+    for obj in objects:
+        obj.hide_set(not is_visibe)      # Hide in viewport
+        obj.hide_render = not is_visibe  # Hide in renders
+        
+def merge_objects(objects, object_name):
+    """
+    Using Blender's APIs merge the given mesh objects into a new object while leaving the originals
+    untouched.
+
+    Parameters:
+        objects (list[bpy.types.Object]): Objects to merge.
+        object_name (str): Name of the merged object.
+
+    Returns:
+        bpy.types.Object | None
+    """
+
+    context = bpy.context
+    view_layer = context.view_layer
+
+    # Filter mesh objects
+    objects = [obj for obj in objects if obj and obj.type == 'MESH']
+
+    if not objects:
+        return None
+
+    try:
+        
+        bpy.ops.object.select_all(action='DESELECT')
+        
+        for obj in objects:
+            obj.select_set(True)
+
+        view_layer.objects.active = objects[0]
+
+        # Duplicate and join
+        bpy.ops.object.duplicate(linked=False)
+        duplicates = context.selected_objects[:]
+
+        view_layer.objects.active = duplicates[0]
+        bpy.ops.object.join()
+
+        merged = view_layer.objects.active
+        merged.name = object_name
+        
+        # delete unnecessary custom properties 
+        for key in list(merged.keys()):
+            del merged[key]
+
+        # Force Blender to update the viewport and geometry cache
+        merged.data.update()
+            
+        return merged
+
+    except Exception as error:
+        print("Error Occured while grouping objects : ", str(error))
+        return None 

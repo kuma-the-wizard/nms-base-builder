@@ -1,0 +1,294 @@
+import bpy
+import bmesh
+import mathutils
+import json
+import math
+import time
+from mathutils import Matrix, Vector
+import uuid
+
+from .utils import blend_utils
+
+
+class Group:
+    """
+    Manages grouping and ungrouping of NMS objects with safe caching.
+    Handles relative matrix calculations, serialization, and restoration.
+    """
+
+    # constants for property names
+    PROP_CHILD_CACHE = "child_cache"
+    PROP_GROUP_ID = "GroupID"
+    PROP_ORIGIN_OFFSET = "origin_offset"
+    PROP_OBJECT_ID = "ObjectID"
+    PROP_USER_DATA = "UserData"
+    PROP_TIMESTAMP = "TimeStamp"
+    PROP_MESSAGE = "Message"
+
+    def __init__(self):
+        """Initialize the Groups manager."""
+        pass
+
+
+    @staticmethod
+    def cache_relative_matrices( parent_obj, object_list ) :
+        """
+        Calculates the local matrices of objects relative to a parent, without
+        actually changing their hierarchy.
+
+        Args:
+            parent_obj: The reference parent object
+            object_list: List of objects to cache
+
+        Returns:
+            JSON-serialized string of cache data
+        """
+        cache_data = {}
+        parent_matrix_inverted = parent_obj.matrix_world.inverted()
+
+        for obj in object_list:
+            if obj == parent_obj or Group.PROP_OBJECT_ID not in obj:
+                continue
+
+            matrix_local = parent_matrix_inverted @ obj.matrix_world
+            matrix_list = [list(row) for row in matrix_local]
+
+            cache = {
+                Group.PROP_OBJECT_ID: obj[Group.PROP_OBJECT_ID],
+                Group.PROP_USER_DATA: obj.get(Group.PROP_USER_DATA, 0),
+                Group.PROP_TIMESTAMP: obj.get(Group.PROP_TIMESTAMP, int(time.time())),
+                "matrix_local": matrix_list,
+            }
+
+            cache_data[obj.name] = cache
+
+        return json.dumps(cache_data)
+        
+
+    @staticmethod
+    def extract_child_data(parent_obj) :
+        """
+        Reads the custom property cache from parent_obj and returns a dictionary
+        mapping child names to cached data.
+
+        Args:
+            parent_obj: The parent object containing the cache
+
+        Returns:
+            Dictionary of cached child data, or None if not found or invalid
+        """
+        if Group.PROP_CHILD_CACHE not in parent_obj:
+            return None
+
+        try:
+            cache_data = json.loads(parent_obj[Group.PROP_CHILD_CACHE])
+            return cache_data if isinstance(cache_data, dict) else None
+        except (json.JSONDecodeError, Exception):
+            return None
+
+
+    @staticmethod
+    def group_objects(  objects_list, origin_pos = None ) :
+        """
+        Groups multiple objects into a single merged object with cached children.
+
+        Args:
+            objects_list: List of objects to group
+            origin_position: Optional custom origin point. If None, calculates median.
+
+        Returns:
+            The merged group object, or None if operation fails
+        """
+        if objects_list is None or len(objects_list) == 0:
+            return None
+
+        # Check if any object already has a GroupID
+        for obj in objects_list:
+            if Group.PROP_GROUP_ID in obj:
+                return None
+
+        # Determine origin point
+        if origin_pos is None:
+            # Calculate median of all object positions
+            total_location = Vector((0.0, 0.0, 0.0))
+            for obj in objects_list:
+                total_location += obj.matrix_world.translation
+            median = total_location / len(objects_list)
+            mesh_origin = Vector(median)
+        else:
+            print(origin_pos)
+            mesh_origin = Vector(origin_pos)
+
+        # Merge objects
+        merged_object = blend_utils.merge_objects(objects_list, "Grouped_Objects")
+
+        if merged_object is None:
+            return None
+
+        prev_position = merged_object.location.copy()
+
+        # Set origin of merged object
+        local_origin = merged_object.matrix_world.inverted() @ mesh_origin
+        for vertex in merged_object.data.vertices:
+            vertex.co -= local_origin
+
+        merged_object.location = mesh_origin
+        merged_object.data.update()
+
+        # Calculate origin difference
+        new_location = merged_object.location.copy()
+        origin_difference = prev_position - new_location
+
+        # Convert difference to local space and store
+        local_difference = merged_object.matrix_world.to_3x3().inverted() @ origin_difference
+        merged_object[Group.PROP_ORIGIN_OFFSET] = local_difference
+
+        # Cache all combined objects
+        child_cache = Group.cache_relative_matrices(merged_object, objects_list)
+        merged_object[Group.PROP_CHILD_CACHE] = child_cache
+        merged_object[Group.PROP_GROUP_ID] = str(uuid.uuid4())
+
+        # Delete original objects
+        for obj in objects_list:
+            try:
+                bpy.data.objects.remove(obj, do_unlink=True)
+            except Exception:
+                pass
+
+        return merged_object
+
+
+    @staticmethod
+    def restore_matrix_world( parent_obj, child_cache_data) :
+        local_offset = Vector(parent_obj.get(Group.PROP_ORIGIN_OFFSET, (0.0, 0.0, 0.0)))
+        parent_matrix_world = parent_obj.matrix_world.copy()
+        parent_transform = parent_matrix_world.to_3x3()
+
+        # Rotate and scale the offset vector to match parent's current orientation
+        rotated_offset = parent_transform @ local_offset
+        
+        matrix_local_data = child_cache_data.get("matrix_local")
+        if not matrix_local_data:
+            return None
+        
+        matrix_local = mathutils.Matrix(matrix_local_data)
+        matrix_world = parent_matrix_world @ matrix_local
+        matrix_world.translation += rotated_offset
+        
+        return matrix_world
+
+    @staticmethod
+    def ungroup_objects( builder, parent_obj):
+        """
+        Restores grouped objects back to their original state from cache.
+
+        Args:
+            builder: The builder instance (with add_part method)
+            parent_obj: The grouped parent object to ungroup
+
+        Returns:
+            List of restored objects, or None if operation fails
+        """
+        cached_child_data = Group.extract_child_data(parent_obj)
+        if not cached_child_data:
+            return None
+        
+        restored_objects = []
+
+        for child_name, cache_data in cached_child_data.items():
+
+            object_id = cache_data[Group.PROP_OBJECT_ID]
+            user_data = cache_data.get(Group.PROP_USER_DATA, 0)
+            time_stamp = cache_data.get(Group.PROP_TIMESTAMP, int(time.time()))
+
+            # Add part via builder
+            new_part = builder.add_part(object_id, user_data)
+            if new_part is None or not hasattr(new_part, "object"):
+                continue
+
+            new_obj = new_part.object
+
+            # Restore properties
+            new_obj[Group.PROP_TIMESTAMP] = time_stamp
+            if Group.PROP_MESSAGE in cache_data:
+                new_obj[Group.PROP_MESSAGE] = cache_data[Group.PROP_MESSAGE]
+
+            # Restore transform
+            matrix_local_data = cache_data.get("matrix_local")
+            if not matrix_local_data:
+                continue
+
+            new_obj.matrix_world = Group.restore_matrix_world(parent_obj, cache_data)
+            restored_objects.append(new_obj)
+
+        # Delete parent object
+        bpy.data.objects.remove(parent_obj, do_unlink=True)
+        return restored_objects
+
+
+    @staticmethod
+    def serialise(parent_obj):
+        """
+        Converts grouped objects to serialized format for No Man's Sky savefile.
+
+        Args:
+            parent_obj: The group_object object to serialize, these obejcts have "GroupID" property attached to them
+
+        Returns:
+            List of serialized object dictionaries, or None if operation fails
+        """
+        cached_child_data = Group.extract_child_data(parent_obj)
+        if not cached_child_data:
+            return None
+
+        serialized_objects = []
+        for child_name, cache_data in cached_child_data.items():
+
+            object_id = cache_data[Group.PROP_OBJECT_ID]
+            user_data = cache_data.get(Group.PROP_USER_DATA, 0)
+            time_stamp = cache_data.get(Group.PROP_TIMESTAMP, int(time.time()))
+            message = cache_data.get(Group.PROP_MESSAGE)
+
+
+            # Build world matrix
+            matrix_world = Group.restore_matrix_world(parent_obj, cache_data)
+            if matrix_world is None:
+                continue
+            
+            pos, up, at = Group.extract_pos_up_at(matrix_world)
+            
+            data = {
+                "ObjectId": f"^{object_id}",
+                "UserData": user_data,
+                "TimeStamp": time_stamp,
+                "Position": [pos[0], pos[1], pos[2]],
+                "Up": [up[0], up[1], up[2]],
+                "At": [at[0], at[1], at[2]],
+            }
+
+            if message is not None:
+                data[Group.PROP_MESSAGE] = message
+
+            serialized_objects.append(data)
+
+        return serialized_objects
+    
+    @staticmethod
+    def extract_pos_up_at(matrix_world):
+    # Bring the matrix from Blender Z-Up soace into standard Y-up space.
+        z_compensate = mathutils.Matrix.Rotation(math.radians(-90.0), 4, "X")
+        world_matrix_offset = z_compensate @ matrix_world
+        # Retrieve Position, Up and At vectors.
+        pos = world_matrix_offset.decompose()[0]
+        up = [
+            world_matrix_offset[0][1],
+            world_matrix_offset[1][1],
+            world_matrix_offset[2][1],
+        ]
+        at = [
+            world_matrix_offset[0][2],
+            world_matrix_offset[1][2],
+            world_matrix_offset[2][2],
+        ]
+        
+        return pos, up, at

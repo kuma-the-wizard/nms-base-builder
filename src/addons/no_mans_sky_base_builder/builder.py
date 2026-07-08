@@ -12,7 +12,7 @@ from copy import copy
 import bpy
 from mathutils import Matrix
 
-from . import part, preset
+from . import part, preset, group
 from .part_overrides import (bone, bone_replacer, line, locked, message,
                              power_control, turret, u_bytebeatline, u_pipeline,
                              u_portalline, u_powerline)
@@ -195,7 +195,7 @@ class Builder(object):
         return None
 
     def get_all_parts(
-        self, exclude_presets=False, skip_object_type=None, include_lines=False
+        self, exclude_presets=False, skip_object_type=None, include_lines=False, include_groups = False
     ):
         """Get all NMS parts in the scene.
 
@@ -233,6 +233,10 @@ class Builder(object):
     def get_all_presets(self):
         """Get all Builder preset items in the scene."""
         return [part for part in bpy.data.objects if "PresetID" in part]
+    
+    def get_all_groups(self):
+        """Get all Builder preset items in the scene."""
+        return [part for part in bpy.data.objects if "GroupID" in part]
 
     def add_part(self, object_id, user_data=None, build_rigs=True):
         """Add an item based on it's object ID."""
@@ -281,7 +285,7 @@ class Builder(object):
         return part_object
 
     # Serialising ---
-    def serialise(self, get_presets=False, add_timestamp=False, as_prefab=False):
+    def serialise(self, get_presets=False, add_timestamp=False, as_prefab=False, include_groups = True):
         """Return NMS compatible dictionary.
 
         Args:
@@ -298,6 +302,13 @@ class Builder(object):
             use_class = self.get_part_class(object_id)
             item_obj = use_class.deserialise_from_object(item, builder_object=self)
             object_list.append(item_obj.serialise())
+            
+        # Include object groups?
+        if include_groups:
+            for item in self.get_all_groups():
+                group_objects = group.Group.serialise(item)
+                if group_objects is not None:
+                    object_list += group_objects
 
         # Create full dictionary.
         key = "Prefab" if as_prefab else "Objects"
@@ -318,6 +329,8 @@ class Builder(object):
                 )
                 preset_list.append(preset_obj.serialise())
             data["Presets"] = preset_list
+            
+        
 
         return data
 
