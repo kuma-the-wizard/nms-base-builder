@@ -179,7 +179,7 @@ def find_duplicates(decimals = 4):
     seen_objects = {}
     duplicates = []
 
-    for obj in bpy.data.objects:
+    for obj in bpy.context.view_layer.objects:
         location_vector, rotation_quaternion, scale_vector = obj.matrix_world.decompose()
         
         location = (
@@ -210,7 +210,7 @@ def find_duplicates(decimals = 4):
 
     # select duplicates
     for obj in duplicates:
-        select(duplicates)
+            select(duplicates)
 
     print(f"Selected {len(duplicates)} duplicate objects")
     return len(duplicates)

@@ -88,16 +88,19 @@ class Group:
 
 
     @staticmethod
-    def group_objects(  objects_list, origin_pos = None ) :
+    def group_objects(objects_list, target_matrix=None):
         """
-        Groups multiple objects into a single merged object with cached children.
+        Groups multiple objects into a single merged object.
+        Applies the location and local rotation axes from the provided target_matrix.
 
         Args:
-            objects_list: List of objects to group
-            origin_position: Optional custom origin point. If None, calculates median.
+            objects_list (list[bpy.types.Object]): A list of Blender objects to be grouped.
+            target_matrix (mathutils.Matrix, optional): A 4x4 transformation matrix defining the 
+                origin location and local rotation axes for the new grouped object. 
+                If None, the median position of all objects is used with a default global rotation.
 
         Returns:
-            The merged group object, or None if operation fails
+            bpy.types.Object | None: Lis of objects if sucessful or None
         """
         if objects_list is None or len(objects_list) == 0:
             return None
@@ -107,17 +110,17 @@ class Group:
             if Group.PROP_GROUP_ID in obj:
                 return None
 
-        # Determine origin point
-        if origin_pos is None:
-            # Calculate median of all object positions
+        # Clean the target matrix (keep location and rotation, but force scale to 1.0)
+        if target_matrix is not None:
+            loc, rot, _ = target_matrix.decompose()
+            clean_matrix = Matrix.LocRotScale(loc, rot, None)
+        else:
+            # Fallback: Calculate median position if no matrix is given
+            clean_matrix = Matrix.Identity(4)
             total_location = Vector((0.0, 0.0, 0.0))
             for obj in objects_list:
                 total_location += obj.matrix_world.translation
-            median = total_location / len(objects_list)
-            mesh_origin = Vector(median)
-        else:
-            print(origin_pos)
-            mesh_origin = Vector(origin_pos)
+            clean_matrix.translation = total_location / len(objects_list)
 
         # Merge objects
         merged_object = blend_utils.merge_objects(objects_list, "Grouped_Objects")
@@ -125,18 +128,21 @@ class Group:
         if merged_object is None:
             return None
 
-        prev_position = merged_object.location.copy()
+        prev_position = merged_object.matrix_world.translation.copy()
 
-        # Set origin of merged object
-        local_origin = merged_object.matrix_world.inverted() @ mesh_origin
+        # Transform vertices so they do not visually move when we apply the new matrix
+        current_matrix = merged_object.matrix_world.copy()
+        transform_matrix = clean_matrix.inverted() @ current_matrix
+
         for vertex in merged_object.data.vertices:
-            vertex.co -= local_origin
+            vertex.co = transform_matrix @ vertex.co
 
-        merged_object.location = mesh_origin
+        # Apply the clean matrix (this sets the new location and local axes)
+        merged_object.matrix_world = clean_matrix
         merged_object.data.update()
 
-        # Calculate origin difference
-        new_location = merged_object.location.copy()
+        # Calculate origin difference for the cache
+        new_location = merged_object.matrix_world.translation.copy()
         origin_difference = prev_position - new_location
 
         # Convert difference to local space and store
@@ -156,26 +162,6 @@ class Group:
                 pass
 
         return merged_object
-
-
-    @staticmethod
-    def restore_matrix_world( parent_obj, child_cache_data) :
-        local_offset = Vector(parent_obj.get(Group.PROP_ORIGIN_OFFSET, (0.0, 0.0, 0.0)))
-        parent_matrix_world = parent_obj.matrix_world.copy()
-        parent_transform = parent_matrix_world.to_3x3()
-
-        # Rotate and scale the offset vector to match parent's current orientation
-        rotated_offset = parent_transform @ local_offset
-        
-        matrix_local_data = child_cache_data.get("matrix_local")
-        if not matrix_local_data:
-            return None
-        
-        matrix_local = mathutils.Matrix(matrix_local_data)
-        matrix_world = parent_matrix_world @ matrix_local
-        matrix_world.translation += rotated_offset
-        
-        return matrix_world
 
     @staticmethod
     def ungroup_objects( builder, parent_obj):
@@ -258,7 +244,7 @@ class Group:
             pos, up, at = Group.extract_pos_up_at(matrix_world)
             
             data = {
-                "ObjectId": f"^{object_id}",
+                "ObjectID": f"^{object_id}",
                 "UserData": user_data,
                 "TimeStamp": time_stamp,
                 "Position": [pos[0], pos[1], pos[2]],
@@ -274,8 +260,20 @@ class Group:
         return serialized_objects
     
     @staticmethod
+    def restore_matrix_world(parent_obj, child_cache_data):
+        matrix_local_data = child_cache_data.get("matrix_local")
+        if not matrix_local_data:
+            return None
+        
+        # multiply the parent's current world matrix by the local matrix.
+        matrix_local = mathutils.Matrix(matrix_local_data)
+        matrix_world = parent_obj.matrix_world @ matrix_local
+        
+        return matrix_world
+    
+    @staticmethod
     def extract_pos_up_at(matrix_world):
-    # Bring the matrix from Blender Z-Up soace into standard Y-up space.
+        # Bring the matrix from Blender Z-Up spoace into standard Y-up space.
         z_compensate = mathutils.Matrix.Rotation(math.radians(-90.0), 4, "X")
         world_matrix_offset = z_compensate @ matrix_world
         # Retrieve Position, Up and At vectors.

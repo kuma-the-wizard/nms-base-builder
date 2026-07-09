@@ -1870,7 +1870,7 @@ class SplitPreset(bpy.types.Operator):
         return {"FINISHED"}
     
 class GroupObjects(bpy.types.Operator):
-    """Split the selected preset into individual parts"""
+    """Group parts together into"""
 
     bl_idname = "object.nms_group_objects"
     bl_label = "Group Objects together"
@@ -1880,37 +1880,62 @@ class GroupObjects(bpy.types.Operator):
         name="Select Origin",
         description="Choose how to group the objects",
         items=[
-            ("active", "Active Object", "User active object in viewport as origin of Group" ),#"CON_PIVOT",0
-            ("cursor", "3d Cursor", "User 3d cursor in viewport as origin of Group" ) # "CURSOR",1
+            ("median", "Median", "Use median of obejcts in viewport as origin of Group",  "PIVOT_MEDIAN", 0),
+            ("active", "Active Object", "Use active object in viewport as origin of Group", "CON_PIVOT", 1),
+            ("cursor", "3D Cursor", "Use 3D cursor in viewport as origin of Group",  "CURSOR", 2)
+            
         ],
         default='active',
     )
     
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
+        
+        selected_objects = context.selected_objects
+        if not selected_objects or len(selected_objects) < 2:
+            message = "Please select atleast two objects"
+            ShowMessageBox(
+                message,
+                title="Group Objects",
+                icon = "WARNING_LARGE"
+            )
+            return {"CANCELLED"}
+        
+        return context.window_manager.invoke_props_dialog(
+            self,
+            title="Group Objects",
+            confirm_text="Group"
+        )
 
     def execute(self, context):
         selected_objects = context.selected_objects
         
-        if not selected_objects:
-            return {"FINISHED"}
+        # Grab the full matrix instead of just the location
+        if self.origin_type == "active" and context.active_object:
+            target_matrix = context.active_object.matrix_world.copy()
+        elif self.origin_type == "cursor" and context.scene.cursor:
+            target_matrix = context.scene.cursor.matrix.copy()
+        else :
+            target_matrix = None
+            
+        # Pass the matrix to our group function
+        if not selected_objects or len(selected_objects) < 2:
+            return {"CANCELLED"}
         
-        if self.origin_type == "active":
-            active_object = context.active_object
-            mesh_origin = active_object.location
-        else:
-            mesh_origin = context.scene.cursor.location
-        group.Group.group_objects(selected_objects, mesh_origin)
+        merged_object = group.Group.group_objects(selected_objects, target_matrix)
+        if merged_object is not None:
+            self.report({'INFO'}, f"{len(selected_objects)} objects merged into {merged_object.name}")
+        
         return {"FINISHED"}
 
     def draw(self, context):
         layout = self.layout
-        type_row = layout.row(align = True)
-        layout.label(text = "This point will act as transformations pivot point")
-        type_row.prop(self, "origin_type")
+        layout.label(text = "Select Origin of Merged Object", icon = "OUTLINER_OB_POINTCLOUD")
+        type_row = layout.row(align=True)
+        type_row.prop(self, "origin_type", expand = True)
+        layout.label(text="This point will act as transformations pivot point")
     
 class UngroupObjects(bpy.types.Operator):
-    """Split the selected preset into individual parts"""
+    """Ungroup Parts"""
 
     bl_idname = "object.nms_ungroup_objects"
     bl_label = "Ungroup Objects"
@@ -1923,7 +1948,9 @@ class UngroupObjects(bpy.types.Operator):
                 restored_obejcts = group.Group.ungroup_objects(BUILDER,item)
                 if restored_obejcts is not None:
                     restored_obejcts_collection += restored_obejcts
-        blend_utils.select(restored_obejcts_collection)
+        if len(restored_obejcts_collection) > 0:
+            self.report({'INFO'}, f"ungrouped into {len(restored_obejcts_collection)} objects")
+            blend_utils.select(restored_obejcts_collection)
         return {"FINISHED"}
     
     

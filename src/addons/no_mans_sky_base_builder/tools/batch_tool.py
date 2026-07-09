@@ -176,7 +176,7 @@ class BatchTool(bpy.types.PropertyGroup):
         
         #Iterate through all objects to collect matches with keys_to_find
         found_matches = []
-        for obj in bpy.data.objects:
+        for obj in bpy.context.view_layer.objects:
             if "ObjectID" not in obj:
                 continue
             
@@ -216,7 +216,7 @@ class BatchTool(bpy.types.PropertyGroup):
         
         #Iterate through all objects to collect matches with keys_to_find
         found_matches = []
-        for obj in bpy.data.objects:
+        for obj in bpy.context.view_layer.objects:
             if "ObjectID" not in obj:
                 continue
             
@@ -229,4 +229,13 @@ class BatchTool(bpy.types.PropertyGroup):
             
         return len(found_matches) - len(keys_to_find)
     
+    def select_all_groups(self):
+        #Iterate through all objects to collect matches with keys_to_find
+        found_matches = []
+        for obj in bpy.context.view_layer.objects:
+            if "GroupID" in obj:
+                found_matches.append(obj)
+        if len(found_matches) > 0:
+            blend_utils.select(found_matches)
+        return len(found_matches)
     
