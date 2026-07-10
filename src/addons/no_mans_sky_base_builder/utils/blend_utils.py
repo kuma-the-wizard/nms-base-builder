@@ -114,7 +114,8 @@ def select(selection, add=False):
         selection = [selection]
 
     for item in selection:
-        item.select_set(True)
+        if item is not None:
+            item.select_set(True)
 
     # Make the last item the active one.
     selection[-1].select_set(True)
@@ -223,7 +224,7 @@ def duplicate_part(target):
     new_item.data = target.data.copy()
     for collection in target.users_collection:
         collection.objects.link(new_item)
-    return target
+    return new_item
 
 def parent_objects(parent, children):
     """

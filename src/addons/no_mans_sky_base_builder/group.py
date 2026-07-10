@@ -7,7 +7,7 @@ import time
 from mathutils import Matrix, Vector
 import uuid
 
-from .utils import blend_utils
+from .utils import blend_utils, mirror_utils
 
 
 class Group:
@@ -20,10 +20,13 @@ class Group:
     PROP_CHILD_CACHE = "child_cache"
     PROP_GROUP_ID = "GroupID"
     PROP_ORIGIN_OFFSET = "origin_offset"
+    PROP_ORIGIN_MATRIX = "origin_matrix"
     PROP_OBJECT_ID = "ObjectID"
     PROP_USER_DATA = "UserData"
-    PROP_TIMESTAMP = "TimeStamp"
+    PROP_TIMESTAMP = "Timestamp"
     PROP_MESSAGE = "Message"
+    PROP_PART_COUNT = "part_count"
+    PROP_IS_MIRROR = "is_mirror"
 
     def __init__(self):
         """Initialize the Groups manager."""
@@ -88,7 +91,7 @@ class Group:
 
 
     @staticmethod
-    def group_objects(objects_list, target_matrix=None):
+    def group_objects(objects_to_group, target_matrix=None):
         """
         Groups multiple objects into a single merged object.
         Applies the location and local rotation axes from the provided target_matrix.
@@ -102,13 +105,16 @@ class Group:
         Returns:
             bpy.types.Object | None: Lis of objects if sucessful or None
         """
-        if objects_list is None or len(objects_list) == 0:
+        if objects_to_group is None or len(objects_to_group) == 0:
             return None
 
+        objects_list = []
         # Check if any object already has a GroupID
-        for obj in objects_list:
+        for obj in objects_to_group:
             if Group.PROP_GROUP_ID in obj:
                 return None
+            if "ObjectID" in obj:
+                objects_list.append(obj)
 
         # Clean the target matrix (keep location and rotation, but force scale to 1.0)
         if target_matrix is not None:
@@ -124,6 +130,9 @@ class Group:
 
         # Merge objects
         merged_object = blend_utils.merge_objects(objects_list, "Grouped_Objects")
+        target_matrix_cache = json.dumps([list(row) for row in target_matrix]) if target_matrix is not None else None
+        merged_object[Group.PROP_ORIGIN_MATRIX] = target_matrix_cache
+        
 
         if merged_object is None:
             return None
@@ -151,15 +160,15 @@ class Group:
 
         # Cache all combined objects
         child_cache = Group.cache_relative_matrices(merged_object, objects_list)
+        number_of_objects_grouped = len(objects_list)
         merged_object[Group.PROP_CHILD_CACHE] = child_cache
         merged_object[Group.PROP_GROUP_ID] = str(uuid.uuid4())
+        merged_object[Group.PROP_PART_COUNT] = number_of_objects_grouped
+        merged_object[Group.PROP_IS_MIRROR] = False
 
         # Delete original objects
-        for obj in objects_list:
-            try:
-                bpy.data.objects.remove(obj, do_unlink=True)
-            except Exception:
-                pass
+        for obj in objects_to_group:
+            bpy.data.objects.remove(obj, do_unlink=True)
 
         return merged_object
 
@@ -244,9 +253,9 @@ class Group:
             pos, up, at = Group.extract_pos_up_at(matrix_world)
             
             data = {
+                "Timestamp": time_stamp,
                 "ObjectID": f"^{object_id}",
-                "UserData": user_data,
-                "TimeStamp": time_stamp,
+                "UserData": int(user_data),
                 "Position": [pos[0], pos[1], pos[2]],
                 "Up": [up[0], up[1], up[2]],
                 "At": [at[0], at[1], at[2]],
@@ -290,3 +299,58 @@ class Group:
         ]
         
         return pos, up, at
+    
+    @staticmethod
+    def get_all_groups():
+        """  Returns all groups presetin inside view_layer"""
+        groups = []
+        for obj in bpy.context.view_layer.objects:
+            try:
+                if obj is not None:
+                    if Group.PROP_GROUP_ID in obj:
+                        groups.append(obj)
+            except ReferenceError:
+                continue
+        return groups
+    
+    @staticmethod
+    def find_mirror_group(target, groups_list = None):
+        """ 
+        Return first group found in scene that is mirror of target object 
+        Args:
+            target: object who's mirror needs to be found,
+            groups_list (optional) : list of groups in which search will take place, if None, all other groups will be used
+        
+        Returns:
+            First mirror group found or None if no match was found
+        """
+        existing_groups = Group.get_all_groups() if groups_list is None else groups_list
+        is_target_mirror = target.get(Group.PROP_IS_MIRROR, False)   
+        
+        for obj in existing_groups:
+            try:
+                # validate obj
+                if obj is None or Group.PROP_GROUP_ID not in obj:
+                    continue
+                # check if target is not equal to obj
+                if obj.name == target.name:
+                    continue
+                
+                # check if their GroupIDs are equal
+                if obj[Group.PROP_GROUP_ID] != target[Group.PROP_GROUP_ID]:
+                    continue
+                
+                # Mirror of groups with same GroupIDs is needed so obj need to opposite "is_mirror" value than target object
+                if obj[Group.PROP_IS_MIRROR] != is_target_mirror:
+                    # return after all conditions are met because only first match is needed
+                    return obj
+            except ReferenceError:
+                continue
+        return None
+    
+    @staticmethod
+    def extract_origin_matrix(group_obj):
+        target_matrix_cache = group_obj[Group.PROP_ORIGIN_MATRIX]
+        if target_matrix_cache is not None:
+            return Matrix(json.loads(target_matrix_cache))
+        return None

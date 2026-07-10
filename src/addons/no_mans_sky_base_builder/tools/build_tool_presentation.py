@@ -35,7 +35,7 @@ class NMS_PT_tools_panel(Panel):
         part_box = tools_column.box()
         splitter = part_box.split(factor=0.7)
         splitter.label(text="Part Count:" )# , icon = "GEOMETRY_NODES"
-        part_count = len([obj for obj in bpy.data.objects if "ObjectID" in obj])
+        part_count = build_tool.get_part_count()
         splitter.label(text="{}".format(part_count))
 
         tools_box = tools_column.box()

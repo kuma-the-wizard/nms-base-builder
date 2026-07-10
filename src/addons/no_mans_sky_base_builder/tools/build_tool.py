@@ -2,10 +2,13 @@ from ..utils import mirror_utils
 import bpy
 import os
 import uuid
+import json
 from ..utils import blend_utils, curve
 from ..utils import python as python_utils
-from .. import builder, part
+from .. import builder, part, group
 from ..utils.mirror_utils import ShowMessageBox
+
+from ..group import Group
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 NICE_JSON = os.path.join(FILE_PATH,"..","resources","nice_names.json")
@@ -16,7 +19,7 @@ GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
 nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
 BUILDER = builder.Builder()
 
-from mathutils import Vector
+from mathutils import Vector,Matrix
 
 class BuildTool(bpy.types.PropertyGroup):
     
@@ -79,18 +82,18 @@ class BuildTool(bpy.types.PropertyGroup):
     )
     
     
-    def mirror(self, axis = None, center = None, change_orientation = False, auto_duplicate = False):
+    def mirror(self, axis = None, center = None, change_orientation = False, auto_duplicate = False, objects_to_mirror = None):
         """Mirror the object acording to parameters provided"""
-        # Store selection.
-        selected_objects = bpy.context.selected_objects
-
-        # Validate
+        # Store selection and validate.
+        selected_objects = bpy.context.selected_objects if objects_to_mirror is None else objects_to_mirror
         if not selected_objects:
             ShowMessageBox(
                 message="Make sure you have an item selected.", 
                 title="Mirror"
             )
             return
+        
+        existing_groups = Group.get_all_groups() if objects_to_mirror is None else []
 
         # Get Selected item.
         new_items = []
@@ -105,11 +108,11 @@ class BuildTool(bpy.types.PropertyGroup):
                 else :
                     new_item = target
                 
-                # Build Item.
+                # If mirror part exist for an object, like for a corvette part,
                 mirror_part_exist =  mirror_id in nice_name_dictionary.keys()
                 if mirror_part_exist:
                     new_item = BUILDER.mirror_part(target)
-
+                    
                 if not change_orientation:
                     mirrored_matrix_world = mirror_utils.mirror_matrix_world_universal(object_id, new_item.matrix_world, axis,center)
                     new_item.matrix_world = mirrored_matrix_world
@@ -131,8 +134,59 @@ class BuildTool(bpy.types.PropertyGroup):
                 new_curve_obj = curve.mirror_curve(target, axis, center, should_auto_duplicate)
                 if new_curve_obj is not None:
                     new_items.append(new_curve_obj)
-                
-        blend_utils.select(new_items)
+            
+            # mirror if object is a nms group
+            elif Group.PROP_GROUP_ID in target: 
+                is_target_mirror = target.get(Group.PROP_IS_MIRROR, False)   
+                found_match = Group.find_mirror_group(target, existing_groups)
+                if found_match is None:
+                    # if there is no mirror present for target object 
+                    # create a mirror by ungrouping -> mirroring ungrouped objects -> grouping them again
+                    new_obj = blend_utils.duplicate_part(target) if auto_duplicate else target
+                    origin_matrix = Group.extract_origin_matrix(new_obj)
+                    old_group_id = new_obj[Group.PROP_GROUP_ID]
+                    
+                    # split group into objects
+                    ungrouped_objects = Group.ungroup_objects(BUILDER,new_obj)
+                    
+                    # mirror all objects normally
+                    if ungrouped_objects:
+                        self.mirror( axis, center,change_orientation, auto_duplicate = False,objects_to_mirror = ungrouped_objects)
+                        
+                    # mirror origin matrix
+                    if origin_matrix is not None:
+                        origin_matrix = mirror_utils.mirror_matrix_world_universal(None, origin_matrix, axis,center)
+                    
+                    # regroup objects into a group
+                    mirrored_group = Group.group_objects(ungrouped_objects, origin_matrix)
+                    # restore GroupID
+                    mirrored_group[Group.PROP_GROUP_ID] = old_group_id
+                    # flip boolean that describes which side of mirror group belongs
+                    mirrored_group[Group.PROP_IS_MIRROR] = not is_target_mirror
+                else:
+                    # un-grouping and re-grouping is an expeisive task, it can be optimised by reusing existing mirrors
+                    # if a mirroed group already exist, use it's mesh and data to mirror target
+                    
+                    # duplicate existing mirror group
+                    new_obj = blend_utils.duplicate_part(found_match)
+                    
+                    # assign that duplicate a mirrored matrix world of target
+                    old_matrix_world = target.matrix_world.copy()
+                    new_matrix_world = mirror_utils.mirror_matrix_world_universal(None, old_matrix_world, axis,center)
+                    new_obj.matrix_world = new_matrix_world
+                    
+                    # delete target if auto duplicate is not checked
+                    if not auto_duplicate:
+                        bpy.data.objects.remove(target, do_unlink=True)
+                        
+                # append newly generated morrors to existing_groups list for optimised search operations
+                existing_groups.append(mirrored_group)
+                new_items.append(mirrored_group)
+        
+        # filter out deleted objects
+        new_items = [obj for obj in new_items if obj is not None]
+        if new_items:
+            blend_utils.select(new_items)
         return {"FINISHED"}
     
     # called my Perform Mirror button in advanced mirroring options
@@ -353,3 +407,16 @@ class BuildTool(bpy.types.PropertyGroup):
                 next_target=next_target,
                 prev_target=prev_target,
             )
+        
+    def get_part_count(self):
+        parts_count = 0
+        # Iterate through all objects and count parts
+        for obj in bpy.data.objects:
+            # count 1 if object has perperty "ObjectID"
+            if "ObjectID" in obj:
+                parts_count += 1
+                
+            # size of a group is stored in its "part_count" property
+            if "GroupID" in obj:
+                parts_count += obj.get("part_count", 0)
+        return parts_count
