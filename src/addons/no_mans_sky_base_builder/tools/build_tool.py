@@ -9,6 +9,7 @@ from .. import builder, part, group
 from ..utils.mirror_utils import ShowMessageBox
 
 from ..group import Group
+from ..utils.curve import Curve
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 NICE_JSON = os.path.join(FILE_PATH,"..","resources","nice_names.json")
@@ -282,7 +283,7 @@ class BuildTool(bpy.types.PropertyGroup):
             curve_object = new_curve_object
         
         else :
-            curve_object["unique_id"] = str(uuid.uuid4())
+            curve_object[Curve.PROP_CURVE_ID] = str(uuid.uuid4())
             curve_object["parent_selected"] = True
             curve_object.show_in_front = True
             self.selected_curve_object_is_parent = True

@@ -1986,6 +1986,18 @@ def active_object_watcher(scene, depsgraph):
     if active != last_active:
         last_active = active
         properties.set_active_obect(active)
+
+def deferred_curve_update():
+    global _curve_update_pending
+    global known_curves
+    
+    _curve_update_pending = False
+    
+    # Run the heavy update logic here
+    from . import curve
+    curve.update_curves(known_curves)
+    
+    return None # Stops the timer from looping
         
             
 # Whenever a curve is modified, automatically update whatever child objects that are associated with that curve.
@@ -2033,13 +2045,13 @@ def curve_udpate_handler(scene, depsgraph):
     # Handle duplication syncing
     if new_curves_detected and known_curves:
         for new_curve in new_curves_detected:
-            # if two curves have equal "unique_id", that means they have been duplicated using shift+d
+            # if two curves have equal Curve.PROP_CURVE_ID, that means they have been duplicated using shift+d
             # we need to duplicate objects in similar way on new curve too
             try:
-                new_uuid = new_curve.get("unique_id")
+                new_uuid = new_curve.get(curve.Curve.PROP_CURVE_ID)
                 # Look for curves that have same unique_id as new curve
                 # if a duplciate unique_id found, new curve must be duplicate of that curve
-                matching_curve = next((c for c in known_curves if c.get("unique_id") == new_uuid and c != new_curve), None)
+                matching_curve = next((c for c in known_curves if c.get(curve.Curve.PROP_CURVE_ID) == new_uuid and c != new_curve), None)
                 if matching_curve is not None:
                     curve.sync_curves(new_curve, matching_curve)
             except ReferenceError as error:

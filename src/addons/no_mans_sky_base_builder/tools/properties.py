@@ -6,6 +6,7 @@ from ..utils import blend_utils, curve
 from ..utils import python as python_utils
 from .. import builder, part
 from ..utils.mirror_utils import ShowMessageBox
+from ..utils.curve import Curve
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 NICE_JSON = os.path.join(FILE_PATH,"..","resources","nice_names.json")
@@ -22,7 +23,7 @@ class Properties(bpy.types.PropertyGroup):
     active_curve_number_of_objects: bpy.props.IntProperty(
         name="Number of Objects",
         default = 10,
-        update = lambda self, context: self.on_number_of_objects_change(),
+        #update = lambda self, context: self.on_number_of_objects_change(),
         
         min=1,       # Absolute lowest value allowed
         max=1000,      # Absolute highest value allowed
@@ -34,7 +35,7 @@ class Properties(bpy.types.PropertyGroup):
     active_curve_radius_multiplier: bpy.props.FloatProperty(
         name="Overall Radius",
         default = 1.0,
-        update = lambda self, context: self.on_curve_radius_multiplier_change(),
+        #update = lambda self, context: self.on_curve_radius_multiplier_change(),
         
         min=0.0,       # Absolute lowest value allowed
         max=100.0,      # Absolute highest value allowed
@@ -67,42 +68,6 @@ class Properties(bpy.types.PropertyGroup):
     active_object = None
     
     
-    def on_curve_radius_multiplier_change(self):
-        active = bpy.context.view_layer.objects.active
-        curve_obj = curve.get_curve_or_linked_curve(active)
-        
-        if curve_obj is None: 
-            return
-        
-        original_object_id = curve_obj.get("dup_ObjectID",None)
-        if curve_obj and original_object_id:
-            
-            old_radius_miltiplier = curve_obj.get("radius_multiplier")
-            if old_radius_miltiplier and old_radius_miltiplier == self.active_curve_radius_multiplier:
-                return
-            
-            curve.update_curve_children(curve_obj, self.active_curve_radius_multiplier)
-        
-    def on_number_of_objects_change(self):
-        active = bpy.context.view_layer.objects.active
-        curve_obj = curve.get_curve_or_linked_curve(active)
-        
-        if curve_obj is None: 
-            return
-        
-        original_object_id = curve_obj.get("dup_ObjectID",None)
-        if curve_obj and original_object_id:
-            
-            old_count = curve_obj.get("objects_count")
-            if old_count and old_count == self.active_curve_number_of_objects:
-                return
-            
-            curve.duplicate_along_curve(
-                None,
-                curve_obj,
-                self.active_curve_number_of_objects,
-                curve_obj.get("radius_multiplier",1.0)
-            )
     
     def show_curve_edit_options(self,curve_obj):
         self.show_gap_edit_field = True

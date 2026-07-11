@@ -69,7 +69,7 @@ class Group:
         
 
     @staticmethod
-    def extract_child_data(parent_obj) :
+    def extract_cached_data(parent_obj) :
         """
         Reads the custom property cache from parent_obj and returns a dictionary
         mapping child names to cached data.
@@ -81,13 +81,15 @@ class Group:
             Dictionary of cached child data, or None if not found or invalid
         """
         if Group.PROP_CHILD_CACHE not in parent_obj:
-            return None
+            return None, None
 
         try:
-            cache_data = json.loads(parent_obj[Group.PROP_CHILD_CACHE])
-            return cache_data if isinstance(cache_data, dict) else None
+            cache_child_data = json.loads(parent_obj[Group.PROP_CHILD_CACHE])
+            origin_matrix_str = parent_obj.get(Group.PROP_ORIGIN_MATRIX)
+            origin_matrix = Group.str_to_matrix(origin_matrix_str) if origin_matrix_str else None
+            return cache_child_data, origin_matrix
         except (json.JSONDecodeError, Exception):
-            return None
+            return None, None
 
 
     @staticmethod
@@ -160,6 +162,7 @@ class Group:
 
         # Cache all combined objects
         child_cache = Group.cache_relative_matrices(merged_object, objects_list)
+        #child_cache[Group.PROP_ORIGIN_MATRIX] = target_matrix_cache
         number_of_objects_grouped = len(objects_list)
         merged_object[Group.PROP_CHILD_CACHE] = child_cache
         merged_object[Group.PROP_GROUP_ID] = str(uuid.uuid4())
@@ -184,7 +187,7 @@ class Group:
         Returns:
             List of restored objects, or None if operation fails
         """
-        cached_child_data = Group.extract_child_data(parent_obj)
+        cached_child_data, origin_matrix = Group.extract_cached_data(parent_obj)
         if not cached_child_data:
             return None
         
@@ -232,7 +235,7 @@ class Group:
         Returns:
             List of serialized object dictionaries, or None if operation fails
         """
-        cached_child_data = Group.extract_child_data(parent_obj)
+        cached_child_data, origin_matrix = Group.extract_cached_data(parent_obj)
         if not cached_child_data:
             return None
 
@@ -267,6 +270,57 @@ class Group:
             serialized_objects.append(data)
 
         return serialized_objects
+    
+    @staticmethod
+    def deserialise_to_group(builder,child_cache, origin_matrix):
+        """
+        Deserialise string to group
+        Args:
+            builder: The builder instance (with add_part method)
+            child_cache: string containing data related to grouped object
+        Returns:
+            merged_group: object that is a merged group
+        """
+        
+        if origin_matrix is None:
+            origin_matrix = Group.get_default_origin_matrix()
+        
+        try:
+            cached_child_data = json.loads(child_cache)
+        except (json.JSONDecodeError, Exception) as error:
+            print("Error deserialise_to_group ", error)
+            return None
+        
+        restored_objects = []
+        for child_name, cache_data in cached_child_data.items():
+
+            object_id = cache_data[Group.PROP_OBJECT_ID]
+            user_data = cache_data.get(Group.PROP_USER_DATA, 0)
+            time_stamp = cache_data.get(Group.PROP_TIMESTAMP, int(time.time()))
+
+            # Add part via builder
+            new_part = builder.add_part(object_id, user_data)
+            if new_part is None or not hasattr(new_part, "object"):
+                continue
+
+            new_obj = new_part.object
+
+            # Restore properties
+            new_obj[Group.PROP_TIMESTAMP] = time_stamp
+            if Group.PROP_MESSAGE in cache_data:
+                new_obj[Group.PROP_MESSAGE] = cache_data[Group.PROP_MESSAGE]
+
+            # Restore transform
+            matrix_local_data = cache_data.get("matrix_local")
+            if not matrix_local_data:
+                continue
+            # multiply the current world matrix by the local matrix.
+            matrix_local = mathutils.Matrix(matrix_local_data)
+            new_obj.matrix_world = origin_matrix@ matrix_local
+            restored_objects.append(new_obj)
+        
+        merged_group = Group.group_objects(restored_objects,origin_matrix)
+        return merged_group
     
     @staticmethod
     def restore_matrix_world(parent_obj, child_cache_data):
@@ -351,6 +405,21 @@ class Group:
     @staticmethod
     def extract_origin_matrix(group_obj):
         target_matrix_cache = group_obj[Group.PROP_ORIGIN_MATRIX]
-        if target_matrix_cache is not None:
-            return Matrix(json.loads(target_matrix_cache))
-        return None
+        return Group.str_to_matrix(target_matrix_cache)
+    
+    @staticmethod
+    def str_to_matrix(json_string):
+        
+        if not json_string:
+            return None
+        
+        
+        try:
+            return Matrix(json.loads(json_string))
+        except (json.JSONDecodeError, Exception):
+            print("error deconding json string : ", json_string)
+            return None
+        
+    @staticmethod
+    def get_default_origin_matrix():
+        return mathutils.Matrix.Identity(4)
