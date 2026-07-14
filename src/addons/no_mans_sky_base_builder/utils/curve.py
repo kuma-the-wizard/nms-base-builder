@@ -9,6 +9,7 @@ from . import (blend_utils, collection_utils, curve_utils, material,
                mirror_utils)
 from . import python as python_utils
 from ..group import Group
+from ..part import Part
 
 BUILDER = builder.Builder()
 
@@ -26,12 +27,14 @@ class Curve:
     PROP_OBJECTS_COUNT = "objects_count"
     PROP_CURVE_ID = "CurveID"
     PROP_PARENT_SELECTED = "parent_selected"
+    PROP_CURVE_PARENT = "curve_parent"
+    PROP_BASE_SCALE = "base_scale"
 
     # Duplicated object data
-    PROP_DUP_OBJECT_ID = "dup_ObjectID"
-    PROP_DUP_USER_DATA = "dup_UserData"
+    PROP_DUP_OBJECT_ID = f"dup_{Part.PROP_OBJECT_ID}"
+    PROP_DUP_USER_DATA = f"dup_{Part.PROP_USER_DATA}"
     # Duplicated group data
-    PROP_DUP_GROUP_ID = "dup_GroupID"
+    PROP_DUP_GROUP_ID = f"dup_{Group.PROP_GROUP_ID}"
     PROP_DUP_IS_GROUP = "is_group"
     PROP_GROUP_CHILD_CACHE = f"dup_{Group.PROP_CHILD_CACHE}"
     PROP_ORIGIN_MATRIX = f"dupe_{Group.PROP_ORIGIN_MATRIX}"
@@ -43,35 +46,42 @@ class Curve:
 
 def update_curves(updated_curves):
     scene = bpy.context.scene
+    properties = scene.nms_properties
     for curve_obj in updated_curves:
-        properties = scene.nms_properties
-        if Curve.PROP_HAS_LINKED_OBJECTS in curve_obj:
+        if curve_obj.name == properties.active_curve_name:
             try:
-                if curve_obj.name == properties.active_curve_name:
-                    new_radius_multiplier = properties.active_curve_radius_multiplier
-                    if properties.active_curve_number_of_objects != curve_obj[Curve.PROP_OBJECTS_COUNT]:
-                        print("also duplicating along curve")
-                        duplicate_along_curve( None,curve_obj, properties.active_curve_number_of_objects, new_radius_multiplier)
-                elif Curve.PROP_RADIUS_MULTIPLIER in curve_obj:
-                    new_radius_multiplier = curve_obj[Curve.PROP_RADIUS_MULTIPLIER]
-                update_curve_children(curve_obj, new_radius_multiplier)
+                new_radius_multiplier = properties.active_curve_radius_multiplier
+                new_number_of_objects = properties.active_curve_number_of_objects
+                
+                objects_count_changed = new_number_of_objects != curve_obj[Curve.PROP_OBJECTS_COUNT]
+                radius_changed = new_radius_multiplier != curve_obj[Curve.PROP_RADIUS_MULTIPLIER]
+                
+                if objects_count_changed:
+                    duplicate_along_curve( None,curve_obj, new_number_of_objects, new_radius_multiplier)
+                    
+                if radius_changed or bpy.context.mode in {'EDIT_CURVE'}:
+                    update_curve_children(curve_obj, new_radius_multiplier, objects_count_changed)
+                    
             except ReferenceError:
                 continue
 
 # update children on curve
-def update_curve_children(curve_obj, new_radius_multier = None):
+def update_curve_children(curve_obj, new_radius_multier = None, objects_count_changed = False):
     """Refreshes transformations for all objects assigned to this curve."""
     if not curve_obj.get(Curve.PROP_HAS_LINKED_OBJECTS):
         return
     
-    val_data, total_length = curve_utils.build_curve_eval_data(curve_obj, resolution=64)
+    val_data = curve_obj.get("val_data",None)
+    total_length = curve_obj.get("total_length",None)
+    if val_data is None:
+        val_data, total_length = curve_utils.build_curve_eval_data(curve_obj, resolution=64)
     
     if new_radius_multier is not None:
         curve_obj[Curve.PROP_RADIUS_MULTIPLIER] = new_radius_multier
     
     for obj in bpy.context.scene.objects:
         if obj.get("curve_parent") == curve_obj.name:
-            curve_utils.update_obj_transformations(obj, curve_obj, val_data, total_length)
+            curve_utils.update_obj_transformations(obj, curve_obj, val_data, total_length, objects_count_changed)
 
 
 def duplicate_along_curve( bpy_object, curve, number_of_duplicates=10, radius_multiplier=1.0):
@@ -97,7 +107,7 @@ def duplicate_along_curve( bpy_object, curve, number_of_duplicates=10, radius_mu
     gap_distance = 1.0 / (number_of_duplicates - 1)
     
     # Gather all bpy_objects currently following this curve
-    existing_objs = [obj for obj in bpy.context.scene.objects if obj.get("curve_parent") == curve.name]
+    existing_objs = [obj for obj in bpy.context.scene.objects if obj.get(Curve.PROP_CURVE_PARENT) == curve.name]
     current_count = len(existing_objs)
     
     # here we check if number of objects needed on curve are more or less than previously duplicated objects.
@@ -156,8 +166,8 @@ def duplicate_along_curve( bpy_object, curve, number_of_duplicates=10, radius_mu
                 constraint.use_fixed_location = True
                 constraint.use_curve_follow = True
                 
-                new_obj["curve_parent"] = curve.name
-                new_obj["base_scale"] = 1.0
+                new_obj[Curve.PROP_CURVE_PARENT] = curve.name
+                new_obj[Curve.PROP_BASE_SCALE] = 1.0
                 new_obj.rotation_euler = (math.pi,0,0)
                 new_obj.location = (0,0,0)
                 new_obj.hide_select = True
@@ -166,7 +176,7 @@ def duplicate_along_curve( bpy_object, curve, number_of_duplicates=10, radius_mu
                 
             else :
                 new_obj = existing_objs[-1].copy()
-                new_obj["curve_parent"] = curve.name
+                new_obj[Curve.PROP_CURVE_PARENT] = curve.name
                 linked_curve_obj_col.objects.link(new_obj)
                 
             existing_objs.append(new_obj)
@@ -185,7 +195,7 @@ def duplicate_along_curve( bpy_object, curve, number_of_duplicates=10, radius_mu
         obj["curve_factor"] = percentage_count
         curve_utils.update_obj_transformations(obj, curve, val_data, total_length)
         
-    curve["objects_count"] = len(existing_objs)
+    curve[Curve.PROP_OBJECTS_COUNT] = len(existing_objs)
     
     return existing_objs
 
@@ -261,8 +271,8 @@ def apply_curve_transforms_and_detach(curve):
     if Curve.PROP_RADIUS_MULTIPLIER in curve:
         del curve[Curve.PROP_RADIUS_MULTIPLIER]
         
-    if "objects_count" in curve:
-        del curve["objects_count"]
+    if Curve.PROP_OBJECTS_COUNT in curve:
+        del curve[Curve.PROP_OBJECTS_COUNT]
         
     if Curve.PROP_CURVE_ID in curve:
         del curve[Curve.PROP_CURVE_ID]
@@ -272,7 +282,7 @@ def apply_curve_transforms_and_detach(curve):
 # make all objects linked ao a curve unselectable
 def lock_all_objects(curve_obj, lock_location = True):
     for obj in bpy.context.scene.objects:
-        if obj.get("curve_parent") == curve_obj.name:
+        if obj.get(Curve.PROP_CURVE_PARENT) == curve_obj.name:
             obj.hide_select = True
             #if lock_location:
                 #obj.lock_location = (lock_location, lock_location, lock_location)
@@ -280,23 +290,23 @@ def lock_all_objects(curve_obj, lock_location = True):
 # make all objects linked to a curve selectable
 def unlock_all_objects(curve_obj, lock_location = False):
     for obj in bpy.context.scene.objects:
-        if obj.get("curve_parent") == curve_obj.name:
+        if obj.get(Curve.PROP_CURVE_PARENT) == curve_obj.name:
             obj.hide_select = False
             #obj.lock_location = (lock_location, lock_location, lock_location)
 
 # select parent curve of object
 # make its children unselectable and make only curve selectable
 def select_parent_curve(object):
-    parent_curve_name = object.get("curve_parent", None)
+    parent_curve_name = object.get(Curve.PROP_CURVE_PARENT, None)
     if parent_curve_name is None:
         return
     
     parent_curve = bpy.data.objects.get(parent_curve_name)
     if parent_curve is not None:
         parent_curve.hide_select = False
-        parent_curve["parent_selected"] = True
+        parent_curve[Curve.PROP_PARENT_SELECTED] = True
         for obj in bpy.context.scene.objects:
-            if obj.get("curve_parent") == parent_curve.name:
+            if obj.get(Curve.PROP_CURVE_PARENT) == parent_curve.name:
                 obj.hide_select = True
                 #obj.lock_location = (True, True, True)
                 #obj["base_scale"] = obj.scale.x/(parent_curve[Curve.PROP_RADIUS_MULTIPLIER]*obj["radius"])
@@ -310,7 +320,7 @@ def select_children_of_curve(curve):
     
     children = []
     for obj in bpy.context.scene.objects:
-        if obj.get("curve_parent") == curve.name:
+        if obj.get(Curve.PROP_CURVE_PARENT) == curve.name:
             obj.hide_select = False
             children.append(obj)
             
@@ -318,7 +328,7 @@ def select_children_of_curve(curve):
     #curve["initial_curve_scale"] = 1
     
     curve.hide_select = True
-    curve["parent_selected"] = False
+    curve[Curve.PROP_PARENT_SELECTED] = False
     blend_utils.select(children)
     
 # return objects if object is a curve and has lihked objects
@@ -329,8 +339,8 @@ def get_curve_or_linked_curve(obj):
     
     if is_bezier_or_nurbs_path(obj) and obj.get(Curve.PROP_HAS_LINKED_OBJECTS,False):
         return obj
-    elif "curve_parent" in obj:
-        return bpy.data.objects.get(obj["curve_parent"])
+    elif Curve.PROP_CURVE_PARENT in obj:
+        return bpy.data.objects.get(obj[Curve.PROP_CURVE_PARENT])
     return None
 
 # delete selected curve and children linked to it
@@ -347,7 +357,7 @@ def delete_curve_and_children(curve):
     deleted_count = 0
     # Delete all linked objects first
     for obj in list(bpy.data.objects):
-        if obj.get("curve_parent") == curve.name:
+        if obj.get(Curve.PROP_CURVE_PARENT) == curve.name:
             bpy.data.objects.remove(obj, do_unlink=True)
             deleted_count += 1
     
@@ -369,8 +379,17 @@ def replace_curve_object(curve_obj, source_obj):
     for collection in curve_obj.users_collection:
         collection.objects.link(new_curve_obj)
     
-    new_curve_obj[Curve.PROP_DUP_OBJECT_ID] = source_obj["ObjectID"]
-    new_curve_obj[Curve.PROP_DUP_USER_DATA] = source_obj["UserData"]
+    
+    if Group.PROP_GROUP_ID in source_obj:
+        new_curve_obj[Curve.PROP_DUP_GROUP_ID] = source_obj[Group.PROP_GROUP_ID]
+        new_curve_obj[Curve.PROP_DUP_IS_GROUP] = True
+        new_curve_obj[Curve.PROP_GROUP_CHILD_CACHE] = source_obj[Group.PROP_CHILD_CACHE]
+        new_curve_obj[Curve.PROP_ORIGIN_MATRIX] = source_obj[Group.PROP_ORIGIN_MATRIX]
+    else:
+        new_curve_obj[Curve.PROP_DUP_OBJECT_ID] = source_obj["ObjectID"]
+        new_curve_obj[Curve.PROP_DUP_USER_DATA] = source_obj["UserData"]
+        new_curve_obj[Curve.PROP_DUP_IS_GROUP] = False
+    
     
     sync_curves(new_curve_obj , curve_obj, duping_object_source= source_obj)
     
@@ -391,7 +410,7 @@ def reset_curve(curve):
     return curve_obj
 
 # mirror a curve and objects dupicated along it
-def mirror_curve(curve_obj, axis = "Z", center = None, auto_duplicate = False):
+def mirror_curve(build_tool,curve_obj, axis = "Z", center = None, auto_duplicate = False):
     if not is_bezier_or_nurbs_path(curve_obj):
         return None
     
@@ -405,31 +424,33 @@ def mirror_curve(curve_obj, axis = "Z", center = None, auto_duplicate = False):
     else:
         new_curve_obj = curve_obj
                     
-    
     #Apply the mathematical mirror to curve objects
-    curve_utils.mirror_curve_data(new_curve_obj, axis)
+    curve_utils.mirror_curve(new_curve_obj, axis, center)
     
-    # Mirror positin of curve according to center of reflection
-    location = new_curve_obj.location
-    if axis == "X":
-        new_curve_obj.location.x  = mirror_utils.reflect_point_across(location.x, center.x)
-        new_curve_obj.rotation_euler.y *= -1
-        new_curve_obj.rotation_euler.z *= -1
-    elif axis == "Y":
-        new_curve_obj.location.y = mirror_utils.reflect_point_across(location.y, center.y)
-        new_curve_obj.rotation_euler.x *= -1
-        new_curve_obj.rotation_euler.z *= -1
-    elif axis == "Z":
-        new_curve_obj.location.z = mirror_utils.reflect_point_across(location.z, center.z)
-        new_curve_obj.rotation_euler.x *= -1
-        new_curve_obj.rotation_euler.y *= -1
-    
-    # update objectID of mirror part of that object exist
-    obj_id = new_curve_obj[Curve.PROP_DUP_OBJECT_ID]
-    mirror_obj_id = part.Part.get_mirror_part_id(obj_id)
-    mirror_part_exist =  mirror_obj_id in nice_name_dictionary.keys()
-    if mirror_part_exist:
-        new_curve_obj[Curve.PROP_DUP_OBJECT_ID] = mirror_obj_id
+    if new_curve_obj[Curve.PROP_DUP_IS_GROUP]:
+        child_cache = new_curve_obj[Curve.PROP_GROUP_CHILD_CACHE]
+        origin_matrix = Group.str_to_matrix(new_curve_obj[Curve.PROP_ORIGIN_MATRIX])
+        ungrouped_objects = Group.deserialise_to_objects(BUILDER, child_cache, origin_matrix)
+        
+        tool_axis = "Z" if axis == "Z" else "X"
+        build_tool.mirror(axis = tool_axis, center = center, objects_to_mirror = ungrouped_objects)
+        
+        if origin_matrix is not None:
+            origin_matrix = mirror_utils.mirror_matrix_world_universal(None, origin_matrix, axis, center)
+            
+        merged_mesh = Group.group_objects(ungrouped_objects, origin_matrix)
+        new_curve_obj[Curve.PROP_GROUP_CHILD_CACHE] = merged_mesh[Group.PROP_CHILD_CACHE]
+        new_curve_obj[Curve.PROP_ORIGIN_MATRIX] = merged_mesh[Group.PROP_ORIGIN_MATRIX]
+        
+        bpy.data.objects.remove(merged_mesh, do_unlink=True)
+            
+    else:
+        # update objectID if mirror part of that object exist
+        obj_id = new_curve_obj[Curve.PROP_DUP_OBJECT_ID]
+        mirror_obj_id = part.Part.get_mirror_part_id(obj_id)
+        mirror_part_exist =  mirror_obj_id in nice_name_dictionary.keys()
+        if mirror_part_exist:
+            new_curve_obj[Curve.PROP_DUP_OBJECT_ID] = mirror_obj_id
     
     # syncing curves will make objects duplicating on them have identical transformations
     sync_curves(new_curve_obj, curve_obj, True, axis, from_mirror= True)
@@ -445,12 +466,13 @@ def mirror_curve(curve_obj, axis = "Z", center = None, auto_duplicate = False):
 def sync_curves(target_curve, source_curve, do_mirror = False, axis = None, from_mirror = False, duping_object_source = None):
 
     target_curve[Curve.PROP_CURVE_ID] = str(uuid.uuid4())
+    target_is_group =  target_curve.get(Curve.PROP_DUP_IS_GROUP,False)
     
     # all child objects of source curve
-    source_dupe_objects = [obj for obj in bpy.context.scene.objects if obj.get("curve_parent") == source_curve.name]
+    source_dupe_objects = [obj for obj in bpy.context.scene.objects if obj.get(Curve.PROP_CURVE_PARENT) == source_curve.name]
     
     radius_multiplier = target_curve[Curve.PROP_RADIUS_MULTIPLIER]
-    number_of_objects = target_curve["objects_count"]
+    number_of_objects = target_curve[Curve.PROP_OBJECTS_COUNT]
     
     if duping_object_source is not None:
         duping_obejct = duping_object_source
@@ -463,7 +485,7 @@ def sync_curves(target_curve, source_curve, do_mirror = False, axis = None, from
     target_dupe_obejcts = duplicate_along_curve(duping_obejct, target_curve, number_of_objects, radius_multiplier)
     
     
-    if len(target_dupe_obejcts)>0 and not target_curve.get(Curve.PROP_DUP_IS_GROUP):
+    if len(target_dupe_obejcts)>0 and not target_is_group:
         target = target_dupe_obejcts[0]
         material.restore_material(target, target["UserData"])
         
@@ -479,14 +501,14 @@ def sync_curves(target_curve, source_curve, do_mirror = False, axis = None, from
         target.rotation_euler = source.rotation_euler.copy()
         target.scale = source.scale.copy()
         target.location = source.location.copy()
-        target["base_scale"] = source["base_scale"]
+        target[Curve.PROP_BASE_SCALE] = source[Curve.PROP_BASE_SCALE]
             
         if do_mirror:
             target.location.x = -target.location.x
             target.rotation_euler.y = -target.rotation_euler.y
             target.rotation_euler.z = -target.rotation_euler.z
             
-            if axis is not None and axis == "Z":
+            if axis is not None and axis == "Z" and target_is_group:
                 target.rotation_euler.x += math.pi
                 target.rotation_euler.z += math.pi
 
@@ -510,6 +532,6 @@ def apply_color(curve_obj, user_data):
     if Curve.PROP_HAS_LINKED_OBJECTS in curve_obj and is_bezier_or_nurbs_path(curve_obj):
         curve_obj[Curve.PROP_DUP_USER_DATA] = user_data
         for child_obj in bpy.context.scene.objects:
-            if "curve_parent" in child_obj and child_obj["curve_parent"] == curve_obj.name:
+            if Curve.PROP_CURVE_PARENT in child_obj and child_obj[Curve.PROP_CURVE_PARENT] == curve_obj.name:
                 material.restore_material(child_obj, user_data)
                 break

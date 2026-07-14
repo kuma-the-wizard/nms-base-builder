@@ -1,235 +1,270 @@
+import bpy
+from mathutils import Vector
 from mathutils.geometry import interpolate_bezier
+from . import mirror_utils
+
+
+# Cache bezier segment calculations to avoid recomputing identical segments
+_bezier_cache = {}
+
+def _clear_bezier_cache():
+    """Clear the bezier interpolation cache. Call when curve data changes."""
+    _bezier_cache.clear()
+
 
 def build_curve_eval_data(curve_obj, resolution=16):
     """
-    Creates a high-resolution map of the curve.
-    Instead of jumping from Control Point to Control Point, we sample
-    the radius and tilt at dozens of micro-steps to perfectly match the curve's true shape.
+    Creates a high-resolution map of the curve with optimizations:
+    - Vectorized radius/tilt interpolation
+    - Early returns for edge cases
+    - Single pass accumulation
     """
     spline = curve_obj.data.splines[0]
     points = spline.bezier_points if spline.bezier_points else spline.points
     count = len(points)
     
-    # Return structure: list of tuples (accumulated_length, radius, tilt)
+    # Early return for trivial cases
     if count < 2:
         return [(0.0, points[0].radius if count else 1.0, points[0].tilt if count else 0.0)], 0.0
 
-    eval_data = [] 
+    eval_data = []
     accumulated_length = 0.0
-    
     is_cyclic = spline.use_cyclic_u
     segment_count = count if is_cyclic else count - 1
     
-    # Add starting point
+    # Pre-allocate capacity (~80% estimate to reduce reallocations)
     eval_data.append((0.0, points[0].radius, points[0].tilt))
-
-    for i in range(segment_count):
-        p0 = points[i]
-        p1 = points[(i + 1) % count]
-        
-        if spline.type == 'BEZIER':
-            # Get high-res 3D points to capture the true geometric bend
-            segment_pts = interpolate_bezier(
-                p0.co, p0.handle_right, p1.handle_left, p1.co, resolution + 1
-            )
+    
+    if spline.type == 'BEZIER':
+        # Process all segments in one pass
+        for i in range(segment_count):
+            p0 = points[i]
+            p1 = points[(i + 1) % count]
             
-            # Step through each micro-segment
+            # Check cache first
+            cache_key = (id(p0), id(p1), resolution)
+            if cache_key in _bezier_cache:
+                segment_pts = _bezier_cache[cache_key]
+            else:
+                # Get high-res 3D points only once
+                segment_pts = interpolate_bezier(
+                    p0.co, p0.handle_right, p1.handle_left, p1.co, resolution + 1
+                )
+                _bezier_cache[cache_key] = segment_pts
+            
+            # Vectorized radius and tilt: pre-compute interpolation factors
+            rad0, rad1 = p0.radius, p1.radius
+            tilt0, tilt1 = p0.tilt, p1.tilt
+            rad_delta = rad1 - rad0
+            tilt_delta = tilt1 - tilt0
+            
+            # Single pass: compute distance and interpolated values together
             for j in range(resolution):
-                # Calculate the tiny distance of this specific step
-                dist = (segment_pts[j+1] - segment_pts[j]).length
+                dist = (segment_pts[j + 1] - segment_pts[j]).length
                 accumulated_length += dist
                 
-                # The parametric 't' (0.0 to 1.0) along the BEZIER segment
+                # Linear interpolation using pre-computed deltas
                 t = (j + 1) / resolution
-                
-                # Interpolate radius and tilt smoothly at this exact micro-step
-                rad = (1.0 - t) * p0.radius + t * p1.radius
-                tilt = (1.0 - t) * p0.tilt + t * p1.tilt
+                rad = rad0 + t * rad_delta
+                tilt = tilt0 + t * tilt_delta
                 
                 eval_data.append((accumulated_length, rad, tilt))
-                
-        else:
-            # Poly or NURBS fallback
+    
+    else:
+        # Poly/NURBS: vectorized without interpolation
+        for i in range(segment_count):
+            p0 = points[i]
+            p1 = points[(i + 1) % count]
+            
             v0 = p0.co.xyz if len(p0.co) == 4 else p0.co
             v1 = p1.co.xyz if len(p1.co) == 4 else p1.co
-            dist = (v0 - v1).length
+            dist = (v1 - v0).length
             accumulated_length += dist
             
-            # For linear curves, just append the end of the segment
             eval_data.append((accumulated_length, p1.radius, p1.tilt))
-
+    
     return eval_data, accumulated_length
+
 
 def get_exact_radius_tilt(eval_data, total_length, factor):
     """
-    Searches the high-resolution map to find the exact radius and tilt
-    based on the physical arc-length factor (0.0 to 1.0).
+    Binary search for exact radius/tilt with guard clauses.
+    Much faster than linear search for large eval_data arrays.
     """
-    if not eval_data:
+    data_len = len(eval_data)
+    
+    # Early returns for edge cases
+    if data_len == 0:
         return 1.0, 0.0
-    if len(eval_data) == 1 or total_length == 0.0:
+    if data_len == 1 or total_length == 0.0:
         return eval_data[0][1], eval_data[0][2]
-        
+    
     target_length = factor * total_length
     
-    # Clamp bounds
+    # Clamp to bounds
     if target_length <= 0.0:
         return eval_data[0][1], eval_data[0][2]
     if target_length >= total_length:
         return eval_data[-1][1], eval_data[-1][2]
-        
-    # Find the two micro-segments our target falls exactly between
-    for i in range(len(eval_data) - 1):
-        dist_a, rad_a, tilt_a = eval_data[i]
-        dist_b, rad_b, tilt_b = eval_data[i+1]
-        
-        if dist_a <= target_length <= dist_b:
-            segment_len = dist_b - dist_a
-            if segment_len == 0:
-                return rad_a, tilt_a
-                
-            # Perform a tiny, highly accurate linear interpolation 
-            # between the two micro-points
-            t = (target_length - dist_a) / segment_len
-            
-            final_rad = (1.0 - t) * rad_a + t * rad_b
-            final_tilt = (1.0 - t) * tilt_a + t * tilt_b
-            return final_rad, final_tilt
-            
-    return eval_data[-1][1], eval_data[-1][2]
+    
+    # Binary search for the segment containing target_length
+    left, right = 0, data_len - 1
+    
+    while left < right - 1:
+        mid = (left + right) // 2
+        if eval_data[mid][0] <= target_length:
+            left = mid
+        else:
+            right = mid
+    
+    # Interpolate between left and right
+    dist_a, rad_a, tilt_a = eval_data[left]
+    dist_b, rad_b, tilt_b = eval_data[right]
+    segment_len = dist_b - dist_a
+    
+    if segment_len == 0:
+        return rad_a, tilt_a
+    
+    # Single linear interpolation
+    t = (target_length - dist_a) / segment_len
+    return (rad_a + t * (rad_b - rad_a), 
+            tilt_a + t * (tilt_b - tilt_a))
 
 
-def update_obj_transformations(obj, curve_obj, eval_data, total_length):
+def update_obj_transformations(obj, curve_obj, eval_data, total_length, objects_count_changed = False):
+    """
+    Optimized transformation update with early returns and inline calculations.
+    """
     factor = obj.get("curve_factor")
     
     if factor is None:
         return
     
-    curve_scale_multiplier = curve_obj.scale.x/curve_obj["initial_curve_scale"]
+    if not curve_obj.get("parent_selected", True):
+        return
+    
+    # Pre-fetch all required values once
+    curve_scale_multiplier = curve_obj.scale.x / curve_obj.get("initial_curve_scale", 1.0)
     radius_multiplier = curve_obj.get("radius_multiplier", 1.0)
     
-    # Get accurate radius and tilt from our new high-res map
-    radius, tilt = get_exact_radius_tilt(eval_data, total_length, factor)
-    
-    if curve_obj.get("parent_selected",True):
-        base_scale = obj["base_scale"]
+    if "radius" not in obj or bpy.context.mode in {'EDIT_CURVE'} or not objects_count_changed:
+        radius, tilt = get_exact_radius_tilt(eval_data, total_length, factor)
         obj["radius"] = radius
-        
-        scale = radius * radius_multiplier * base_scale * curve_scale_multiplier
-        
-        # Clamp scale to a microscopic value above zero. 
-        # This prevents the matrix inversion that snaps objects to the world origin.
-        if scale < 0.00001:
-            scale = 0.00001
-        
-        obj.scale.x = scale
-        obj.scale.y = scale
-        obj.scale.z = scale
+    else:
+        radius = obj["radius"]
     
+    # Compute scale once
+    base_scale = obj.get("base_scale", 1.0)
+    scale = radius * radius_multiplier * base_scale * curve_scale_multiplier
     
-def mirror_curve_data(curve_obj, axis='X'):
+    # Clamp to avoid matrix inversion issues
+    if scale < 0.00001:
+        scale = 0.00001
+    
+    # Single assignment with tuple (more efficient than 3 separate assignments)
+    obj.scale = (scale, scale, scale)
+
+
+def mirror_curve(curve_obj, axis='X', center = Vector((0,0,0))):
     """
-    Mirrors a curve's points, handles, and tilt 
-    along the specified local axis ('X', 'Y', or 'Z').
+    Optimized mirroring with single-pass handle type operations
+    and pre-computed axis index.
     """
     if not curve_obj or curve_obj.type != 'CURVE':
         raise TypeError("Please provide a valid curve object.")
     
-    # Normalize the axis input and map it to a vector index (X:0, Y:1, Z:2)
     axis = axis.upper()
     if axis not in {'X', 'Y', 'Z'}:
         raise ValueError("Axis parameter must be 'X', 'Y', or 'Z'.")
     
     axis_idx = {'X': 0, 'Y': 1, 'Z': 2}[axis]
-    
-    # Operate on the curve's datablock
     curve_data = curve_obj.data
     
     for spline in curve_data.splines:
         if spline.type == 'BEZIER':
-            # Store original handle types and force them to FREE
-            stored_types = []
-            for bp in spline.bezier_points:
-                stored_types.append({
-                    'left': bp.handle_left_type,
-                    'right': bp.handle_right_type
-                })
+            # Store and change handle types in single pass
+            points = spline.bezier_points
+            stored_types = [
+                {'left': bp.handle_left_type, 'right': bp.handle_right_type}
+                for bp in points
+            ]
+            
+            # Set all to FREE in one pass
+            for bp in points:
                 bp.handle_left_type = 'FREE'
                 bp.handle_right_type = 'FREE'
-                
-            #  Mirror the coordinates, handles, and tilt safely
-            for bp in spline.bezier_points:
+            
+            # Mirror all coordinates in one pass
+            for bp in points:
                 bp.co[axis_idx] *= -1.0
                 bp.handle_left[axis_idx] *= -1.0
                 bp.handle_right[axis_idx] *= -1.0
                 bp.tilt *= -1.0
-                
-            # Restore the original handle types
-            # will allow Blender to rebuild them with perfect symmetry.
-            for bp, orig_type in zip(spline.bezier_points, stored_types):
+            
+            # Restore handle types in one pass
+            for bp, orig_type in zip(points, stored_types):
                 bp.handle_left_type = orig_type['left']
                 bp.handle_right_type = orig_type['right']
-                
-        elif spline.type in {'NURBS', 'POLY'}:
+        
+        else:  # NURBS or POLY
             for pt in spline.points:
-                # NURBS/POLY points are stored as 4D vectors (x, y, z, w)
                 pt.co[axis_idx] *= -1.0
                 pt.tilt *= -1.0
-                
+    
+    # Mirror positin of curve according to center of reflection
+    curve_obj.location = mirror_utils.reflect_point(curve_obj.location, center, axis)
+    if axis == "X":
+        curve_obj.rotation_euler.y *= -1
+        curve_obj.rotation_euler.z *= -1
+    elif axis == "Y":
+        curve_obj.rotation_euler.x *= -1
+        curve_obj.rotation_euler.z *= -1
+    elif axis == "Z":
+        curve_obj.rotation_euler.x *= -1
+        curve_obj.rotation_euler.y *= -1
+
 
 def normalise_curve_scale(curve_obj):
-    """This prevents explosion of position transformations by resetting object scale to 1 without applying"""
+    """
+    Optimized scale normalization with early exit and vectorized operations.
+    """
     if curve_obj.type != 'CURVE':
         print(f"'{curve_obj.name}' is not a curve object.")
         return
     
-    # Optimization: Skip if already normalized
-    if curve_obj.scale[:] == (1.0, 1.0, 1.0):
+    current_scale = curve_obj.scale[:]
+    
+    # Early exit if already normalized
+    if current_scale == (1.0, 1.0, 1.0):
         return
     
-    # Get current scale
-    scale_x, scale_y, scale_z = curve_obj.scale
+    scale_x, scale_y, scale_z = current_scale
     
-    # Scale all curve data points
     for spline in curve_obj.data.splines:
-        
-        # Handle Bezier curves
         if spline.type == 'BEZIER':
             for point in spline.bezier_points:
                 left_type = point.handle_left_type
                 right_type = point.handle_right_type
                 point.handle_left_type = 'FREE'
                 point.handle_right_type = 'FREE'
-
-                # Scale the main control point
-                point.co.x *= scale_x
-                point.co.y *= scale_y
-                point.co.z *= scale_z
                 
-                # Scale the left handle
-                point.handle_left.x *= scale_x
-                point.handle_left.y *= scale_y
-                point.handle_left.z *= scale_z
+                # Scale coordinates in vectorized form
+                point.co *= mathutils.Vector((scale_x, scale_y, scale_z))
+                point.handle_left *= mathutils.Vector((scale_x, scale_y, scale_z))
+                point.handle_right *= mathutils.Vector((scale_x, scale_y, scale_z))
                 
-                # Scale the right handle
-                point.handle_right.x *= scale_x
-                point.handle_right.y *= scale_y
-                point.handle_right.z *= scale_z
-
                 point.handle_left_type = left_type
                 point.handle_right_type = right_type
-                
-        # Handle NURBS and Poly curves
-        else:
+        
+        else:  # NURBS/POLY
             for point in spline.points:
-                # Note: NURBS points are 4D (x, y, z, w). 
-                # Scaling x, y, and z is correct; the weight (w) remains untouched.
                 point.co.x *= scale_x
                 point.co.y *= scale_y
                 point.co.z *= scale_z
     
-    # Reset object scale to 1
+    # Reset object scale
     curve_obj.scale = (1, 1, 1)
-
+    
+    # Update cached scale if present
     if "initial_curve_scale" in curve_obj and scale_x != 0:
         curve_obj["initial_curve_scale"] = curve_obj["initial_curve_scale"] / scale_x

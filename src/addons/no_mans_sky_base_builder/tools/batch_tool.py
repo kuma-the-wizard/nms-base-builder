@@ -92,7 +92,7 @@ class BatchTool(bpy.types.PropertyGroup):
 
         if self.nms_batch_replace_type == "target":
             target_object = self.target_object
-            if "ObjectID" not in target_object:
+            if "ObjectID" not in target_object and 'GroupID' not in target_object:
                 title="Batch Replace Objects"
                 message="Target Object is Invalid"
                 ShowMessageBox(message=message, title=title )
@@ -152,7 +152,7 @@ class BatchTool(bpy.types.PropertyGroup):
         return len(replaced_objects_list)
     
     
-    def select_same_colored_objects(self):
+    def select_same_colored_objects(self, with_same_object_id = False):
         """Selects objects with same UserData, for easy experimentation with colors"""
         
         selected_objects = bpy.context.selected_objects
@@ -192,6 +192,42 @@ class BatchTool(bpy.types.PropertyGroup):
             
         return len(found_matches) - len(keys_to_find)
     
+    def select_all_same_colored_objects(self):
+        """Selects objects with same UserData, for easy experimentation with colors"""
+        
+        selected_objects = bpy.context.selected_objects
+        
+        if not selected_objects:
+            ShowMessageBox(
+                message="Make sure you have an item selected.", title="Find Objects with same Color"
+            )
+            return 0
+        
+        #Gather unique keys from selected obejcts
+        keys_to_find = []
+        for obj in selected_objects:
+            if "ObjectID" not in obj:
+                continue
+            
+            user_data = obj["UserData"]
+            if user_data not in keys_to_find:
+                keys_to_find.append(user_data)
+        
+        #Iterate through all objects to collect matches with keys_to_find
+        found_matches = []
+        for obj in bpy.context.view_layer.objects:
+            if "ObjectID" not in obj:
+                continue
+            
+            user_data = obj["UserData"]
+            if user_data in keys_to_find:
+                found_matches.append(obj)
+        
+        if len(found_matches) > 0:
+            blend_utils.select(found_matches)
+            
+        return len(found_matches) - len(keys_to_find)
+    
     
     def select_same_objects(self):
         """Selects objects with same ObjectIDs"""
@@ -207,21 +243,28 @@ class BatchTool(bpy.types.PropertyGroup):
         #Gather unique keys from selected obejcts
         keys_to_find = []
         for obj in selected_objects:
-            if "ObjectID" not in obj:
-                continue
-            
-            obj_id = obj["ObjectID"]
-            if obj_id not in keys_to_find:
+            obj_id = None
+            if "ObjectID" in obj:
+                obj_id = obj["ObjectID"]
+            elif "GroupID" in obj:
+                obj_id = obj["GroupID"]
+            else:
+                obj_id = None
+                
+            if obj_id is not None and obj_id not in keys_to_find:
                 keys_to_find.append(obj_id)
         
         #Iterate through all objects to collect matches with keys_to_find
         found_matches = []
         for obj in bpy.context.view_layer.objects:
-            if "ObjectID" not in obj:
-                continue
-            
-            obj_id = obj["ObjectID"]
-            if obj_id in keys_to_find:
+            if "ObjectID" in obj:
+                obj_id = obj["ObjectID"]
+            elif "GroupID" in obj:
+                obj_id = obj["GroupID"]
+            else:
+                obj_id = None
+                
+            if obj_id is not None and obj_id in keys_to_find:
                 found_matches.append(obj)
         
         if len(found_matches) > 0:

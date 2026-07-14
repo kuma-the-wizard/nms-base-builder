@@ -24,6 +24,21 @@ class SelectSameColoredObjects(bpy.types.Operator):
         self.report({'INFO'}, f"found {found_matches} matches")
         return {"FINISHED"}
     
+class SelectAllSameColoredObjects(bpy.types.Operator):
+    """Select objects with similar colors for easy experimentation."""
+
+    bl_idname = "object.nms_select_all_same_colors"
+    bl_label = "Select same colors"
+    bl_options = {"UNDO", "REGISTER"}
+
+    def execute(self, context):
+        scene = context.scene
+        batch_tool = scene.nms_batch_tool
+        
+        found_matches =  batch_tool.select_all_same_colored_objects()
+        self.report({'INFO'}, f"found {found_matches} matches")
+        return {"FINISHED"}
+    
 
 class SelectSameObjects(bpy.types.Operator):
     """Select objects with similar colors for easy experimentation."""
@@ -284,6 +299,7 @@ class SelectAllGroups(bpy.types.Operator):
     
 classes = (
     SelectSameColoredObjects,
+    SelectAllSameColoredObjects,
     SelectSameObjects,
     BatchReplaceTarget,
     BatchSelectRandom,

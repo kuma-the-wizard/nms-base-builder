@@ -62,6 +62,23 @@ def mirror_matrix_world(object_id, old_matrix_world, across_x=True):
 def reflect_point_across(source,origin):
     return (2 * origin) - source
 
+
+def reflect_point(source,origin, axis):
+    """reflects a point across give asix assuming origin as center of reflection
+
+    Args:
+        source (Vector): location of point to be mirrored
+        origin (Vector): center of reflection
+        axis (String): ( Takes "X","Y","Z" ), direction in which to morror
+
+    Returns:
+        Vector: Location of mirrored point
+    """
+    x = reflect_point_across(source.x, origin.x) if axis == "X" else source.x
+    y = reflect_point_across(source.y, origin.y) if axis == "Y" else source.y
+    z = reflect_point_across(source.z, origin.z) if axis == "Z" else source.z
+    return Vector((x,y,z))
+
 # This function mirrors matrix world according to parameters passed
 # Axis has three possible string values : X, Y and Z
 # Center is a point across which mirroring will take place, it is a 3d Vector
@@ -86,7 +103,7 @@ def mirror_matrix_world_universal(object_id, old_matrix_world, axis = None, cent
     if axis == "X":
         rotation_values = (current_euler.x, -current_euler.y, -current_euler.z)
     elif axis == "Y":
-        rotation_values = (current_euler.x, -current_euler.y, -current_euler.z + math.pi)
+        rotation_values = (current_euler.x, -current_euler.y, -current_euler.z)
     elif axis == "Z":
         rotation_values = (current_euler.x + math.pi, current_euler.y , current_euler.z + math.pi)
     else:

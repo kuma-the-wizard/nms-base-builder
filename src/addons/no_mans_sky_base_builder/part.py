@@ -20,6 +20,15 @@ class Part(object):
 
     SNAP_MATRIX_DICTIONARY = python_utils.load_dictionary(SNAP_MATRIX_JSON)
     SNAP_PAIR_DICTIONARY = python_utils.load_dictionary(SNAP_PAIR_JSON)
+    
+    """Curve property names."""
+    PROP_OBJECT_ID = "ObjectID"
+    PROP_USER_DATA = "UserData"
+    PROP_TIMESTAMP = "Timestamp"
+    PROP_MESSAGE = "Message"
+    PROP_POSITION = "Position"
+    PROP_UP = "Up"
+    PROP_AT = "At"
 
     SNAP_CACHE = {}
 
@@ -399,6 +408,8 @@ class Part(object):
             "NWTB2",
             "NWTB3",
         ]
+        
+        
         for idx, east_compass_id in enumerate(east_compass_ids):
             if object_id.endswith(f"_{east_compass_id}"):
                 return (
@@ -413,12 +424,21 @@ class Part(object):
                     + "_"
                     + east_compass_ids[idx]
                 )
-
-        # Handle Winged
-        if object_id.endswith("_R"):
-            return object_id[:-2]
-        else:
-            return object_id + "_R"
+        
+        # Handle Diffusers
+        if object_id.startswith("B_DECO"):
+            if object_id.endswith("_0") or object_id.endswith("_1"):
+                return object_id[:-1] + "1" if object_id.endswith("_0") else object_id[:-1] + "0"
+        
+         # Handle Winged
+        if object_id.startswith("B_WNG"):
+            if object_id == "B_WNG_R" or object_id == "B_WNG_R_R":
+                #Exception case, Default Aeron Wing's object ID ends with R and mirror part's ID ends with R_R
+                return "B_WNG_R_R" if object_id == "B_WNG_R" else "B_WNG_R"
+            elif object_id.endswith("_R"):
+                return object_id[:-2]
+            else:
+                return object_id + "_R"
 
     @staticmethod
     def get_flip_part_id(object_id):

@@ -29,7 +29,9 @@ class NMS_PT_batch_tools_panel(Panel):
         select_box.label(text = "Batch Select")
         select_col = select_box.column(align = True)
         select_col.label(text = "Select objects with")
-        select_col.operator("object.nms_select_same_colors", text = "Same Colour", icon = "MOD_SOFT")
+        select_color_row = select_col.row(align = True)
+        select_color_row.operator("object.nms_select_same_colors", text = "Same Colour", icon = "MOD_SOFT")
+        select_color_row.operator("object.nms_select_all_same_colors", text = "", icon = "TEXTURE")
         select_col.operator("object.nms_select_same_objects", text = "Same ObjectID", icon = "CON_SIZELIKE")
         
         more_options_box =  top_row.box()

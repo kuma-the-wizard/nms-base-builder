@@ -132,34 +132,32 @@ class BuildTool(bpy.types.PropertyGroup):
                     continue
                 
                 should_auto_duplicate = auto_duplicate and not change_orientation
-                new_curve_obj = curve.mirror_curve(target, axis, center, should_auto_duplicate)
+                new_curve_obj = curve.mirror_curve( self, target, axis, center, should_auto_duplicate)
                 if new_curve_obj is not None:
                     new_items.append(new_curve_obj)
             
             # mirror if object is a nms group
-            elif Group.PROP_GROUP_ID in target: 
+            elif Group.PROP_GROUP_ID in target and objects_to_mirror is None: 
                 is_target_mirror = target.get(Group.PROP_IS_MIRROR, False)   
                 found_match = Group.find_mirror_group(target, existing_groups)
                 if found_match is None:
                     # if there is no mirror present for target object 
                     # create a mirror by ungrouping -> mirroring ungrouped objects -> grouping them again
                     new_obj = blend_utils.duplicate_part(target) if auto_duplicate else target
-                    origin_matrix = Group.extract_origin_matrix(new_obj)
                     old_group_id = new_obj[Group.PROP_GROUP_ID]
+                    
+                    group_matrix_world = new_obj.matrix_world.copy()
+                    group_matrix_world = mirror_utils.mirror_matrix_world_universal(None, group_matrix_world, axis,center)
                     
                     # split group into objects
                     ungrouped_objects = Group.ungroup_objects(BUILDER,new_obj)
                     
                     # mirror all objects normally
                     if ungrouped_objects:
-                        self.mirror( axis, center,change_orientation, auto_duplicate = False,objects_to_mirror = ungrouped_objects)
-                        
-                    # mirror origin matrix
-                    if origin_matrix is not None:
-                        origin_matrix = mirror_utils.mirror_matrix_world_universal(None, origin_matrix, axis,center)
+                        ungrouped_objects = self.mirror( axis, center, objects_to_mirror = ungrouped_objects)
                     
                     # regroup objects into a group
-                    mirrored_group = Group.group_objects(ungrouped_objects, origin_matrix)
+                    mirrored_group = Group.group_objects(ungrouped_objects, group_matrix_world)
                     # restore GroupID
                     mirrored_group[Group.PROP_GROUP_ID] = old_group_id
                     # flip boolean that describes which side of mirror group belongs
@@ -169,12 +167,12 @@ class BuildTool(bpy.types.PropertyGroup):
                     # if a mirroed group already exist, use it's mesh and data to mirror target
                     
                     # duplicate existing mirror group
-                    new_obj = blend_utils.duplicate_part(found_match)
+                    mirrored_group = blend_utils.duplicate_part(found_match)
                     
                     # assign that duplicate a mirrored matrix world of target
                     old_matrix_world = target.matrix_world.copy()
                     new_matrix_world = mirror_utils.mirror_matrix_world_universal(None, old_matrix_world, axis,center)
-                    new_obj.matrix_world = new_matrix_world
+                    mirrored_group.matrix_world = new_matrix_world
                     
                     # delete target if auto duplicate is not checked
                     if not auto_duplicate:
@@ -188,7 +186,7 @@ class BuildTool(bpy.types.PropertyGroup):
         new_items = [obj for obj in new_items if obj is not None]
         if new_items:
             blend_utils.select(new_items)
-        return {"FINISHED"}
+        return new_items
     
     # called my Perform Mirror button in advanced mirroring options
     def advanced_mirror(self):

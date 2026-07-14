@@ -1,4 +1,5 @@
 import bpy
+import os
 import bmesh
 import mathutils
 import json
@@ -8,6 +9,12 @@ from mathutils import Matrix, Vector
 import uuid
 
 from .utils import blend_utils, mirror_utils
+from .utils import python as python_utils
+from .part import Part
+
+FILE_PATH = os.path.dirname(os.path.realpath(__file__))
+NICE_JSON = os.path.join(FILE_PATH,"resources","nice_names.json")
+nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
 
 
 class Group:
@@ -15,18 +22,22 @@ class Group:
     Manages grouping and ungrouping of NMS objects with safe caching.
     Handles relative matrix calculations, serialization, and restoration.
     """
-
-    # constants for property names
+    
+    # object properties
+    PROP_OBJECT_ID = Part.PROP_OBJECT_ID
+    PROP_USER_DATA = Part.PROP_USER_DATA
+    PROP_TIMESTAMP = Part.PROP_TIMESTAMP
+    PROP_MESSAGE = Part.PROP_TIMESTAMP
+    
+    # curve properties
     PROP_CHILD_CACHE = "child_cache"
     PROP_GROUP_ID = "GroupID"
     PROP_ORIGIN_OFFSET = "origin_offset"
     PROP_ORIGIN_MATRIX = "origin_matrix"
-    PROP_OBJECT_ID = "ObjectID"
-    PROP_USER_DATA = "UserData"
-    PROP_TIMESTAMP = "Timestamp"
-    PROP_MESSAGE = "Message"
     PROP_PART_COUNT = "part_count"
     PROP_IS_MIRROR = "is_mirror"
+    
+    PROP_MATRIX_LOCAL = "matrix_local"
 
     def __init__(self):
         """Initialize the Groups manager."""
@@ -60,7 +71,7 @@ class Group:
                 Group.PROP_OBJECT_ID: obj[Group.PROP_OBJECT_ID],
                 Group.PROP_USER_DATA: obj.get(Group.PROP_USER_DATA, 0),
                 Group.PROP_TIMESTAMP: obj.get(Group.PROP_TIMESTAMP, int(time.time())),
-                "matrix_local": matrix_list,
+                Group.PROP_MATRIX_LOCAL: matrix_list,
             }
 
             cache_data[obj.name] = cache
@@ -247,7 +258,6 @@ class Group:
             time_stamp = cache_data.get(Group.PROP_TIMESTAMP, int(time.time()))
             message = cache_data.get(Group.PROP_MESSAGE)
 
-
             # Build world matrix
             matrix_world = Group.restore_matrix_world(parent_obj, cache_data)
             if matrix_world is None:
@@ -256,23 +266,23 @@ class Group:
             pos, up, at = Group.extract_pos_up_at(matrix_world)
             
             data = {
-                "Timestamp": time_stamp,
-                "ObjectID": f"^{object_id}",
-                "UserData": int(user_data),
-                "Position": [pos[0], pos[1], pos[2]],
-                "Up": [up[0], up[1], up[2]],
-                "At": [at[0], at[1], at[2]],
+                Part.PROP_TIMESTAMP: int(time_stamp),
+                Part.PROP_OBJECT_ID: f"^{object_id}",
+                Part.PROP_USER_DATA: int(user_data),
+                Part.PROP_POSITION: [pos[0], pos[1], pos[2]],
+                Part.PROP_UP: [up[0], up[1], up[2]],
+                Part.PROP_AT: [at[0], at[1], at[2]],
             }
 
             if message is not None:
-                data[Group.PROP_MESSAGE] = message
+                data[Part.PROP_MESSAGE] = message
 
             serialized_objects.append(data)
 
         return serialized_objects
     
     @staticmethod
-    def deserialise_to_group(builder,child_cache, origin_matrix):
+    def deserialise_to_group(builder,child_cache, origin_matrix = None):
         """
         Deserialise string to group
         Args:
@@ -321,6 +331,56 @@ class Group:
         
         merged_group = Group.group_objects(restored_objects,origin_matrix)
         return merged_group
+    
+    @staticmethod
+    def deserialise_to_objects(builder,child_cache, origin_matrix = None):
+        """
+        Deserialise string to ungrouped obejcts
+        Args:
+            builder: The builder instance (with add_part method)
+            child_cache: string containing data related to grouped object
+        Returns:
+            merged_group: list of ungrouped objects
+        """
+        
+        if origin_matrix is None:
+            origin_matrix = Group.get_default_origin_matrix()
+        
+        try:
+            cached_child_data = json.loads(child_cache)
+        except (json.JSONDecodeError, Exception) as error:
+            print("Error deserialise_to_group ", error)
+            return None
+        
+        restored_objects = []
+        for child_name, cache_data in cached_child_data.items():
+
+            object_id = cache_data[Group.PROP_OBJECT_ID]
+            user_data = cache_data.get(Group.PROP_USER_DATA, 0)
+            time_stamp = cache_data.get(Group.PROP_TIMESTAMP, int(time.time()))
+
+            # Add part via builder
+            new_part = builder.add_part(object_id, user_data)
+            if new_part is None or not hasattr(new_part, "object"):
+                continue
+
+            new_obj = new_part.object
+
+            # Restore properties
+            new_obj[Group.PROP_TIMESTAMP] = time_stamp
+            if Group.PROP_MESSAGE in cache_data:
+                new_obj[Group.PROP_MESSAGE] = cache_data[Group.PROP_MESSAGE]
+
+            # Restore transform
+            matrix_local_data = cache_data.get("matrix_local")
+            if not matrix_local_data:
+                continue
+            # multiply the current world matrix by the local matrix.
+            matrix_local = mathutils.Matrix(matrix_local_data)
+            new_obj.matrix_world = origin_matrix@ matrix_local
+            restored_objects.append(new_obj)
+            
+        return restored_objects
     
     @staticmethod
     def restore_matrix_world(parent_obj, child_cache_data):
@@ -423,3 +483,58 @@ class Group:
     @staticmethod
     def get_default_origin_matrix():
         return mathutils.Matrix.Identity(4)
+    
+    @staticmethod
+    def mirror_group_cache(group_obj, axis, center):
+        """
+        Directly mirrors the cached child data and origin matrix of a group object
+        without needing to unpack and repack the geometry in the scene.
+        """
+        cached_child_data, origin_matrix = Group.extract_cached_data(group_obj)
+        
+        if cached_child_data is None:
+            print("Error mirroring group cache: child cache is None")
+            return None, None
+        
+        # Mirror the group's origin matrix (World Space)
+        if origin_matrix is not None:
+            origin_matrix = mirror_utils.mirror_matrix_world_universal(None, origin_matrix, axis, center)
+        
+        new_child_cache = {}
+        
+        for child_name, cache_data in cached_child_data.items():
+            # Create a clean copy to avoid mutating the iteration source
+            new_cache_data = cache_data.copy()
+            
+            # Handle Part ID swapping (e.g., Left Wing to Right Wing)
+            object_id = new_cache_data[Group.PROP_OBJECT_ID]
+            mirror_part_id = Part.get_mirror_part_id(object_id)
+            if mirror_part_id in nice_name_dictionary:
+                object_id = mirror_part_id
+            
+            # Extract local matrix (Stored as a 2D Python list, not a JSON string)
+            matrix_local_list = new_cache_data[Group.PROP_MATRIX_LOCAL]
+            matrix_local = mathutils.Matrix(matrix_local_list)
+            
+            # Mirror the local matrix. 
+            # Note: center is explicitly None because local matrices must reflect 
+            # across the group's internal origin (0,0,0), not the world cursor.
+            matrix_local = mirror_utils.mirror_matrix_world_universal(object_id, matrix_local, axis, center=None)
+            
+            # Update the cache data for this child
+            new_cache_data[Group.PROP_OBJECT_ID] = object_id
+            new_cache_data[Group.PROP_MATRIX_LOCAL] = [list(row) for row in matrix_local]
+            
+            new_child_cache[child_name] = new_cache_data
+            
+        # Serialize and assign back to Blender custom properties
+        if origin_matrix is not None:
+            group_obj[Group.PROP_ORIGIN_MATRIX] = json.dumps([list(row) for row in origin_matrix])
+            
+        group_obj[Group.PROP_CHILD_CACHE] = json.dumps(new_child_cache)
+            
+        return new_child_cache, origin_matrix
+            
+            
+        
+    
