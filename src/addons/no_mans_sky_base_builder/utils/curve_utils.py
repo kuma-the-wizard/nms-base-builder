@@ -1,4 +1,5 @@
 import bpy
+
 from mathutils import Vector
 from mathutils.geometry import interpolate_bezier
 from . import mirror_utils
@@ -249,9 +250,9 @@ def normalise_curve_scale(curve_obj):
                 point.handle_right_type = 'FREE'
                 
                 # Scale coordinates in vectorized form
-                point.co *= mathutils.Vector((scale_x, scale_y, scale_z))
-                point.handle_left *= mathutils.Vector((scale_x, scale_y, scale_z))
-                point.handle_right *= mathutils.Vector((scale_x, scale_y, scale_z))
+                point.co *= Vector((scale_x, scale_y, scale_z))
+                point.handle_left *= Vector((scale_x, scale_y, scale_z))
+                point.handle_right *= Vector((scale_x, scale_y, scale_z))
                 
                 point.handle_left_type = left_type
                 point.handle_right_type = right_type

@@ -2,21 +2,20 @@ import json
 import os
 import subprocess
 import sys
-import uuid
 import webbrowser
 
-import blf
 import bpy
 import bpy.ops
 import bpy.utils
 import bpy.utils.previews
+import math
 from bpy.app.handlers import persistent
 from bpy.props import (BoolProperty, EnumProperty, FloatProperty, IntProperty,
                        PointerProperty, StringProperty)
 from bpy.types import Panel, PropertyGroup
-from numpy import isin
+from pathlib import Path
 
-from . import builder, icons, part, preset, group
+from . import builder, icons, part, preset, group, viewport_overlay
 from .part_overrides import line
 from .save_editor import save_editor_operators, save_editor_utils
 from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel
@@ -27,8 +26,8 @@ from .tools.batch_tool_presentation import NMS_PT_batch_tools_panel
 from .tools.build_tool import BuildTool
 from .tools.build_tool_presentation import NMS_PT_tools_panel
 from .tools.properties import Properties
-from .tools.properties_presentation import NMS_PT_base_prop_panel
-from .utils import blend_utils, collection_utils, curve, curve_utils
+from .tools.properties_presentation import NMS_PT_base_prop_panel, NMS_PT_transformation_panel
+from .utils import blend_utils, collection_utils, curve, curve_utils, native_asset_browser_utils
 from .utils import material as _material
 from .utils import python as python_utils
 from .utils import workspace
@@ -763,7 +762,9 @@ class NMS_PT_hero_panel(Panel):
         workspace_row = layout.row(align=True)
         workspace_box = workspace_row.box()
         workspace_column = workspace_box.column(align = True)
-        workspace_column.label(text = "Workspace")
+        workspace_label_row = workspace_column.row(align = True)
+        workspace_label_row.label(text = "Workspace")
+        workspace_label_row.operator("object.nms_workspace_settings", text = "", icon = "SETTINGS")
         workspace_column.operator("object.nms_launch_asset_browser", text = "Launch Asset Browser", icon = "DESKTOP")
         if not nms_tool.is_workspace_cleaned:
             workspace_column.operator("object.nms_cleanup_workspace", text = "Simplify Blender Workspace", icon = "WORKSPACE")
@@ -928,7 +929,7 @@ class NMS_PT_build_panel(Panel):
         main_col = build_column.box().column(align = True)
         col = main_col.column(align=True)
         col.label(text = "Asset Browser")
-        col.operator("object.nms_launch_asset_browser", icon = "DESKTOP" )# icon="COLLECTION_COLOR_03"
+        col.operator("object.nms_launch_native_asset_browser", icon = "DESKTOP" )# icon="COLLECTION_COLOR_03"
         
         presets_box = main_col.column(align = True)
         presets_box.label(text = "Prefabs")
@@ -1246,6 +1247,16 @@ class LoadFancyUI(bpy.types.Operator):
         from .asset_browser import main as asset_browser_main
 
         asset_browser_main.load()
+        return {"FINISHED"}
+    
+class LoadNativeAssetBrowser(bpy.types.Operator):
+    """Launch the standalone asset browser."""
+
+    bl_idname = "object.nms_launch_native_asset_browser"
+    bl_label = "Native Asset Browser..."
+
+    def execute(self, context):
+        native_asset_browser_utils.open_and_switch_asset_browser()
         return {"FINISHED"}
 
 
@@ -1953,8 +1964,27 @@ class UngroupObjects(bpy.types.Operator):
             blend_utils.select(restored_obejcts_collection)
         return {"FINISHED"}
     
-    
+class WorkspaceSettings(bpy.types.Operator):
+    """Some settings related to workspace"""
 
+    bl_idname = "object.nms_workspace_settings"
+    bl_label = "Workspace Settings"
+    
+    
+    def invoke(self, context, event):
+        
+        def draw_menu(self, context):
+            prefs = context.preferences.addons[ADDON_ID].preferences
+            layout = self.layout
+            layout.prop(prefs,"nms_check_show_properties")
+        
+        context.window_manager.popup_menu(draw_menu, title="Workspace Settings", icon='SETTINGS')
+        return {'FINISHED'}
+    
+    def execute(self, context):
+        return {"FINISHED"}
+    
+    
 
 # Track  curve objects
 known_curves = set()
@@ -1967,6 +1997,8 @@ def reset_plugin_state(dummy):
     global known_curves
     known_curves = set( obj for obj in bpy.data.objects  if obj.type == 'CURVE' and obj.get("has_linked_objects", False) )
     curve.update_curves(known_curves)
+    
+    native_asset_browser_utils.add_asset_library_to_blender()
     
     # reset save editor's state to closed
     for scene in bpy.data.scenes:
@@ -1984,8 +2016,11 @@ def active_object_watcher(scene, depsgraph):
     
     # only continue when active object actually changes
     if active != last_active:
-        last_active = active
+        if active is None:
+            return
+        native_asset_browser_utils.check_new_import(active)
         properties.set_active_obect(active)
+        last_active = active
 
 def deferred_curve_update():
     global _curve_update_pending
@@ -2075,6 +2110,12 @@ class NMSAddonPreferences(bpy.types.AddonPreferences):
         default = str(save_editor_utils.get_default_save_folder())
     )
     
+    nms_check_show_properties : BoolProperty(
+        name = "Display details in viewport",
+        description = "Display some details like Part Count or active-object details on bottom left side of 3-d viewport",
+        default = True
+    )
+    
 
 preview_collections = {}
 
@@ -2099,6 +2140,7 @@ classes = (
     ApplyDefaultColour,
     SaveAsPreset,
     LoadFancyUI,
+    LoadNativeAssetBrowser,
     GetMorePresets,
     PresetsMenu,
     VisitDiscord,
@@ -2122,12 +2164,14 @@ classes = (
     BuildTool,
     Properties,
     BatchTool,
+    WorkspaceSettings,
     
     NMS_UL_actions_list,
     NMS_PT_hero_panel,
     NMS_PT_file_buttons_panel,
     NMS_PT_save_editor_panel,
     NMS_PT_base_prop_panel,
+    NMS_PT_transformation_panel,
     NMS_PT_colour_panel,
     NMS_PT_logic_panel,
     NMS_PT_tools_panel,
@@ -2195,6 +2239,9 @@ def register():
     if curve_udpate_handler not in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.append(curve_udpate_handler)
         
+    
+    bpy.app.timers.register(viewport_overlay.register_draw, first_interval=0.01)
+        
         
     
 
@@ -2222,7 +2269,8 @@ def unregister():
     if curve_udpate_handler in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.remove(curve_udpate_handler)
         
-        
+    
+    viewport_overlay.unregister_draw()
 
 
 if __name__ == "__main__":

@@ -74,6 +74,9 @@ def reflect_point(source,origin, axis):
     Returns:
         Vector: Location of mirrored point
     """
+    if origin is None:
+        return source
+    
     x = reflect_point_across(source.x, origin.x) if axis == "X" else source.x
     y = reflect_point_across(source.y, origin.y) if axis == "Y" else source.y
     z = reflect_point_across(source.z, origin.z) if axis == "Z" else source.z
@@ -82,32 +85,23 @@ def reflect_point(source,origin, axis):
 # This function mirrors matrix world according to parameters passed
 # Axis has three possible string values : X, Y and Z
 # Center is a point across which mirroring will take place, it is a 3d Vector
-def mirror_matrix_world_universal(object_id, old_matrix_world, axis = None, center = None):
+def mirror_matrix_world_universal(object_id, old_matrix_world, axis = None, center = None, mirror_part_exist = False):
 
     #extract location,rotation and scale values from matrix world
     location, rotation_quaternion, scale = old_matrix_world.decompose()
 
     # mirror location according to axis
-    if center is not None:
-        location_x = reflect_point_across(location.x,center.x) if axis == "X" else location.x
-        location_y = reflect_point_across(location.y,center.y) if axis == "Y" else location.y
-        location_z = reflect_point_across(location.z,center.z) if axis == "Z" else location.z
-        position_values = (location_x, location_y, location_z)
-        position_matrix = Matrix.Translation(Vector(position_values))
-    else:
-        position_values = (location.x, location.y, location.z)
-        position_matrix = Matrix.Translation(Vector(position_values))
+    position_vector = reflect_point(location,center,axis)
+    position_matrix = Matrix.Translation(position_vector)
 
     # mirror rotation according to axis
     current_euler = rotation_quaternion.to_euler("XYZ")
     if axis == "X":
         rotation_values = (current_euler.x, -current_euler.y, -current_euler.z)
     elif axis == "Y":
-        rotation_values = (current_euler.x, -current_euler.y, -current_euler.z)
-    elif axis == "Z":
+        rotation_values = (current_euler.x, -current_euler.y, -current_euler.z + math.pi)
+    else:# axis == "Z"
         rotation_values = (current_euler.x + math.pi, current_euler.y , current_euler.z + math.pi)
-    else:
-        rotation_values = (current_euler.x, -current_euler.y, -current_euler.z)
         
     rotation_euler = Euler(rotation_values, "XYZ")
     rotation_matrix = rotation_euler.to_matrix().to_4x4()
@@ -121,6 +115,41 @@ def mirror_matrix_world_universal(object_id, old_matrix_world, axis = None, cent
     #correct anomalies in mirroring
     if object_id is not None:
         matrix_world = mirror_correction(object_id, matrix_world)
+
+    return matrix_world
+
+
+def mirror_matrix_world_universal_2(object_id, old_matrix_world, axis=None, center=None, mirror_part_exist = False):
+    if axis not in {"X", "Y", "Z"} or center is None:
+        return old_matrix_world.copy()
+
+    # Extract the basic transformation components
+    location, rotation_quaternion, scale = old_matrix_world.decompose()
+    
+    flip_vector = Vector((
+        -1.0 if axis == "X" else 1.0,
+        -1.0 if axis == "Y" else 1.0,
+        -1.0 if axis == "Z" else 1.0,
+    ))
+    
+    rotation_matrix = rotation_quaternion.to_matrix()
+    rotation_matrix.col[0] *= flip_vector       # local X
+    rotation_matrix.col[1] *= flip_vector * -1  # local Y
+    rotation_matrix.col[2] *= flip_vector       # local Z
+    
+    # Mirror Position based on the chosen global mirror plane
+    location_vector = reflect_point(location, center, axis)
+
+    # rotation matrix
+    new_rotation_matrix = rotation_matrix.to_4x4()
+    # translation matrix
+    new_translation_matrix = Matrix.Translation(location_vector)
+    # scale matrix
+    new_scale_matrix = Matrix.Scale(scale.x, 4)
+    
+    rotation_correction = Matrix.Rotation(math.pi, 4, "Z" if mirror_part_exist else "X")
+    # combined matrix
+    matrix_world = new_translation_matrix @ new_rotation_matrix @ new_scale_matrix @ rotation_correction
 
     return matrix_world
 

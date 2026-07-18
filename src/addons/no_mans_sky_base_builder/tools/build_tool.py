@@ -115,7 +115,12 @@ class BuildTool(bpy.types.PropertyGroup):
                     new_item = BUILDER.mirror_part(target)
                     
                 if not change_orientation:
-                    mirrored_matrix_world = mirror_utils.mirror_matrix_world_universal(object_id, new_item.matrix_world, axis,center)
+                    mirrored_matrix_world = mirror_utils.mirror_matrix_world_universal_2(
+                        object_id, 
+                        new_item.matrix_world, 
+                        axis,center, 
+                        mirror_part_exist = mirror_part_exist
+                    )
                     new_item.matrix_world = mirrored_matrix_world
                 else :
                     mirrored_matrix_world = mirror_utils.change_orientation(object_id,new_item.matrix_world, axis, mirror_part_exist)

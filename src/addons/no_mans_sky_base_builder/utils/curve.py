@@ -518,9 +518,9 @@ def sync_curves(target_curve, source_curve, do_mirror = False, axis = None, from
 # scale of a child object of curve is mix of multiple products
 # base scale is scale of object before getting influenced by curve's points
 def calculate_base_scale(curve, obj):
-    curve_scale_multiplier = curve.scale.x/curve["initial_curve_scale"]
+    curve_scale_multiplier = curve.scale.x/curve.get("initial_curve_scale", curve.scale.x)
     radius_multiplier = curve[Curve.PROP_RADIUS_MULTIPLIER]
-    point_radius = obj["radius"]
+    point_radius = obj.get("radius",1.0)
     return obj.scale.x/( point_radius* radius_multiplier * curve_scale_multiplier )
 
 # change color of objects on curve

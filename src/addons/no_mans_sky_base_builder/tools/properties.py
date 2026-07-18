@@ -7,6 +7,7 @@ from ..utils import python as python_utils
 from .. import builder, part
 from ..utils.mirror_utils import ShowMessageBox
 from ..utils.curve import Curve
+import re
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 NICE_JSON = os.path.join(FILE_PATH,"..","resources","nice_names.json")
@@ -16,6 +17,17 @@ ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
 GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
 nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
 BUILDER = builder.Builder()
+
+
+def get_uniform_scale(self):
+    if self.active_object is not None:
+        return self.active_object.scale.x
+    return None
+
+
+def set_uniform_scale(self, value):
+    if self.active_object is not None:
+        self.active_object.scale = (value, value, value)
 
 class Properties(bpy.types.PropertyGroup):
     
@@ -65,7 +77,18 @@ class Properties(bpy.types.PropertyGroup):
         options={'SKIP_SAVE'},
     )
     
-    active_object = None
+    active_object : bpy.props.PointerProperty(
+        name="Active Object",
+        type=bpy.types.Object,
+    )
+    
+    uniform_scale: bpy.props.FloatProperty(
+        name="Scale",
+        get=get_uniform_scale,
+        set=set_uniform_scale,
+        min=0.0,
+        default=1.0,
+    )
     
     
     
@@ -110,8 +133,36 @@ class Properties(bpy.types.PropertyGroup):
         return False
     
     def set_active_obect(self, obj):
+        if obj is None:
+            return
+        
         curve_obj = curve.get_curve_or_linked_curve(obj)
         if curve_obj is not None:
             self.show_curve_edit_options(curve_obj)
-        else: 
+        elif "ObjectID" in obj: 
             self.hide_curve_edit_options()
+            
+        self.active_object = obj
+        
+    def get_active_object_nice_name(self):
+        if self.active_object is None:
+            return None, None
+        
+        if "ObjectID" not in self.active_object:
+            return self.active_object.name, None
+        
+        object_id = self.active_object["ObjectID"]
+        nice_name = nice_name_dictionary.get(object_id, "")
+        nice_name = self.beaufity_name(nice_name)
+        
+        
+        
+        return nice_name, object_id
+    
+    def beaufity_name(self,text):
+        parts = re.split(r'(\([^)]*\))', text)
+        return ''.join(
+            part if part.startswith('(') else part.title()
+            for part in parts
+        )
+        

@@ -21,7 +21,7 @@ class Part(object):
     SNAP_MATRIX_DICTIONARY = python_utils.load_dictionary(SNAP_MATRIX_JSON)
     SNAP_PAIR_DICTIONARY = python_utils.load_dictionary(SNAP_PAIR_JSON)
     
-    """Curve property names."""
+    """parts property names."""
     PROP_OBJECT_ID = "ObjectID"
     PROP_USER_DATA = "UserData"
     PROP_TIMESTAMP = "Timestamp"
@@ -317,11 +317,19 @@ class Part(object):
         Returns:
             dict: Dictionary of part information.
         """
+        
+        # Is native asset
+        is_native_asset = self.__object.get("is_native_asset", False)
+        
         # Get Matrix Data
         world_matrix = self.matrix_world
         # Bring the matrix from Blender Z-Up space into standard Y-up space.
-        z_compensate = mathutils.Matrix.Rotation(math.radians(-90.0), 4, "X")
-        world_matrix_offset = z_compensate @ world_matrix
+        if is_native_asset:
+            world_matrix_offset = world_matrix
+        else :
+            z_compensate = mathutils.Matrix.Rotation(math.radians(-90.0), 4, "X")
+            world_matrix_offset = z_compensate @ world_matrix
+        
         # Retrieve Position, Up and At vectors.
         pos = world_matrix_offset.decompose()[0]
         up = [
@@ -397,6 +405,8 @@ class Part(object):
             "NETB1",
             "NETB2",
             "NETB3",
+            "E",
+            "N",
         ]
         west_compass_ids = [
             "NW",
@@ -407,6 +417,8 @@ class Part(object):
             "NWTB1",
             "NWTB2",
             "NWTB3",
+            "W",
+            "S"
         ]
         
         
@@ -424,8 +436,10 @@ class Part(object):
                     + "_"
                     + east_compass_ids[idx]
                 )
+                
         
-        # Handle Diffusers
+        
+        # Handle B_DEC) parts
         if object_id.startswith("B_DECO"):
             if object_id.endswith("_0") or object_id.endswith("_1"):
                 return object_id[:-1] + "1" if object_id.endswith("_0") else object_id[:-1] + "0"

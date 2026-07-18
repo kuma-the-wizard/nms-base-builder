@@ -1,0 +1,83 @@
+VERSION 1
+
+99e3ec8a-e76e-477b-8b9e-45807418fa8a:Advanced Technology:Advanced Technology
+44706574-3abb-4a21-a048-d46a57c38183:Advanced Technology/Farming:Farming
+2c515903-af2d-449b-82d7-f29b747ccb6e:Advanced Technology/Freighter Storage:Freighter Storage
+b668f020-9ade-485c-9676-ab067555c563:Advanced Technology/General Utility:General Utility
+3eb0d393-17bb-457c-a0fd-75386dc2e8aa:Advanced Technology/Specialist Terminals:Specialist Terminals
+c64dfc53-1c42-414e-9209-8ac3310aaf97:Advanced Technology/Storage:Storage
+2c6ba3f7-af63-42fd-a7df-d849797975bd:Alloy Structures:Alloy Structures
+d48d48fb-e207-48ed-9aeb-4a98212c3b2b:Alloy Structures/Flooring and Stairs:Flooring and Stairs
+2cc7d59b-92f3-4797-8e9d-561d55e035e5:Alloy Structures/Roofing:Roofing
+419ec51b-0cc8-48e2-848c-4fe0e375091a:Alloy Structures/Walls, Doors and Windows:Walls, Doors and Windows
+70e4fa52-076f-4f4c-a22c-44b581767d94:Builder Structures:Builder Structures
+f8469423-2559-400e-977e-12c9bbd731c7:Builder Structures/Flooring and Stairs:Flooring and Stairs
+8e903a97-af52-44b1-9618-b8fca9f9f3cb:Builder Structures/Roofing:Roofing
+c2815fb0-1e25-490e-84d4-16d8889d00eb:Builder Structures/Walls, Doors and Windows:Walls, Doors and Windows
+2e0d1a55-421e-44e6-bbfe-ab96bca2b89a:Corvette:Corvette
+45627260-b862-4c9c-b69e-65e87746ba35:Corvette/Access and Docking:Access and Docking
+a5eb04a2-eba6-4abb-bd1d-9848f3b4f3e6:Corvette/Cockpits and Habitation Modules:Cockpits and Habitation Modules
+00693478-6a36-4eec-9048-fcf2fd240c39:Corvette/Defensive Systems:Defensive Systems
+b0be50d8-95e5-4000-845b-349584e12873:Corvette/Exterior Decoration:Exterior Decoration
+38113773-30f9-4c22-abdc-434ef20810d7:Corvette/Hull Connectors:Hull Connectors
+9aff7be7-6022-4ad7-8de1-4833038d57fc:Corvette/Hull Plating:Hull Plating
+403d633f-21e4-40ac-a12c-260136bd1330:Corvette/Internal Configuration:Internal Configuration
+da98a748-b429-4cb6-ad4b-4d5d32814261:Corvette/Reactors:Reactors
+c1f0cf70-61fd-460a-b31c-d2a65617dccc:Corvette/Storage:Storage
+934a3aee-d902-4645-9b3e-2d4c14c39c6b:Corvette/Thrusters:Thrusters
+3f99998b-dade-4610-aa02-0c5b6f292ba1:Corvette/Utility Modules:Utility Modules
+4d00b3dc-86c9-4f17-a928-578de29fa91a:Corvette/Windows:Windows
+6aa91a5e-a810-4c0a-83b9-c34d032ce297:Corvette/Wings:Wings
+882bb231-c11f-4325-8dc3-0b51a4b8080e:Decoration:Decoration
+7185d542-ef1b-4f1b-b342-55998e5236af:Decoration/Construction Parts:Construction Parts
+e7cad4ea-c6be-4b6e-929b-5e357baa21b9:Decoration/Lighting:Lighting
+4208de82-344a-4401-9716-8e61d5e4a87e:Decoration/Structural Adornments:Structural Adornments
+5b0f8901-b60e-4858-8947-0669abe4524d:Deployable Technology:Deployable Technology
+9c3bb8d5-f83e-4023-b9a6-8331b487f1ec:Deployable Technology/Exocraft Geobays:Exocraft Geobays
+bb81f0dd-8751-45f2-96bf-ddbc565a3d26:Deployable Technology/Fireworks:Fireworks
+50a6521e-5658-41da-b185-69a3669472e7:Deployable Technology/Portable Units:Portable Units
+bdb4d6fc-ac7d-4f68-bb48-3e03b5295184:Deployable Technology/Utopia:Utopia
+399e1323-9a3a-4035-ada5-5e9ac1618669:Exotic Decorations:Exotic Decorations
+41776c5a-8adf-4858-8de1-e325601015d1:Exotic Decorations/Decorative Plants:Decorative Plants
+58b3d5a3-f3fc-4c5c-909c-aab46a58d147:Exotic Decorations/Planetary Glitches:Planetary Glitches
+0b19ab83-0b44-4333-9f1d-adf88a7f39bb:Exotic Decorations/Ruins:Ruins
+a48821a5-67bb-45d2-b0ba-3afe8a64c131:Exotic Decorations/Ship Wreckage:Ship Wreckage
+5782ee30-11bc-4bd6-ba19-6c579e36e011:Exotic Decorations/Statues:Statues
+95eb1d7f-dd34-439a-9a78-83b08ff9ac2a:Exotic Decorations/Trophies:Trophies
+0443238b-a518-41fa-a9d5-86af06b5941d:Fossils:Fossils
+97f9a765-8087-49df-97ec-0737a113cf86:Fossils/Fossil Display:Fossil Display
+087bab72-6879-4a4e-8dfe-384dbfe5c7e5:Fossils/Fossil Parts:Fossil Parts
+4aa774ad-7d61-468b-8df2-c6c6d65b1fde:Furnishings:Furnishings
+af2a1b52-d821-46ed-95f1-4a45d3bab989:Furnishings/Decorative Technology:Decorative Technology
+e3d3367b-cb31-47de-b7c0-8bd638acb877:Furnishings/Derelict Freighter Salvage:Derelict Freighter Salvage
+41476c79-b3fe-4ad3-adc1-70de0764a368:Furnishings/Interior Decoration:Interior Decoration
+cc7c4c76-c854-4f12-9492-88c0d4115a2d:Furnishings/Space Station:Space Station
+7d7630fa-8770-4418-bc97-8ea60892d410:Large Structures:Large Structures
+94b12159-999f-4fbe-ae78-57e054f75876:Large Structures/Corridors:Corridors
+07707541-0857-48b2-a843-872bda210d55:Large Structures/Cuboid Rooms:Cuboid Rooms
+52f34900-222c-4f57-a30b-6452bb498586:Large Structures/Doors and Ladders:Doors and Ladders
+b9bd6956-7315-4241-b464-719174c6c4fd:Large Structures/Freighter:Freighter
+d4cb8b45-90ee-4709-b018-8d191c7a9827:Large Structures/Rooms and Foundations:Rooms and Foundations
+f3de9db3-1550-4bc2-a69d-8c0acde181d3:Legacy Structures:Legacy Structures
+8a8f2714-5c4e-4cfb-8502-776be99601ca:Legacy Structures/Concrete:Concrete
+e444b043-f088-4fe0-96f5-6adb662b2a8a:Legacy Structures/Freighter:Freighter
+8dab425f-64a2-4921-ae5e-4fed6e79a538:Legacy Structures/Metal:Metal
+deafbfcb-4cdd-43b4-bd5a-5e0efff7a5c3:Legacy Structures/Super Legacy:Super Legacy
+9fd31663-579c-46a1-873c-7216f2cc2f8e:Legacy Structures/Wood:Wood
+6d83c2cb-d339-428f-8c8e-3974a531e577:Power and Industry:Power and Industry
+06fa041e-a8f3-418d-a56e-55bad9e7ff7e:Power and Industry/Electrical Switches:Electrical Switches
+28ef81b2-14b7-49d9-a47a-c1f131c6e251:Power and Industry/Industrial Components:Industrial Components
+9abed9ea-221f-4669-a8ea-a0c7ddd5cd53:Power and Industry/Power Generation:Power Generation
+8739f1df-8147-4db1-a5e2-a87cf072693c:Settlement:Settlement
+11ec42af-98b8-4b03-bffe-f20467ca1fc3:Settlement/Settlement:Settlement
+60dddcae-e9ad-403b-890d-b5fe3bcdcdef:Stone Structures:Stone Structures
+679af670-a721-4ce3-877a-b9e4170a812f:Stone Structures/Flooring and Stairs:Flooring and Stairs
+2fcdbade-1d32-456c-88dd-9ffd66257903:Stone Structures/Roofing:Roofing
+e5d7ee40-a316-4502-918d-50b047f646ca:Stone Structures/Walls, Doors and Windows:Walls, Doors and Windows
+24d68e34-5995-4288-a9e3-24c516f2282c:Timber Structures:Timber Structures
+c3827276-9b40-4618-afc1-193cfa143c3f:Timber Structures/Flooring and Stairs:Flooring and Stairs
+e5b2144f-7a5f-4b11-b956-c0889c6aadaf:Timber Structures/Roofing:Roofing
+ee5ba31e-9513-49da-9364-d9d45f8c27ec:Timber Structures/Walls, Doors and Windows:Walls, Doors and Windows
+483e3237-2424-4077-927a-7673f75bf081:Wall Art:Wall Art
+5a262346-f6d3-4ca3-b1fe-dd6c806f13e2:Wall Art/Decals:Decals
+973ea13b-43ad-4acb-8a13-8aff5ce28790:Wall Art/Posters:Posters
