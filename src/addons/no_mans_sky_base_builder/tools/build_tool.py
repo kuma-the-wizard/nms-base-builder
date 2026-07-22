@@ -115,7 +115,7 @@ class BuildTool(bpy.types.PropertyGroup):
                     new_item = BUILDER.mirror_part(target)
                     
                 if not change_orientation:
-                    mirrored_matrix_world = mirror_utils.mirror_matrix_world_universal_2(
+                    mirrored_matrix_world = mirror_utils.mirror_matrix_world_universal(
                         object_id, 
                         new_item.matrix_world, 
                         axis,center, 
@@ -415,7 +415,7 @@ class BuildTool(bpy.types.PropertyGroup):
     def get_part_count(self):
         parts_count = 0
         # Iterate through all objects and count parts
-        for obj in bpy.data.objects:
+        for obj in bpy.context.scene.objects:
             # count 1 if object has perperty "ObjectID"
             if "ObjectID" in obj:
                 parts_count += 1

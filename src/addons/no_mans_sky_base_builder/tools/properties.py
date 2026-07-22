@@ -155,8 +155,6 @@ class Properties(bpy.types.PropertyGroup):
         nice_name = nice_name_dictionary.get(object_id, "")
         nice_name = self.beaufity_name(nice_name)
         
-        
-        
         return nice_name, object_id
     
     def beaufity_name(self,text):

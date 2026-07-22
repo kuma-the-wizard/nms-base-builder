@@ -32,6 +32,97 @@ class Part(object):
 
     SNAP_CACHE = {}
 
+    # --- Persistent mesh-template cache -----------------------------------
+    # Importing an FBX (bpy.ops.import_scene.fbx) is by far the most
+    # expensive step of building a part: it hits disk and runs Blender's
+    # FBX parser/importer operator. Everything else (transform, parenting,
+    # material assignment) is cheap by comparison.
+    #
+    # MESH_TEMPLATE_CACHE maps object_id -> the name of a small, inert mesh
+    # datablock that is never linked to any object in the scene - it exists
+    # purely as a "master copy" to duplicate from. It is deliberately a
+    # class attribute (not per-Builder-instance) and is intentionally NOT
+    # cleared by Builder.clear_caches()/new_file(), so it survives:
+    #   - multiple "Load Save"/"New File" operations in the same session,
+    #   - reusing the same part across unrelated presets/bases,
+    # and, because the template meshes are flagged with use_fake_user,
+    # even survive being saved into the .blend file with zero real users.
+    #
+    # This means, in the best case, each unique part is only ever imported
+    # from its .fbx file ONCE per Blender session (often less than once, if
+    # re-opening a .blend that already carries the templates).
+    MESH_TEMPLATE_CACHE = {}
+    TEMPLATE_NAME_PREFIX = "NMSB_TEMPLATE_"
+
+    @classmethod
+    def _get_cached_template_mesh(cls, object_id):
+        """Return the cached template mesh for object_id, if it still exists.
+
+        Falls back to a deterministic name lookup (in addition to the
+        in-memory dict) so previously-saved templates are still found after
+        an add-on reload or a fresh Blender session, even though the
+        in-memory dict itself does not persist across those.
+        """
+        mesh_name = cls.MESH_TEMPLATE_CACHE.get(object_id)
+        mesh = bpy.data.meshes.get(mesh_name) if mesh_name else None
+
+        if mesh is None:
+            # Dict entry missing/stale - see if a template mesh is still
+            # sitting in this .blend file from an earlier session.
+            mesh = bpy.data.meshes.get(f"{cls.TEMPLATE_NAME_PREFIX}{object_id}")
+
+        if mesh is None:
+            cls.MESH_TEMPLATE_CACHE.pop(object_id, None)
+            return None
+
+        # Keep the dict authoritative for next time.
+        cls.MESH_TEMPLATE_CACHE[object_id] = mesh.name
+        return mesh
+
+    @classmethod
+    def _cache_template_mesh(cls, object_id, mesh):
+        """Store an independent, fake-user-protected copy of mesh as the
+        reusable template for object_id.
+
+        The template is a full copy (never the live object's own mesh) so
+        later in-place edits to any instance (e.g. mirror_part/flip_part)
+        can never corrupt the template used by future imports.
+        """
+        target_name = f"{cls.TEMPLATE_NAME_PREFIX}{object_id}"
+
+        # Reuse an existing template datablock if one is already present
+        # (e.g. left over from an earlier session on this file) instead of
+        # making a redundant copy.
+        template = bpy.data.meshes.get(target_name)
+        if template is None:
+            template = mesh.copy()
+            template.name = target_name
+
+        template.use_fake_user = True
+        cls.MESH_TEMPLATE_CACHE[object_id] = template.name
+        return template
+
+    @classmethod
+    def clear_template_cache(cls, object_id=None):
+        """Forget cached mesh templates, forcing a re-import from .fbx.
+
+        Call this after updating/modding the underlying .fbx files on disk;
+        otherwise the (now stale) cached template keeps getting reused
+        instead of the new geometry.
+
+        Args:
+            object_id (str): Clear a single cached entry. If omitted, every
+                cached template is cleared.
+        """
+        targets = [object_id] if object_id else list(cls.MESH_TEMPLATE_CACHE.keys())
+        for oid in targets:
+            mesh_name = cls.MESH_TEMPLATE_CACHE.pop(oid, None)
+            mesh = bpy.data.meshes.get(mesh_name) if mesh_name else None
+            if mesh is not None:
+                mesh.use_fake_user = False
+                if mesh.users == 0:
+                    bpy.data.meshes.remove(mesh)
+
     def __init__(
         self,
         object_id=None,
@@ -273,7 +364,11 @@ class Part(object):
         Method Priority.
         - If the object already exists in the builder cache, we can just
             dupliciate it.
-        - If it doesn't exist in the cache, find the obj path.
+        - If we've previously imported this part at any point in this
+            session (or a prior one, if the file was saved), duplicate the
+            cached mesh template instead of touching disk again.
+        - If it doesn't exist in either cache, find the obj path and import
+            it, then cache the result for next time.
         - If the obj path doesn't exist, just create a cube.
         """
         # Duplicate existing.
@@ -284,6 +379,15 @@ class Part(object):
             duped.name = object_id
             blend_utils.add_to_scene(duped)
             return duped
+
+        # Re-use a cached mesh template if we've imported this part before.
+        # This skips bpy.ops.import_scene.fbx entirely - the expensive part -
+        # and just duplicates an in-memory mesh datablock instead.
+        cached_mesh = self._get_cached_template_mesh(object_id)
+        if cached_mesh:
+            item = bpy.data.objects.new(object_id, cached_mesh.copy())
+            blend_utils.add_to_scene(item)
+            return item
 
         # Locate OBJ.
         obj_path = self.builder.get_obj_path(object_id)
@@ -301,6 +405,11 @@ class Part(object):
             item.data.materials.clear()
             item.select_set(False)
             blend_utils.add_to_scene(item)
+
+            # Seed the template cache so every future request for this
+            # object_id - this load, later loads, even future sessions -
+            # can skip the FBX import entirely.
+            self._cache_template_mesh(object_id, item.data)
             return item
 
         # Create cube.

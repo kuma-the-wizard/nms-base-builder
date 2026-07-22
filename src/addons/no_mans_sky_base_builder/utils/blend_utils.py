@@ -320,6 +320,7 @@ def merge_objects(objects, object_name):
     objects = [obj for obj in objects if obj and obj.type == 'MESH']
 
     if not objects:
+        print("No objects to merge")
         return None
 
     try:
@@ -347,7 +348,7 @@ def merge_objects(objects, object_name):
 
         # Force Blender to update the viewport and geometry cache
         merged.data.update()
-            
+        print("Group created : ", merged.name)
         return merged
 
     except Exception as error:

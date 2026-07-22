@@ -627,6 +627,16 @@ class NMSSettings(PropertyGroup):
 
         # Apply Colour Material.
         maeterial_index = int(material.split("_")[0])
+        
+        unique_objects = {}
+        for obj in selected_objects:
+            if "ObjectID" in obj:
+                obj_id = obj["ObjectID"]
+                if obj_id not in unique_objects:
+                    obj.data = obj.data.copy()
+                    _material.assign_material(obj, int(colour_index), int(maeterial_index))
+                    unique_objects[obj_id] = obj
+                    
         for obj in selected_objects:
             # detect if object is nms curve
             if "has_linked_objects" in obj and curve.is_bezier_or_nurbs_path(obj):
@@ -637,7 +647,11 @@ class NMSSettings(PropertyGroup):
                         break
             # for any other object
             else :
-                _material.assign_material(obj, int(colour_index), int(maeterial_index))
+                if "ObjectID" in obj:
+                    obj_id = obj["ObjectID"]
+                    if obj_id in unique_objects:
+                        key = unique_objects[obj_id]
+                        obj.data = key.data
 
         # Refresh the viewport.
         bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
