@@ -644,7 +644,6 @@ class NMSSettings(PropertyGroup):
                     if "curve_parent" in child_obj and child_obj["curve_parent"] == obj.name:
                         _material.assign_material(child_obj, int(colour_index), int(maeterial_index))
                         obj["dup_UserData"] = child_obj["UserData"]
-                        break
             # for any other object
             else :
                 if "ObjectID" in obj:
@@ -652,6 +651,7 @@ class NMSSettings(PropertyGroup):
                     if obj_id in unique_objects:
                         key = unique_objects[obj_id]
                         obj.data = key.data
+                        obj["UserData"] = key["UserData"]
 
         # Refresh the viewport.
         bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
@@ -2063,7 +2063,7 @@ def curve_udpate_handler(scene, depsgraph):
             current_curves.add(obj)
         # if object type is a child of curve
         elif "curve_parent" in obj:
-            parent_curve = bpy.data.objects.get(obj["curve_parent"])
+            parent_curve = bpy.context.scene.objects.get(obj["curve_parent"],None)
             # remove object if it's parent curve has been deleted
             if parent_curve is None:
                 bpy.data.objects.remove(obj, do_unlink=True)
