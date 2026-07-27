@@ -548,7 +548,7 @@ class Part(object):
                 
         
         
-        # Handle B_DEC) parts
+        # Handle B_DECO parts
         if object_id.startswith("B_DECO"):
             if object_id.endswith("_0") or object_id.endswith("_1"):
                 return object_id[:-1] + "1" if object_id.endswith("_0") else object_id[:-1] + "0"

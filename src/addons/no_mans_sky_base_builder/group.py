@@ -129,10 +129,9 @@ class Group:
             if "ObjectID" in obj:
                 objects_list.append(obj)
 
-        # Clean the target matrix (keep location and rotation, but force scale to 1.0)
+        # Keep location, rotation, and scale from the target matrix
         if target_matrix is not None:
-            loc, rot, _ = target_matrix.decompose()
-            clean_matrix = Matrix.LocRotScale(loc, rot, None)
+            clean_matrix = target_matrix.copy()
         else:
             # Fallback: Calculate median position if no matrix is given
             clean_matrix = Matrix.Identity(4)
