@@ -20,14 +20,16 @@ from .part_overrides import line
 from .save_editor import save_editor_operators, save_editor_utils
 from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel
 from .save_editor.save_manager import SaveManager
-from .tools import batch_tool_operators, build_tool_operators
+
+from .tools import batch_tool_operators, build_tool_operators, prooperties_operators
 from .tools.batch_tool import BatchTool
 from .tools.batch_tool_presentation import NMS_PT_batch_tools_panel
 from .tools.build_tool import BuildTool
 from .tools.build_tool_presentation import NMS_PT_tools_panel
 from .tools.properties import Properties
 from .tools.properties_presentation import NMS_PT_base_prop_panel, NMS_PT_transformation_panel
-from .utils import blend_utils, collection_utils, curve, curve_utils, native_asset_browser_utils
+
+from .utils import blend_utils, collection_utils, curve, curve_utils
 from .utils import material as _material
 from .utils import python as python_utils
 from .utils import workspace
@@ -943,7 +945,7 @@ class NMS_PT_build_panel(Panel):
         main_col = build_column.box().column(align = True)
         col = main_col.column(align=True)
         col.label(text = "Asset Browser")
-        col.operator("object.nms_launch_native_asset_browser", icon = "DESKTOP" )# icon="COLLECTION_COLOR_03"
+        col.operator("object.nms_launch_asset_browser", icon = "DESKTOP" )# icon="COLLECTION_COLOR_03"
         
         presets_box = main_col.column(align = True)
         presets_box.label(text = "Prefabs")
@@ -1261,16 +1263,6 @@ class LoadFancyUI(bpy.types.Operator):
         from .asset_browser import main as asset_browser_main
 
         asset_browser_main.load()
-        return {"FINISHED"}
-    
-class LoadNativeAssetBrowser(bpy.types.Operator):
-    """Launch the standalone asset browser."""
-
-    bl_idname = "object.nms_launch_native_asset_browser"
-    bl_label = "Native Asset Browser..."
-
-    def execute(self, context):
-        native_asset_browser_utils.open_and_switch_asset_browser()
         return {"FINISHED"}
 
 
@@ -2012,7 +2004,7 @@ def reset_plugin_state(dummy):
     known_curves = set( obj for obj in bpy.data.objects  if obj.type == 'CURVE' and obj.get("has_linked_objects", False) )
     curve.update_curves(known_curves)
     
-    native_asset_browser_utils.add_asset_library_to_blender()
+    #native_asset_browser_utils.add_asset_library_to_blender()
     
     # reset save editor's state to closed
     for scene in bpy.data.scenes:
@@ -2032,7 +2024,6 @@ def active_object_watcher(scene, depsgraph):
     if active != last_active:
         if active is None:
             return
-        native_asset_browser_utils.check_new_import(active)
         properties.set_active_obect(active)
         last_active = active
 
@@ -2154,7 +2145,6 @@ classes = (
     ApplyDefaultColour,
     SaveAsPreset,
     LoadFancyUI,
-    LoadNativeAssetBrowser,
     GetMorePresets,
     PresetsMenu,
     VisitDiscord,
@@ -2202,7 +2192,7 @@ classes = (
     UngroupObjects
 )
 
-classes = classes  + save_editor_operators.classes + build_tool_operators.classes + batch_tool_operators.classes
+classes = classes  + save_editor_operators.classes + build_tool_operators.classes + batch_tool_operators.classes + prooperties_operators.classes
 
 
 

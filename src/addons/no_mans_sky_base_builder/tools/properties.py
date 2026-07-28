@@ -90,6 +90,29 @@ class Properties(bpy.types.PropertyGroup):
         default=1.0,
     )
     
+    copied_position: bpy.props.FloatVectorProperty(
+        name="Copied Location",
+        description="Position of an object",
+        default=(0.0, 0.0, 0.0),
+        size=3,
+    )
+    
+    copied_rotation: bpy.props.FloatVectorProperty(
+        name="Copied Rotation",
+        description="Rotation of an object",
+        default=(0.0, 0.0, 0.0),
+        size=3,
+    )
+    
+    copied_scale: bpy.props.FloatVectorProperty(
+        name="Copied Scale",
+        description="Scale of an object",
+        default=(1.0, 1.0, 1.0),
+        size=3,
+    )
+        
+        
+    
     
     
     def show_curve_edit_options(self,curve_obj):
@@ -163,4 +186,19 @@ class Properties(bpy.types.PropertyGroup):
             part if part.startswith('(') else part.title()
             for part in parts
         )
+        
+    def paste_transformatinos(self, paste_location = False, paste_rotation = False, paste_scale = False):
+        location = self.copied_position 
+        rotation = self.copied_rotation 
+        scale = self.copied_scale
+        
+        selected_objects = bpy.context.selected_objects
+        
+        for obj in selected_objects:
+            if paste_location:
+                obj.location = location
+            if paste_rotation:
+                obj.rotation_euler = rotation
+            if paste_scale:
+                obj.scale = scale
         

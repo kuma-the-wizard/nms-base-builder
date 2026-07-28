@@ -106,17 +106,29 @@ class NMS_PT_transformation_panel(Panel):
         pos_rot_title_col = transformations_row.column(align = True)
         pos_rot_scale_col = transformations_row.column(align = True)
         pos_rot_scale_col.scale_x = 1.5
+        paste_col = transformations_row.column().column(align = True)
         
         pos_rot_title_col.label(text = "Position")#, icon = "OBJECT_ORIGIN")
         pos_col = pos_rot_scale_col.row(align = True)
         pos_col.prop(active_object, "location", index=0, text = "")
         pos_col.prop(active_object, "location", index=1, text = "")
         pos_col.prop(active_object, "location", index=2, text = "")
+        paste_col.operator("object.nms_paste_location", icon="PASTEDOWN",text = "")
+        
         pos_rot_title_col.label(text = "Rotation")#, icon = "ORIENTATION_GIMBAL")
         rot_col = pos_rot_scale_col.row(align = True)
         rot_col.prop(active_object, "rotation_euler", index=0, text = "")
         rot_col.prop(active_object, "rotation_euler", index=1, text = "")
         rot_col.prop(active_object, "rotation_euler", index=2, text = "")
+        paste_col.operator("object.nms_paste_rotation", icon="PASTEDOWN",text = "")
+    
         pos_rot_title_col.label(text = "Scale")
         scale_row = pos_rot_scale_col.row(align = True)
         scale_row.prop(properties, "uniform_scale",text = "")
+        paste_col.operator("object.nms_paste_scale", icon="PASTEDOWN",text = "")
+        
+        pos_rot_scale_col.separator()
+        copy_transformations_row = pos_rot_scale_col.row(align = True)
+        copy_transformations_row.operator("object.nms_copy_transformations", icon="COPYDOWN",text = "Copy")
+        copy_transformations_row.operator("object.nms_paste_transformations", icon="PASTEDOWN",text = "Paste")
+        copy_transformations_row.operator("object.nms_reset_transformations", icon="DECORATE_OVERRIDE",text = "Reset")
