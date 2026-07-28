@@ -287,27 +287,28 @@ def import_paticular_base_from_save(base_identifier,  save_slot):
     
 #save a base to save file
 def save_base_to_save_file(objects_data, base_identifier,  save_slot, new_base_name = None):
-    save_file = get_save_file(save_slot)
-    data = save_file.load()
-    
-    # look for base in save file to see it it exist or not
-    in_base = save_file.search_base_with_identifier(base_identifier)
-    if in_base is None:
-        return
-    
-    # here update objects list with list provided
-    in_base[SaveTranslation.objects] = save_translation.translate_to_obf_data(objects_data)
-    
-    
-    # update name of base if provided
-    if new_base_name is not None:
-        ship_ownsership = save_file.get_ship_ownership_pointer()
-        in_base[SaveTranslation.base_name] = new_base_name
-        ship_ownsership[base_identifier["user_data"]][SaveTranslation.base_name] = new_base_name
-    
-    # save the file and make backup after update it
-    save_file.make_backup()
-    save_file.save()
+    from .save_file import SaveFile
+    for slot in save_slot:
+        save_file = SaveFile(slot)
+        save_file.load()
+        
+        # look for base in save file to see it it exist or not
+        in_base = save_file.search_base_with_identifier(base_identifier)
+        if in_base is None:
+            return
+        
+        # here update objects list with list provided
+        in_base[SaveTranslation.objects] = save_translation.translate_to_obf_data(objects_data)
+        
+        # update name of base if provided
+        if new_base_name is not None:
+            ship_ownsership = save_file.get_ship_ownership_pointer()
+            in_base[SaveTranslation.base_name] = new_base_name
+            ship_ownsership[base_identifier["user_data"]][SaveTranslation.base_name] = new_base_name
+        
+        # save the file and make backup after update it
+        save_file.make_backup()
+        save_file.save()
     return "Base/Corvette saved sucessfully"
 
 # a folder within save_directory , where backups will be stored
