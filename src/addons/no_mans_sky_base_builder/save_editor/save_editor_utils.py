@@ -271,7 +271,7 @@ def get_save_file(save_slot):
 # impart a base from save file
 def import_paticular_base_from_save(base_identifier,  save_slot):
     save_file = get_save_file(save_slot)
-    data = save_file.load()
+    save_file.load()
     
     # fist see if base actially exists or not
     searched_base = save_file.search_base_with_identifier(base_identifier)
@@ -283,10 +283,13 @@ def import_paticular_base_from_save(base_identifier,  save_slot):
         return None
         
     #return bases after translating it to engish
-    return save_translation.translate_to_eng_data(searched_base)
+    searched_base = save_translation.translate_to_eng_data(searched_base)
+    
+    #print(searched_base)
+    return searched_base
     
 #save a base to save file
-def save_base_to_save_file(objects_data, base_identifier,  save_slot, new_base_name = None):
+def save_base_to_save_file(objects_data, base_identifier,  save_slot, objects_only = True):
     from .save_file import SaveFile
     for slot in save_slot:
         save_file = SaveFile(slot)
@@ -297,14 +300,13 @@ def save_base_to_save_file(objects_data, base_identifier,  save_slot, new_base_n
         if in_base is None:
             return
         
-        # here update objects list with list provided
-        in_base[SaveTranslation.objects] = save_translation.translate_to_obf_data(objects_data)
-        
-        # update name of base if provided
-        if new_base_name is not None:
-            ship_ownsership = save_file.get_ship_ownership_pointer()
-            in_base[SaveTranslation.base_name] = new_base_name
-            ship_ownsership[base_identifier["user_data"]][SaveTranslation.base_name] = new_base_name
+        if objects_only:
+            # update only objects list
+            in_base[SaveTranslation.objects] = save_translation.translate_to_obf_data(objects_data)
+        else:
+            # update entire base if objects only is False
+            in_base.clear()
+            in_base.update(save_translation.translate_to_obf_data(objects_data))
         
         # save the file and make backup after update it
         save_file.make_backup()

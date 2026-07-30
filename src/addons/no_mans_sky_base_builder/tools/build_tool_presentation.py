@@ -27,42 +27,31 @@ class NMS_PT_tools_panel(Panel):
         #tools_column, snap_column = (split.column(align = True), split.column(align = True))
         build_tools_col = layout.column(align = True)
         tools_row = build_tools_col.row(align = True)
-        tools_column = tools_row.column(align = True)
-        tools_column.scale_x = 1.3333
         snap_column = tools_row.column(align = True)
-
+        tools_column = tools_row.column(align = True)#tools_column
+        snap_column.scale_x = 1.5
         # Create Part Count Box.
         part_box = tools_column.box()
         splitter = part_box.split(factor=0.7)
         splitter.label(text="Part Count:" )# , icon = "GEOMETRY_NODES"
         part_count = build_tool.get_part_count()
         splitter.label(text="{}".format(part_count))
-
-        tools_box = tools_column.box()
-        tools_col = tools_box.column()
-
-        tools_col.label(text="Common Tools")
-        tools_col.operator("object.nms_duplicate", icon="DUPLICATE")
-        tools_col.operator("object.nms_delete", icon="TRASH")
-        tools_col.label(text="Curve")
-        tools_col.operator("object.nms_duplicate_along_curve", icon="MOD_DASH")
         
-
+        
+        
         # Create Snapping box.
-        snap_box = snap_column.box()
+        snap_box = tools_column.box()
         snap_col = snap_box.column(align=True)
         
         snap_button_row = snap_col.row(align = True)
-        snap_button_split = snap_button_row.split(factor=0.23333)
+        snap_button_split = snap_button_row.split(factor=0.277777)
         snap_label_col, snap_button_container = (snap_button_split.column(align = True), snap_button_split.column(align = True))
         
         snap_label_col.label(text="Snap")
-        snap_label_col.separator()
         snap_label_col.label(text="Target")
         snap_label_col.label(text="Source")
         
         snap_op = snap_button_container.operator("object.nms_snap", icon="SNAP_ON")
-        snap_button_container.separator()
 
         target_source_column = snap_button_container.column(align=True)
         source_row = target_source_column.row(align=True)
@@ -75,53 +64,70 @@ class NMS_PT_tools_panel(Panel):
         snap_source_next = source_row.operator("object.nms_snap", icon="TRIA_RIGHT", text="Next")
         
         
+        
+
+        tools_box = snap_column.box()
+        tools_col = tools_box.column(align = True)
+        tools_col.label(text="Common Tools")
+        tools_col.separator()
+        tools_dup_row = tools_col.row(align = True)
+        tools_dup_row.operator("object.nms_duplicate", icon="DUPLICATE")
+        tools_dup_row.operator("object.nms_delete", icon="TRASH")
+        tools_col.separator()
+        tools_col.label(text="Curve")
+        tools_col.operator("object.nms_duplicate_along_curve", icon="MOD_DASH")
+        
+        presets_v2_col = tools_box.column(align = True)
+        presets_v2_col.label(text = "Grouping")
+        presets_v2_row = presets_v2_col.row(align = True)
+        presets_v2_row.operator("object.nms_group_objects", text = "Group", icon = "OUTLINER_OB_POINTCLOUD" )
+        presets_v2_row.operator("object.nms_ungroup_objects", text = "Ungroup",  icon = "OUTLINER_DATA_POINTCLOUD")
+        
         # Object orientation for corvette parts, mirror can work for non corvette parts too
-        orientation_box = snap_column.box()
+        orientation_box = tools_column.box()
         mirror_col = orientation_box.column(align=True)
         mirror_col.label(text="Orientation") # icon = "ORIENTATION_GIMBAL"
-        mirror_col.operator("object.nms_mirror", icon="ARROW_LEFTRIGHT")
-        mirror_col.operator("object.nms_flip", icon="DECORATE_OVERRIDE")
-        #mirror_col.operator("object.nms_turn", icon="GESTURE_ROTATE")
+        mirror_col_row = mirror_col.row(align = True)
+        mirror_col_row.operator("object.nms_mirror", icon="ARROW_LEFTRIGHT")
+        mirror_col_row.operator("object.nms_flip", icon="DECORATE_OVERRIDE")
         
                     
         # Mirroring tools
         mirroring_box = build_tools_col.box()
         mirroring_box_column = mirroring_box.column(align = True)
-        mirroring_box_column_label_row = mirroring_box_column.row(align = True)
-        mirroring_box_column_label_row.label(text = "Mirroring", icon = "MOD_MIRROR")
+        
         
         if not build_tool.check_show_advanced_options:
+            mirroring_box_column_label_row = mirroring_box_column.row(align = True)
+            mirroring_box_column_label_row.label(text = "Mirror", icon = "MOD_MIRROR")
             mirroring_box_column_label_row.prop(build_tool,"check_show_advanced_options", text = "Show more options") # icon = "OPTIONS"
-            #show simple options if advanced mirroring is unchecked
             mirroring_box_column.separator()
             mirroring_box_column.operator( "object.nms_universal_mirror_x", icon="ARROW_LEFTRIGHT" , text = "Mirror across X" )
         
         else :
-            # show advanced options
-
-            mirroring_box_column_label_row.prop(build_tool,"check_show_advanced_options", text = "Hide more options")
-            # select center of reflection
-            mirroring_box_column.label(text = "Center of Reflection")
-            center_of_reflection_row = mirroring_box_column.row(align = True)
-            center_of_reflection_row.prop(build_tool,"center_of_reflection",expand=True)
+            mirroring_box_column_label_row = mirroring_box_column.row(align = True)
+            mirroring_box_column_label_row.label(text = "Mirror", icon = "MOD_MIRROR")
+            mirroring_box_column_label_row.prop(build_tool,"check_show_advanced_options", text = "Show more options") # icon = "OPTIONS"
             
-            # select mirror direction
-            mirroring_box_column.label(text = "Direction")
-            direction_row = mirroring_box_column.row(align = True)
-            direction_row.prop(build_tool,"mirror_direction",expand=True)
-
-            mirroring_box_column.separator()
+            mirroring_options_row = mirroring_box_column.row(align = True)
+            mirroring_options_col_1 = mirroring_options_row.column(align = False)
+            mirroring_options_col_2 = mirroring_options_row.column(align = False)
+            mirroring_options_col_1.scale_x = 1
+            mirroring_options_col_1.alignment = 'RIGHT'
             
-            # displace field to select target object when "object" is selected as center of reflection
-            if build_tool.center_of_reflection == "Object":
-                mirroring_box_column.label(text = "Target Object")
-                mirroring_box_column.prop(build_tool, "target_object", text = "")
-                mirroring_box_column.separator()
-                
-            #check to auto duplicate objects before mirroring
-            mirroring_box_column.prop(build_tool,"check_auto_duplicate")
-            # perform mirror button
-            mirroring_box_column.operator("object.nms_advanced_mirror", icon = "MOD_MIRROR", text = "Perform Mirror")
+            
+            mirroring_options_col_2.separator()
+            mirroring_options_col_1.separator()
+            
+            
+            mirroring_options_col_1.label(text = "Center ")
+            mirroring_options_col_1.label(text = "Direction ")
+            mirroring_options_col_2.row(align = True).prop(build_tool,"center_of_reflection",expand=True)
+            mirroring_options_col_2.row(align = True).prop(build_tool,"mirror_direction",expand=True)
+                        
+            mirroring_options_col_2.prop(build_tool,"check_auto_duplicate")
+            mirroring_options_col_2.operator("object.nms_advanced_mirror", icon = "MOD_MIRROR", text = "Perform Mirror")
+            
             
 
         # Set Snap Operator assignments.

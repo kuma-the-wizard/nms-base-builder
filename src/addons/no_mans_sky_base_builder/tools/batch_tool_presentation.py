@@ -26,17 +26,18 @@ class NMS_PT_batch_tools_panel(Panel):
         batch_column = layout.column(align = True)
         top_row = batch_column.row(align = True)
         select_box = top_row.box()
-        select_box.label(text = "Batch Select")
         select_col = select_box.column(align = True)
         select_col.label(text = "Select objects with")
         select_color_row = select_col.row(align = True)
         select_color_row.operator("object.nms_select_same_colors", text = "Same Colour", icon = "MOD_SOFT")
         select_color_row.operator("object.nms_select_all_same_colors", text = "", icon = "TEXTURE")
         select_col.operator("object.nms_select_same_objects", text = "Same ObjectID", icon = "CON_SIZELIKE")
+        select_col.operator("object.nms_select_all_groups", text = "Select all Groups", icon = "OUTLINER_OB_GROUP_INSTANCE" )
+        
         
         more_options_box =  top_row.box()
-        more_options_box.label(text = "Selection Tools",)
         more_options_column = more_options_box.column(align = True)
+        more_options_column.label(text = "Selection Tools",)
         more_options_column.operator("object.nms_select_duplicates", text = "Find Duplicates", icon = "BRUSH_DATA")
         more_options_column.operator("object.nms_batch_select_random", text = "Select Random", icon = "MOD_NOISE")
         more_options_column.operator("object.nms_batch_select_pattern", text = "Select Pattern", icon = "MOD_OCEAN")
@@ -45,10 +46,10 @@ class NMS_PT_batch_tools_panel(Panel):
         batch_replace_box.label(text = "Batch Replace")
         batch_replace_box.operator("object.nms_batch_replace_target", text = "Batch Replace", icon = "GROUP_VERTEX" )# icon = "CON_FOLLOWPATH"
         
-        more_selection_tools_box = batch_column.row(align = True)
-        more_selection_tools_column = more_selection_tools_box.box().column(align = True)
-        more_selection_tools_column.label(text = "More Selction Tools")
+        #more_selection_tools_box = batch_column.row(align = True)
+        #more_selection_tools_column = more_selection_tools_box.box().column(align = True)
+        #more_selection_tools_column.label(text = "More Selction Tools")
         #more_selection_tools_column.operator("object.nms_batch_replace_target", text = "Select Wires", icon = "MOD_OFFSET" )
-        more_selection_tools_column.operator("object.nms_select_all_groups", text = "Select all Groups", icon = "OUTLINER_OB_GROUP_INSTANCE" )
         
-        more_selection_tools_box.column(align = True).label(text = "")
+        
+        #more_selection_tools_box.column(align = True).label(text = "")

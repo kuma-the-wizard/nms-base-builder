@@ -28,16 +28,15 @@ class NMS_PT_base_prop_panel(Panel):
         scene = context.scene
         nms_tool = scene.nms_base_tool
         
-        #properties = context.scene.nms_properties
         properties = context.scene.nms_properties
         icon_pcroll = icons.get_icons_pscroll()
-        home_icon = icon_pcroll["house"]
-        curve_icon = icon_pcroll["curve"]
         
         properties_col = layout.column(align = True)
         properties_box = properties_col.box()
-        properties_column = properties_box.column(align=True)
-        properties_column.label(text = "Base Properties", icon = "HOME")
+        properties_column = properties_box.column(align=False)
+        properties_column_row = properties_column.row(align = True)
+        properties_column_row.label(text = "Base Properties", icon = "HOME")
+        properties_column_row.operator("object.nms_curve_break_apart", icon="UNLINKED",text = "Import from clipboard")
         base_prop_split = properties_column.split(factor = 0.3)
         base_label_col = base_prop_split.column(align = True)
         base_label_col.label(text = "Base Name :")
@@ -78,7 +77,29 @@ class NMS_PT_base_prop_panel(Panel):
             else :
                 show_box_buttons_row = active_curve_box_col.row(align = True)
                 show_box_buttons_row.operator("object.nms_selecte_object_parent_curve", icon="MOD_ENVELOPE",text = "Select Parent")
-            
+
+class NMS_PT_advannced_base_prop_panel(Panel):
+    bl_idname = "NMS_PT_advanced_base_prop_panel"
+    bl_label = "Advanced Properties"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "No Mans Sky Base Builder"
+    bl_context = "objectmode"
+
+    @classmethod
+    def poll(self, context):
+        return True
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        nms_tool = scene.nms_base_tool
+        
+        main_col = layout.column(align = True)
+        main_col.label(text = "Position")
+        
+
+
             
 class NMS_PT_transformation_panel(Panel):
     bl_idname = "NMS_PT_transformation_panel"

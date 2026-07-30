@@ -54,6 +54,8 @@ class ImportBaseFromSave(bpy.types.Operator):
         result = save_data.import_base_from_save_file(context)
         if result is not None:
             self.report({'INFO'}, result)
+        else:
+            self.report({'ERROR'}, "Error importing base")
         return {"FINISHED"}
 
 # Button to export base selected from list of bases in save editor section
@@ -79,7 +81,16 @@ class PinBase(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         save_data = scene.nms_save_data
+        base_tool = scene.nms_base_tool
+        
         save_data.pin_base()
+        pinned_base = save_data.get_pinned_base_data()
+        
+        if pinned_base is not None:
+            base_tool.deserialise_from_data(nms_data = pinned_base, start_new_file = False)
+        else:
+            self.report({'ERROR'}, "Base not found")
+        
         return {"FINISHED"}
     
 # Button to unpin base from top of editor

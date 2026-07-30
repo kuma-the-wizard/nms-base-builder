@@ -146,11 +146,14 @@ class NMSSettings(PropertyGroup):
         maxlen=1024,
     )
 
-    string_base_type: StringProperty(
+    string_base_type: bpy.props.EnumProperty(
         name="The base type",
         description="Planet or Freighter.",
-        default="HomePlanetBase",
-        maxlen=1024,
+        items = [
+            ("PlayerShipBase", "Corvette", "Base type is a corvette"),
+            ("HomePlanetBase", "Base", "Base type is normal base"),
+            ("FreighterBase", "Freighter", "Base type is freighter"),
+        ]
     )
 
     string_usn: StringProperty(
@@ -302,7 +305,6 @@ class NMSSettings(PropertyGroup):
 
     room_vis_switch: IntProperty(name="room_vis_switch", default=0)
     
-    
     color_picker: bpy.props.PointerProperty(
         name="Colour Picker",
         type=bpy.types.Object,
@@ -311,9 +313,11 @@ class NMSSettings(PropertyGroup):
         update = lambda self, context: self.on_color_picked()
     )
 
-    def deserialise_from_data(self, nms_data):
-        # Start new file
-        self.new_file()
+    def deserialise_from_data(self, nms_data, start_new_file = True):
+        
+        if start_new_file:
+            # Start new file
+            self.new_file()
 
         # Start bringing the data in.
         if "GalacticAddress" in nms_data:
@@ -804,23 +808,60 @@ class NMS_PT_file_buttons_panel(Panel):
         layout = self.layout
         scene = context.scene
         nms_tool = scene.nms_base_tool
+        build_tool = scene.nms_build_tool
+        save_data = context.scene.nms_save_data
         
-        file_row = layout.row(align=True)
+        
+        
+        file_col = layout.column(align = True)
+        
+        file_row = file_col.row(align=True)
         file_box = file_row.box()
         first_column = file_box.column(align=True)
-        first_column.label(text="File")# icon = "COLLECTION_COLOR_04"
-        first_column.operator("object.nms_new_file", icon="FILE_NEW")
-        first_column.separator()
-        first_column.operator("object.nms_save_data", icon="FILE_TICK")
-        first_column.operator("object.nms_load_data", icon="FILE_FOLDER")
+        first_column.scale_x = 0.5 if nms_tool.string_base_type == "PlayerShipBase" else 1.0
+        first_column.label(text="Metadata", icon = "PROPERTIES")
+        first_column.label(text="Base Name")
+        first_column.prop(nms_tool, "string_base", text = "")
+        first_row = first_column.row(align = True)
+        fc_1 = first_row.column(align = True)
+        fc_1.label(text="Basetype")
+        fc_1.prop(nms_tool, "string_base_type", text = "")
+        
+        if nms_tool.string_base_type == "PlayerShipBase":
+            fc_2 = first_row.column(align = True)
+            fc_2.label(text="Userdata")
+            fc_2.prop(nms_tool, "string_userdata", text = "")
 
         clipboard_box = file_row.box()
-        second_column = clipboard_box.column(align=True)
-        second_column.label(text="Import & Export")
+        clipboard_box.label(text="Import & Export", icon = "IMPORT")
+        second_column = clipboard_box.column(align=False)
         second_column.operator("object.nms_import_nms_data", icon="PASTEDOWN")
         second_column.separator()
+        second_column.prop(build_tool,"check_show_advanced_options", text = "Objects only") 
         second_column.operator("object.nms_export_nms_data", icon="COPYDOWN")
-        second_column.operator("object.nms_export_nms_data_objects", icon="COPYDOWN")
+        
+        #display data related to a pinned base on top if there is any withing a blend file
+        if save_data.pinned_base_check:
+            pinned_base_type  = save_data.get_base_type_string(save_data.pinned_base_type)
+            pinned_box = file_col.box()
+            
+            pinned_content_row = pinned_box.row(align = False)
+            pinned_text_col = pinned_content_row.column(align = False)
+            pinned_buttons_col = pinned_content_row.column(align = True)
+            
+            pinned_text_col.label(text = f"{nms_tool.string_base} ({pinned_base_type})", icon = "PINNED")
+            pinned_text_condensed_column = pinned_text_col.column(align = True)
+            pinned_text_condensed_column.label(text = f"{save_data.pinned_save_slot_name}, (...{save_data.pinned_save_account[-3:]})")
+            
+            pinned_buttons_col.scale_x = 0.7
+            pinned_buttons_col.operator("object.nms_unpin_base", icon="UNPINNED", text = f"Unpin {pinned_base_type}")
+            pinned_buttons_col.operator("object.import_pinned_base", icon="IMPORT", text = "Import from Save")
+            
+            pinned_export_button_row = pinned_box.row(align = False)
+            pinned_export_button_row.operator("object.export_pinned_base", icon="FILE_TICK", text = "Export to Save")
+            pinned_export_button_backup_row = pinned_export_button_row.row(align = True)
+            pinned_export_button_backup_row.scale_x = 0.7
+            pinned_export_button_backup_row.operator("object.make_pinned_savefile_backup",  icon = "COLLECTION_NEW", text = "Backup Save files")
             
 
 
@@ -2174,7 +2215,7 @@ classes = (
     NMS_PT_hero_panel,
     NMS_PT_file_buttons_panel,
     NMS_PT_save_editor_panel,
-    NMS_PT_base_prop_panel,
+    #NMS_PT_base_prop_panel,
     NMS_PT_transformation_panel,
     NMS_PT_colour_panel,
     NMS_PT_logic_panel,

@@ -340,12 +340,11 @@ class SaveManager(bpy.types.PropertyGroup):
             nms_base_json = json.loads(nms_import_data)
         except:
             return "Could not import base data, Incorrect json"
-
+            
         # Import json into scene
         nms_tools = context.scene.nms_base_tool
         nms_tools.deserialise_from_data(nms_base_json)
         BUILDER.deserialise_from_data(nms_base_json)
-        
         #return a string for operators for status message
         return "Base/Corvette imported sucessfully"
     
@@ -363,15 +362,23 @@ class SaveManager(bpy.types.PropertyGroup):
             return "Error Exporting bases, base identifiers are None"
         
         # provide data to real export function
-        return self.export_base(context, base_identifiers, current_slot_data["saves"])
+        return self.export_base(context, base_identifiers, current_slot_data["saves"], objects_only= True)
         
     # collect data from scene and export it to save file
-    def export_base(self,context,  base_identifiers, save_links, new_base_name = None):
+    def export_base(self,context,  base_identifiers, save_links, objects_only = True):
         # convert scene to json representing base data
         nms_tools = context.scene.nms_base_tool
-        serialised_base_objects_data  = nms_tools.serialise(objects_only = True)
+        serialised_base_objects_data  = nms_tools.serialise(objects_only = objects_only)
+        
+        print(serialised_base_objects_data)
+        
         # provide data to utils and return status string to calling function
-        return save_editor_utils.save_base_to_save_file(serialised_base_objects_data, base_identifiers, save_links, new_base_name)
+        result = save_editor_utils.save_base_to_save_file(serialised_base_objects_data, base_identifiers, save_links, objects_only = objects_only)
+        
+        # refresh UI
+        self.refresh_bases_list()
+        
+        return result 
       
     # This functin collects data realated to base so that it can be identified in save file
     # since there is no unique property to identify a base, we prepare a fingerprint of that base with collection of properties
@@ -515,23 +522,7 @@ class SaveManager(bpy.types.PropertyGroup):
         if base_identifiers is None:
             return "Pinned base identifiers are none"
         
-        # base name will not be udpated if it is None
-        new_base_name = None
-        
-        # check if export base name check box is checked
-        if self.check_also_update_name:
-            scene = context.scene
-            nms_tool = scene.nms_base_tool
-            string_base_name = nms_tool.string_base.strip()
-            # update of new base name after validating string base name
-            if string_base_name:
-                new_base_name = string_base_name
-        
-        result = self.export_base(context, base_identifiers, base_identifiers.save_slot, new_base_name)
-        
-        # upate base name if base name was sucessfully changed in save file
-        if result is not None and new_base_name is not None:
-            self.update_base_name(new_base_name)
+        result = self.export_base(context, base_identifiers, base_identifiers.save_slot, objects_only = False)
             
         return result
         
@@ -603,3 +594,16 @@ class SaveManager(bpy.types.PropertyGroup):
     
     def get_total_parts_count(self):
         return str(SaveManager.extracted_base_data["total_parts_count"])
+    
+    # returns pinned base data extracted from save file
+    def get_pinned_base_data(self):
+        identifiers = self.get_pinned_base_identifiers()
+        save_slot = identifiers.save_slot
+        pinned_base = save_editor_utils.import_paticular_base_from_save(identifiers, save_slot)
+        return pinned_base
+    
+    # refresh list of bases/corvettes by importing fresh data form save file
+    def refresh_bases_list(self):
+        current_slot_data = self.get_current_slot_data()
+        SaveManager.extracted_base_data = save_editor_utils.extract_bases_list_from_save(current_slot_data["saves"])
+        self.on_base_type_selected()

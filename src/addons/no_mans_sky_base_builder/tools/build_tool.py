@@ -66,8 +66,7 @@ class BuildTool(bpy.types.PropertyGroup):
         description = "Select center of reflection, a point arround which mirroring will take place",
         items = [
             ("World Origin", "World Origin", "World origin will always be 0,0,0","OBJECT_ORIGIN",0),
-            ("3D cursor", "3D cursor", "3d curson can be changed at any time with shift + right click","CURSOR",1),
-            ("Object", "Object", "An object's origin will be take in to account for center of reflection","CON_PIVOT",2),
+            ("3D cursor", "3D cursor", "3d curson can be changed at any time with shift + right click","CURSOR",1)
         ],
         options={'SKIP_SAVE'},
         default = 'World Origin'

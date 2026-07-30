@@ -111,9 +111,6 @@ class Properties(bpy.types.PropertyGroup):
         size=3,
     )
         
-        
-    
-    
     
     def show_curve_edit_options(self,curve_obj):
         self.show_gap_edit_field = True
