@@ -59,8 +59,7 @@ def update_curves(updated_curves):
                 if objects_count_changed:
                     duplicate_along_curve( None,curve_obj, new_number_of_objects, new_radius_multiplier)
                     
-                if radius_changed or bpy.context.mode in {'EDIT_CURVE'}:
-                    update_curve_children(curve_obj, new_radius_multiplier, objects_count_changed)
+                update_curve_children(curve_obj, new_radius_multiplier, objects_count_changed)
                     
             except ReferenceError:
                 continue
@@ -85,6 +84,10 @@ def update_curve_children(curve_obj, new_radius_multier = None, objects_count_ch
 
 
 def duplicate_along_curve( bpy_object, curve, number_of_duplicates=10, radius_multiplier=1.0):
+    
+    if curve.get(Curve.PROP_HAS_LINKED_OBJECTS,False):
+        curve_utils.normalise_curve_scale(curve)
+    
     curve[Curve.PROP_HAS_LINKED_OBJECTS] = True
     curve[Curve.PROP_RADIUS_MULTIPLIER] = radius_multiplier
     

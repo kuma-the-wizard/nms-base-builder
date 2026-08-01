@@ -1800,6 +1800,7 @@ def deferred_curve_update():
 @persistent
 def curve_udpate_handler(scene, depsgraph):
     global known_curves
+    active = bpy.context.view_layer.objects.active
     
     # check each object in scene to detect if their parent curve has been deleted by user or not
     # if not, we update object's base scale to keep track of transformation changes made by user
@@ -1816,7 +1817,8 @@ def curve_udpate_handler(scene, depsgraph):
                 bpy.data.objects.remove(obj, do_unlink=True)
             # Update base scale to persiste changes to scale made by user when curve mode is switched
             elif not parent_curve.get("parent_selected", True):
-                obj["base_scale"] = curve.calculate_base_scale(parent_curve, obj)
+                if active is not None and parent_curve.name == active.name:
+                    obj["base_scale"] = curve.calculate_base_scale(parent_curve, obj)
     
     # Detect dead curves, cuerves that have been deleted by user through blender
     dead_curves = known_curves - current_curves
@@ -1855,7 +1857,8 @@ def curve_udpate_handler(scene, depsgraph):
                 continue
     
     # Loop through all curves and update their children's transformations
-    curve.update_curves(known_curves)
+    if active is not None and "CurveID" in active:
+        curve.update_curves([active])
         
     # Sync back down to the global tracking set 
     known_curves = current_curves

@@ -120,7 +120,8 @@ class NMS_PT_transformation_panel(Panel):
         
         properties = context.scene.nms_properties
         active_object = properties.active_object
-        transformations_box = layout.box()
+        transformations_box_column = layout.column(align = True)
+        transformations_box = transformations_box_column.box()
         
         transformations_block = transformations_box.column(align = True)
         transformations_row = transformations_block.row(align = True)
@@ -153,3 +154,37 @@ class NMS_PT_transformation_panel(Panel):
         copy_transformations_row.operator("object.nms_copy_transformations", icon="COPYDOWN",text = "Copy")
         copy_transformations_row.operator("object.nms_paste_transformations", icon="PASTEDOWN",text = "Paste")
         copy_transformations_row.operator("object.nms_reset_transformations", icon="DECORATE_OVERRIDE",text = "Reset")
+        
+        
+        #properties_col.separator()
+        active_object = properties.active_object
+        #curve tools
+        if properties.show_gap_edit_field and active_object is not None: # and properties.active_curve_is_highlighted()
+            active_curve_box = transformations_box_column.box()
+            active_curve_box_col = active_curve_box.column(align = False)
+            active_curve_box_col.label(text = "Edit Active-Curve Parameters", icon = "NORMALIZE_FCURVES")
+            
+            active_curve_box_col.separator()
+            active_curve_box_col_label_split = active_curve_box_col.split(factor = 0.7)
+            active_curve_box_col_label, active_curve_box_col_delete = (active_curve_box_col_label_split.column(), active_curve_box_col_label_split.column())
+            active_curve_box_col_label.label(text = f"Target : {properties.active_curve_name}")
+            active_curve_box_col_delete.operator("object.nms_curve_delete", icon="TRASH",text = "Delete Curve and Children")
+            #active_curve_box_col.separator()
+            
+            if properties.selected_curve_object_is_parent:
+                curve_params_split = active_curve_box_col.split(factor=0.5)
+                curve_gap_row, curve_radius_row = (curve_params_split.column(align = True), curve_params_split.column(align = True))
+                curve_gap_row.label(text = "Number of Objects")
+                curve_gap_row.label(text = "Objects Size")
+                #Text fields for editing curv related params
+                curve_radius_row.prop(properties,"active_curve_number_of_objects",text = "")
+                curve_radius_row.prop(properties,"active_curve_radius_multiplier",text = "")
+                active_curve_box_col.separator()
+                
+                show_box_buttons_row = active_curve_box_col.row(align = True)
+                show_box_buttons_row.operator("object.nms_curve_break_apart", icon="UNLINKED",text = "Unlink Curve")
+                show_box_buttons_row.operator("object.nms_select_children_of_curve", icon="MOD_OUTLINE",text = "Select Children")
+                
+            else :
+                show_box_buttons_row = active_curve_box_col.row(align = True)
+                show_box_buttons_row.operator("object.nms_selecte_object_parent_curve", icon="MOD_ENVELOPE",text = "Select Parent")
