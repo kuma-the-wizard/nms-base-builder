@@ -26,7 +26,7 @@ class NMS_PT_base_prop_panel(Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         
         properties = context.scene.nms_properties
         icon_pcroll = icons.get_icons_pscroll()
@@ -93,7 +93,7 @@ class NMS_PT_advannced_base_prop_panel(Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         
         main_col = layout.column(align = True)
         main_col.label(text = "Position")

@@ -23,8 +23,8 @@ class NMS_PT_save_editor_panel(Panel):
     def draw(self, context):
         layout = self.layout
         save_data = context.scene.nms_save_data
-        nms_tool = context.scene.nms_base_tool
-        base_props = context.scene.nms_base_properties
+        nms_tool = context.scene.nms_main
+        base_props = context.scene.nms_base_tool
         prefs = context.preferences.addons[ADDON_ID].preferences
         save_folder_path = prefs.nms_save_folder_path
         

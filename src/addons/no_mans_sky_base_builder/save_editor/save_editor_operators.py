@@ -81,7 +81,7 @@ class PinBase(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         save_data = scene.nms_save_data
-        base_tool = scene.nms_base_tool
+        base_tool = scene.nms_main
         
         save_data.pin_base()
         pinned_base = save_data.get_pinned_base_data()

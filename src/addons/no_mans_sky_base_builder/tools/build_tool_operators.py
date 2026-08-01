@@ -124,7 +124,7 @@ class ToggleRoom(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_base_tool = scene.nms_base_tool
+        nms_base_tool = scene.nms_main
         nms_base_tool.toggle_room_visibility()
         return {"FINISHED"}
     

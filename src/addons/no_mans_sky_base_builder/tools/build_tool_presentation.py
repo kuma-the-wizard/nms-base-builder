@@ -19,7 +19,7 @@ class NMS_PT_tools_panel(Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         build_tool = context.scene.nms_build_tool
 
         # Split into two columns of equal widths.
@@ -101,15 +101,15 @@ class NMS_PT_tools_panel(Panel):
         
         if not build_tool.check_show_advanced_options:
             mirroring_box_column_label_row = mirroring_box_column.row(align = True)
-            mirroring_box_column_label_row.label(text = "Mirror")
-            mirroring_box_column_label_row.prop(build_tool,"check_show_advanced_options", text = "Show more options") # icon = "OPTIONS"
+            mirroring_box_column_label_row.label(text = "Mirror", icon = "MOD_MIRROR")
+            mirroring_box_column.prop(build_tool,"check_show_advanced_options", text = "Show more options") # icon = "OPTIONS"
             mirroring_box_column.separator()
             mirroring_box_column.operator( "object.nms_universal_mirror_x", icon="ARROW_LEFTRIGHT" , text = "Mirror across X" )
         
         else :
             mirroring_box_column_label_row = mirroring_box_column.row(align = True)
             mirroring_box_column_label_row.label(text = "Mirror", icon = "MOD_MIRROR")
-            mirroring_box_column_label_row.prop(build_tool,"check_show_advanced_options", text = "Show more options") # icon = "OPTIONS"
+            mirroring_box_column_label_row.prop(build_tool,"check_show_advanced_options", text = "", icon = "TRIA_UP") # icon = "OPTIONS"
             
             mirroring_box_column.separator()
             mirroring_options_col = mirroring_box_column.column(align = True)

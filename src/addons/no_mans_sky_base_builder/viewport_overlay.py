@@ -61,10 +61,10 @@ def display_base_status(font_id, start_x = 20, start_y = 20):
     base_data = {}
     
     if nms_base_tool.string_base and nms_base_tool.string_address:
-        base_type = nms_base_tool.string_base_type
-        base_type_string = "Corvette" if base_type == "PlayerShipBase" else "Base"
-        
+        #base_type = nms_base_tool.string_base_type
+        #base_type_string = "Corvette" if base_type == "PlayerShipBase" else "Base"
         #title = f"{base_type_string} imported :"
+        
         title= None
         base_data["Name"] = nms_base_tool.string_base
         #base_data["Base Type"] = base_type_string
@@ -113,30 +113,47 @@ def display_active_object_prop(font_id, start_x=10, start_y=100 ):
     
 
 def draw_callback_px(self, context):
-    try:
-        prefs = bpy.context.preferences.addons[ADDON_ID].preferences
-        if prefs.nms_check_show_properties:
+    prefs = bpy.context.preferences.addons[ADDON_ID].preferences
+    if prefs.nms_check_show_part_count or prefs.nms_check_show_active_object_properties:
+        try:
+            
             # Set the font ID (0 is the default Blender font)
             font_id  = 0
-
             blf.size(font_id, 11) # Font size
             blf.color(font_id, 1.0, 1.0, 1.0, 1.0) # RGBA (White)
             blf.enable(font_id, blf.SHADOW)
             blf.shadow(font_id, 3, 0, 0, 0, 1.0)
             blf.shadow_offset(font_id, 0, -1)
-            
             region = bpy.context.region
+            if prefs.nms_check_show_part_count:
+                if prefs.nms_part_count_position == "Bottom":
+                    base_prop_x_pos = 20
+                    base_prop_y_pos = 40
+                else:
+                    base_prop_x_pos = 65 
+                    base_prop_y_pos = region.height - 150
+                display_base_status(font_id, start_x=base_prop_x_pos, start_y=base_prop_y_pos)
             
-            base_prop_x_pos = 65 
-            base_prop_y_pos = region.height - 150
-            
-            display_base_status(font_id, start_x=base_prop_x_pos, start_y=base_prop_y_pos)
-            display_active_object_prop(font_id, start_x=25, start_y=90 )
-        
-            
-    except AttributeError as error:
-        print(error)
-        pass
+            if prefs.nms_check_show_active_object_properties:
+                if prefs.nms_active_object_properties_position == "Bottom":
+                    if prefs.nms_part_count_position == "Bottom":
+                        prop_x_pos = 25
+                        prop_y_pos = 90
+                    else :
+                        prop_x_pos = 25
+                        prop_y_pos = 20
+                else:
+                    if prefs.nms_part_count_position == "Bottom":
+                        prop_x_pos = 65 
+                        prop_y_pos = region.height - 215
+                    else:
+                        prop_x_pos = 65 
+                        prop_y_pos = region.height - 280
+                display_active_object_prop(font_id, start_x=prop_x_pos, start_y=prop_y_pos )
+                
+        except AttributeError as error:
+            print(error)
+            pass
         
 
 def register_draw():

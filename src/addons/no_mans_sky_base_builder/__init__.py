@@ -16,6 +16,8 @@ from bpy.types import Panel, PropertyGroup
 from pathlib import Path
 
 from . import builder, icons, part, preset, group, viewport_overlay
+from .base_properties import NMSBaseProperties
+from .addon_preferences import NMSAddonPreferences
 from .part_overrides import line
 from .save_editor import save_editor_operators, save_editor_utils
 from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel
@@ -71,7 +73,7 @@ def part_switch(self, context):
 def get_line_type_from_enum(context):
     line_object = "U_POWERLINE"
     scene = context.scene
-    nms_tool = scene.nms_base_tool
+    nms_tool = scene.nms_main
     line_value = nms_tool.line_switch
     if line_value == "TELEPORT":
         line_object = "U_PORTALLINE"
@@ -85,7 +87,7 @@ def get_line_type_from_enum(context):
 
 
 # Core Settings Class
-class NMSSettings(PropertyGroup):
+class NMSMain(PropertyGroup):
     # Build Array of base part types. (Vanilla Parts - Mods - Presets)
     enum_items = []
     for pack, _ in BUILDER.available_packs:
@@ -124,180 +126,6 @@ class NMSSettings(PropertyGroup):
     preset_name: StringProperty(
         name="preset_name", description="The of a preset.", default="", maxlen=1024
     )
-
-    string_base: StringProperty(
-        name="Base Name",
-        description="The name of the base set in game.",
-        default="",
-        maxlen=1024,
-    )
-
-    string_address: StringProperty(
-        name="Galactic Address",
-        description="The galactic address.",
-        default="",
-        maxlen=1024,
-    )
-
-    string_userdata: StringProperty(
-        name="User Data",
-        description="User Data - important for corvette bases.",
-        default="",
-        maxlen=1024,
-    )
-
-    string_base_type: bpy.props.EnumProperty(
-        name="The base type",
-        description="Planet or Freighter.",
-        items = [
-            ("PlayerShipBase", "Corvette", "Base type is a corvette"),
-            ("HomePlanetBase", "Base", "Base type is normal base"),
-            ("FreighterBase", "Freighter", "Base type is freighter"),
-        ]
-    )
-
-    string_usn: StringProperty(
-        name="USN", description="The username attribute.", default="", maxlen=1024
-    )
-
-    string_uid: StringProperty(
-        name="UID", description="A user ID.", default="", maxlen=1024
-    )
-
-    string_lid: StringProperty(
-        name="LID", description="Not sure what this is.", default="", maxlen=1024
-    )
-
-    string_ptk: StringProperty(
-        name="PTK", description="Not sure what this is.", default="", maxlen=1024
-    )
-
-    string_ts: StringProperty(
-        name="TS",
-        description="Timestamp.",
-        default="",
-        maxlen=1024,
-    )
-
-    string_last_ts: StringProperty(
-        name="LastUpdatedTimestamp",
-        description="Timestamp - last updated timestamp.",
-        default="",
-        maxlen=1024,
-    )
-
-    float_pos_x: FloatProperty(
-        name="X", description="The X position of the base in planet space.", default=0.0
-    )
-
-    float_pos_y: FloatProperty(
-        name="Y", description="The Y position of the base in planet space.", default=0.0
-    )
-
-    float_pos_z: FloatProperty(
-        name="Z", description="The Z position of the base in planet space.", default=0.0
-    )
-
-    float_ori_x: FloatProperty(
-        name="X",
-        description="The X orientation vector of the base in planet space.",
-        default=0.0,
-    )
-
-    float_ori_y: FloatProperty(
-        name="Y",
-        description="The Y orientation vector of the base in planet space.",
-        default=0.0,
-    )
-
-    float_ori_z: FloatProperty(
-        name="Z",
-        description="The Z orientation vector of the base in planet space.",
-        default=0.0,
-    )
-
-    # Unimportant details...
-    LastEditedById: StringProperty(
-        name="LastEditedByID",
-        description="LastEditedByID.",
-        default="",
-        maxlen=1024,
-    )
-    LastEditedByUsername_value: StringProperty(
-        name="LastEditedByUsername",
-        description="LastEditedByUsername.",
-        default="",
-        maxlen=1024,
-    )
-    original_base_version: IntProperty(
-        name="OriginalBaseVersion", description="OriginalBaseVersion.", default=3
-    )
-
-    screenshot_at_x: FloatProperty(
-        name="SAX",
-        description="The X orientation vector of the screenshot.",
-        default=1.0,
-    )
-
-    screenshot_at_y: FloatProperty(
-        name="SAY",
-        description="The Y orientation vector of the screenshot.",
-        default=0.0,
-    )
-
-    screenshot_at_z: FloatProperty(
-        name="SAZ",
-        description="The Z orientation vector of the screenshot.",
-        default=0.0,
-    )
-
-    screenshot_pos_x: FloatProperty(
-        name="SPX",
-        description="The X pos vector of the screenshot.",
-        default=1.0,
-    )
-
-    screenshot_pos_y: FloatProperty(
-        name="SPY",
-        description="The Y pos vector of the screenshot.",
-        default=1.0,
-    )
-
-    screenshot_pos_z: FloatProperty(
-        name="SUZ",
-        description="The Z pos vector of the screenshot.",
-        default=0.0,
-    )
-
-    game_mode: StringProperty(
-        name="GameMode", description="GameMode.", default="Unspecified"
-    )
-
-    platform_token: StringProperty(
-        name="PlatformToken", description="PlatformToken.", default=""
-    )
-
-    is_reported: BoolProperty(
-        name="IsReported", description="Is Reported.", default=False
-    )
-
-    is_featured: BoolProperty(
-        name="IsFeatured", description="Is Featured.", default=False
-    )
-
-    difficulty_flags: IntProperty(
-        name="DifficultyFlags", description="DifficultyFlags.", default=0
-    )
-
-    difficulty_preset: StringProperty(
-        name="DifficultyPresetType",
-        description="DifficultyPresetType.",
-        default="Creative",
-    )
-
-    auto_power_setting: StringProperty(
-        name="AutoPowerSetting", description="AutoPowerSetting.", default="UseDefault"
-    )
     
     is_workspace_cleaned: BoolProperty(
         name="Is Workspace Cleaned", description="Check if workspace has been cleaned by user", default=False
@@ -313,75 +141,20 @@ class NMSSettings(PropertyGroup):
         update = lambda self, context: self.on_color_picked()
     )
 
+
+    check_export_objects_only: bpy.props.BoolProperty(
+        name="Objectsd Only",
+        description="Checking this will only export objects when export button is clicked",
+        default=False,
+    )
+    
     def deserialise_from_data(self, nms_data, start_new_file = True):
-        
         if start_new_file:
             # Start new file
             self.new_file()
 
-        # Start bringing the data in.
-        if "GalacticAddress" in nms_data:
-            self.string_address = str(nms_data["GalacticAddress"])
-        if "UserData" in nms_data:
-            self.string_userdata = str(nms_data["UserData"])
-        if "BaseType" in nms_data:
-            self.string_base_type = str(nms_data["BaseType"]["PersistentBaseTypes"])
-        if "Position" in nms_data:
-            self.float_pos_x = nms_data["Position"][0]
-            self.float_pos_y = nms_data["Position"][1]
-            self.float_pos_z = nms_data["Position"][2]
-        if "Forward" in nms_data:
-            self.float_ori_x = nms_data["Forward"][0]
-            self.float_ori_y = nms_data["Forward"][1]
-            self.float_ori_z = nms_data["Forward"][2]
-        if "Name" in nms_data:
-            self.string_base = str(nms_data["Name"])
-        if "LastUpdateTimestamp" in nms_data:
-            self.string_last_ts = str(nms_data["LastUpdateTimestamp"])
-        if "Owner" in nms_data:
-            Owner_details = nms_data["Owner"]
-            self.string_uid = str(Owner_details.get("UID", ""))
-            self.string_ts = str(Owner_details.get("TS", ""))
-            self.string_lid = str(Owner_details.get("LID", ""))
-            self.string_usn = str(Owner_details.get("USN"))
-            self.string_ptk = str(Owner_details.get("PTK"))
-        # Extras/Unimportant
-        if "LastEditedById" in nms_data:
-            self.LastEditedById = str(nms_data["LastEditedById"])
-        if "LastEditedByUsername" in nms_data:
-            self.LastEditedByUsername_value = str(nms_data["LastEditedByUsername"])
-        if "OriginalBaseVersion" in nms_data:
-            self.original_base_version = nms_data["OriginalBaseVersion"]
-        if "ScreenshotAt" in nms_data:
-            self.screenshot_at_x = nms_data["ScreenshotAt"][0]
-            self.screenshot_at_y = nms_data["ScreenshotAt"][1]
-            self.screenshot_at_z = nms_data["ScreenshotAt"][2]
-        if "ScreenshotPos" in nms_data:
-            self.screenshot_pos_x = nms_data["ScreenshotPos"][0]
-            self.screenshot_pos_y = nms_data["ScreenshotPos"][1]
-            self.screenshot_pos_z = nms_data["ScreenshotPos"][2]
-        if "GameMode" in nms_data:
-            self.game_mode = nms_data["GameMode"]["PresetGameMode"]
-        if "PlatformToken" in nms_data:
-            self.platform_token = nms_data["PlatformToken"]
-        if "IsReported" in nms_data:
-            self.is_reported = nms_data["IsReported"]
-        if "IsFeatured" in nms_data:
-            self.is_featured = nms_data["IsFeatured"]
-        if "AutoPowerSetting" in nms_data:
-            auto_power_container = nms_data.get("AutoPowerSetting", {})
-            self.auto_power_setting = auto_power_container.get(
-                "BaseAutoPowerSetting", "UseDefault"
-            )
-        if "Difficulty" in nms_data:
-            difficulty_container = nms_data.get("Difficulty", {})
-            sub_difficulty_container = difficulty_container.get("DifficultyPreset")
-            self.difficulty_preset = sub_difficulty_container.get(
-                "DifficultyPresetType", "Creative"
-            )
-            self.difficulty_flags = difficulty_container.get(
-                "PersistentBaseDifficultyFlags", 0
-            )
+        base_props = bpy.context.scene.nms_base_tool
+        base_props.deserialise_from_data(nms_data)
 
     def serialise(self, get_presets=False, objects_only=False):
         """Export the data in the blender scene to NMS compatible data.
@@ -389,52 +162,15 @@ class NMSSettings(PropertyGroup):
         This will slot the data into the clip-board so you can easy copy
         and paste data back and forth between the tool.
         """
-        # Try making the address an int, if not it should be a string.
-        data = {
-            "BaseVersion": 5,
-            "OriginalBaseVersion": self.original_base_version,
-            "GalacticAddress": python_utils.prefer_int(self.string_address),
-            "Position": [self.float_pos_x, self.float_pos_y, self.float_pos_z],
-            "Forward": [self.float_ori_x, self.float_ori_y, self.float_ori_z],
-            "UserData": python_utils.prefer_int(self.string_userdata),
-            "LastUpdateTimestamp": python_utils.prefer_int(self.string_last_ts),
-            "RID": "",
-            "Owner": {
-                "UID": self.string_uid,
-                "LID": self.string_lid,
-                "USN": self.string_usn,
-                "PTK": self.string_ptk,
-                "TS": python_utils.prefer_int(self.string_ts),
-            },
-            "Name": self.string_base,
-            "BaseType": {"PersistentBaseTypes": self.string_base_type},
-            "LastEditedById": self.LastEditedById,
-            "LastEditedByUsername": self.LastEditedByUsername_value,
-            "ScreenshotAt": [
-                self.screenshot_at_x,
-                self.screenshot_at_y,
-                self.screenshot_at_z,
-            ],
-            "ScreenshotPos": [
-                self.screenshot_pos_x,
-                self.screenshot_pos_y,
-                self.screenshot_pos_z,
-            ],
-            "GameMode": {"PresetGameMode": self.game_mode},
-            "PlatformToken": self.platform_token,
-            "IsReported": self.is_reported,
-            "IsFeatured": self.is_featured,
-            "Difficulty": {
-                "DifficultyPreset": {"DifficultyPresetType": self.difficulty_preset},
-                "PersistentBaseDifficultyFlags": self.difficulty_flags,
-            },
-            "AutoPowerSetting": {"BaseAutoPowerSetting": self.auto_power_setting},
-        }
+        
         # Capture Individual Objects
         objects_data = BUILDER.serialise(get_presets=get_presets)
         if objects_only:
             return objects_data["Objects"]
-
+        
+        base_props = bpy.context.scene.nms_base_tool
+        data = base_props.serialise()
+        
         data.update(objects_data)
         return data
 
@@ -519,37 +255,8 @@ class NMSSettings(PropertyGroup):
         blend_utils.remove_object("Light")
         blend_utils.remove_object("Camera")
 
-        self.string_address = ""
-        self.string_userdata = ""
-        self.string_base = ""
-        self.string_lid = ""
-        self.string_ts = ""
-        self.string_uid = ""
-        self.string_usn = ""
-        self.string_ptk = ""
-        self.float_pos_x = 0
-        self.float_pos_y = 0
-        self.float_pos_z = 0
-        self.float_ori_x = 0
-        self.float_ori_y = 0
-        self.float_ori_z = 0
-        self.string_last_ts = ""
-        self.LastEditedById = ""
-        self.original_base_version = 3
-        self.LastEditedByUsername_value = ""
-        self.screenshot_at_x = 1
-        self.screenshot_at_y = 0
-        self.screenshot_at_z = 0
-        self.screenshot_up_x = 0
-        self.screenshot_up_y = 1
-        self.screenshot_up_z = 0
-        self.game_mode = "Unspecified"
-        self.platform_token = ""
-        self.is_reported = False
-        self.is_featured = False
-        self.difficulty_preset = "Creative"
-        self.difficulty_flags = 0
-        self.auto_power_setting = "UseDefault"
+        base_props = bpy.context.scene.nms_base_tool
+        base_props.new_file()
 
         # Remove all no mans sky items from scene.
         # Deselect all
@@ -560,7 +267,10 @@ class NMSSettings(PropertyGroup):
             preset_check = "PresetID" in bpy_object
             light_check = "NMS_LIGHT" in bpy_object
             rig_check = "rig_item" in bpy_object
-            if any([id_check, preset_check, light_check, rig_check]):
+            
+            curve_check = "CurveID" in bpy_object
+            group_check = "GroupID" in bpy_object
+            if any([id_check, preset_check, light_check, rig_check, curve_check, group_check]):
                 blend_utils.remove_object(bpy_object.name)
 
         # Reset room vis
@@ -736,7 +446,7 @@ class NMS_PT_hero_panel(Panel):
 
     def draw(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         layout = self.layout
         
         pcoll = icons.get_icons_pscroll()
@@ -781,13 +491,29 @@ class NMS_PT_hero_panel(Panel):
         
         workspace_row = layout.row(align=True)
         workspace_box = workspace_row.box()
-        workspace_column = workspace_box.column(align = True)
+        workspace_column = workspace_box.column(align = False)
         workspace_label_row = workspace_column.row(align = True)
         workspace_label_row.label(text = "Workspace")
-        workspace_label_row.operator("object.nms_workspace_settings", text = "", icon = "SETTINGS")
-        workspace_column.operator("object.nms_launch_asset_browser", text = "Launch Asset Browser", icon = "DESKTOP")
-        if not nms_tool.is_workspace_cleaned:
-            workspace_column.operator("object.nms_cleanup_workspace", text = "Simplify Blender Workspace", icon = "WORKSPACE")
+        
+        workspace_column_2 = workspace_column.column(align = True)
+        workspace_column_2.operator("object.nms_launch_asset_browser", text = "Launch Asset Browser", icon = "DESKTOP")
+        workspace_cleanup_row = workspace_column_2.row(align = True)
+        workspace_cleanup_row.enabled = not nms_tool.is_workspace_cleaned
+        workspace_cleanup_row.operator("object.nms_cleanup_workspace", text = "Simplify Blender Workspace", icon = "WORKSPACE")
+        
+        workspace_column_2.separator()
+        workspace_column_2.operator("object.nms_workspace_settings", text = "Workspace Settings", icon = "SETTINGS")
+        
+        
+        
+        file_box = workspace_row.box()
+        file_column = file_box.column(align = True)
+            
+        file_column.label(text="File")# icon = "COLLECTION_COLOR_04"
+        file_column.operator("object.nms_new_file", icon="FILE_NEW")
+        file_column.separator()
+        file_column.operator("object.nms_save_data", icon="FILE_TICK")
+        file_column.operator("object.nms_load_data", icon="FILE_FOLDER")
 
 
 # File Buttons Panel ---
@@ -807,61 +533,35 @@ class NMS_PT_file_buttons_panel(Panel):
         
         layout = self.layout
         scene = context.scene
-        nms_tool = scene.nms_base_tool
-        build_tool = scene.nms_build_tool
-        save_data = context.scene.nms_save_data
-        
-        
+        nms_tool = scene.nms_main
+        base_props = scene.nms_base_tool
         
         file_col = layout.column(align = True)
-        
         file_row = file_col.row(align=True)
         file_box = file_row.box()
         first_column = file_box.column(align=True)
-        first_column.scale_x = 0.5 if nms_tool.string_base_type == "PlayerShipBase" else 1.0
+        first_column.scale_x = 0.5 if base_props.string_base_type == "PlayerShipBase" else 1.0
         first_column.label(text="Metadata", icon = "PROPERTIES")
         first_column.label(text="Base Name")
-        first_column.prop(nms_tool, "string_base", text = "")
+        first_column.prop(base_props, "string_base", text = "")
         first_row = first_column.row(align = True)
+        first_row.enabled = False
         fc_1 = first_row.column(align = True)
         fc_1.label(text="Basetype")
-        fc_1.prop(nms_tool, "string_base_type", text = "")
+        fc_1.prop(base_props, "string_base_type", text = "")
         
-        if nms_tool.string_base_type == "PlayerShipBase":
+        if base_props.string_base_type == "PlayerShipBase":
             fc_2 = first_row.column(align = True)
             fc_2.label(text="Userdata")
-            fc_2.prop(nms_tool, "string_userdata", text = "")
+            fc_2.prop(base_props, "string_userdata", text = "")
 
         clipboard_box = file_row.box()
         clipboard_box.label(text="Import & Export", icon = "IMPORT")
         second_column = clipboard_box.column(align=False)
         second_column.operator("object.nms_import_nms_data", icon="PASTEDOWN")
         second_column.separator()
-        second_column.prop(build_tool,"check_show_advanced_options", text = "Objects only") 
+        second_column.prop(nms_tool,"check_export_objects_only", text = "Objects only") 
         second_column.operator("object.nms_export_nms_data", icon="COPYDOWN")
-        
-        #display data related to a pinned base on top if there is any withing a blend file
-        if save_data.pinned_base_check:
-            pinned_base_type  = save_data.get_base_type_string(save_data.pinned_base_type)
-            pinned_box = file_col.box()
-            
-            pinned_content_row = pinned_box.row(align = False)
-            pinned_text_col = pinned_content_row.column(align = False)
-            pinned_buttons_col = pinned_content_row.column(align = True)
-            
-            pinned_text_col.label(text = f"{nms_tool.string_base} ({pinned_base_type})", icon = "PINNED")
-            pinned_text_condensed_column = pinned_text_col.column(align = True)
-            pinned_text_condensed_column.label(text = f"{save_data.pinned_save_slot_name}, (...{save_data.pinned_save_account[-3:]})")
-            
-            pinned_buttons_col.scale_x = 0.7
-            pinned_buttons_col.operator("object.nms_unpin_base", icon="UNPINNED", text = f"Unpin {pinned_base_type}")
-            pinned_buttons_col.operator("object.import_pinned_base", icon="IMPORT", text = "Import from Save")
-            
-            pinned_export_button_row = pinned_box.row(align = False)
-            pinned_export_button_row.operator("object.export_pinned_base", icon="FILE_TICK", text = "Export to Save")
-            pinned_export_button_backup_row = pinned_export_button_row.row(align = True)
-            pinned_export_button_backup_row.scale_x = 0.7
-            pinned_export_button_backup_row.operator("object.make_pinned_savefile_backup",  icon = "COLLECTION_NEW", text = "Backup Save files")
             
 
 
@@ -882,7 +582,7 @@ class NMS_PT_colour_panel(Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         colours = _material.get_colours_from_palette(nms_tool.material_switch)
         pcoll = preview_collections["main"]
         
@@ -929,7 +629,7 @@ class NMS_PT_logic_panel(Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         layout = self.layout
         
         box = layout.box()
@@ -980,7 +680,7 @@ class NMS_PT_build_panel(Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         
         build_column = layout.column(align = True)
         main_col = build_column.box().column(align = True)
@@ -1017,7 +717,7 @@ class NMS_PT_nms_legacy_asset_browser(Panel):
         layout = self.layout
         
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         
         lab_col = layout.box().column(align = True)
         lab_col.label(text = "Parts and Prefabs", icon = "ASSET_MANAGER")
@@ -1174,7 +874,7 @@ class NewFile(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         nms_tool.new_file()
         return {"FINISHED"}
 
@@ -1189,7 +889,7 @@ class SaveData(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         nms_tool.save_nms_data(self.filepath)
         return {"FINISHED"}
 
@@ -1206,7 +906,7 @@ class LoadData(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         nms_tool.load_nms_data(self.filepath)
         return {"FINISHED"}
 
@@ -1222,7 +922,7 @@ class ImportData(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         nms_tool.import_nms_data()
         return {"FINISHED"}
 
@@ -1233,8 +933,9 @@ class ExportData(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.export_nms_data()
+        nms_tool = scene.nms_main
+        objects_only = nms_tool.check_export_objects_only
+        nms_tool.export_nms_data( objects_only )
         return {"FINISHED"}
 
 
@@ -1244,7 +945,7 @@ class ExportObjectsData(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         nms_tool.export_nms_data(objects_only=True)
         return {"FINISHED"}
     
@@ -1256,7 +957,7 @@ class SwitchWorkspace(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         nms_tool.is_workspace_cleaned = True
         workspace.cleanup_workspace(context)
         return {"FINISHED"}
@@ -1273,7 +974,7 @@ class SaveAsPreset(bpy.types.Operator):
         BUILDER.save_preset_to_file(self.preset_name)
         # Refresh Preset List.
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         if nms_tool.enum_switch == {"PRESETS"}:
             refresh_ui_part_list(scene, "presets")
         # Reset string variable.
@@ -1467,7 +1168,7 @@ class ListEditOperator(bpy.types.Operator):
     part_id: StringProperty()
 
     def execute(self, context):
-        nms_tool = context.scene.nms_base_tool
+        nms_tool = context.scene.nms_main
         if self.part_id in preset.Preset.get_presets():
             nms_tool.new_file()
             preset.Preset(
@@ -1494,7 +1195,7 @@ class ListDeleteOperator(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = context.scene.nms_base_tool
+        nms_tool = context.scene.nms_main
         if self.part_id in preset.Preset.get_presets():
             preset.Preset.delete_preset(self.part_id)
             if nms_tool.enum_switch == {"PRESETS"}:
@@ -1520,7 +1221,7 @@ class ApplyColour(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         material = nms_tool.material_switch
         nms_tool.apply_colour(colour_index=self.colour_index, material=material)
         return {"FINISHED"}
@@ -1540,7 +1241,7 @@ class ApplyDefaultColour(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         nms_tool.apply_default_colour()
         return {"FINISHED"}
 
@@ -2017,16 +1718,30 @@ class WorkspaceSettings(bpy.types.Operator):
     bl_idname = "object.nms_workspace_settings"
     bl_label = "Workspace Settings"
     
-    
     def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+    
+    def draw(self, context):
+        prefs = context.preferences.addons[ADDON_ID].preferences
+        layout = self.layout
+        column = layout.column(align = True)
+        column.label(text = "Part Count")
+        column.prop(prefs,"nms_check_show_part_count")
+        part_cout_pos_row = column.row(align = True)
+        part_cout_pos_row.enabled = prefs.nms_check_show_part_count
+        part_cout_pos_row.label(text = "Position :", icon = "BLANK1")
+        part_cout_pos_row.prop(prefs,"nms_part_count_position", expand = True)
         
-        def draw_menu(self, context):
-            prefs = context.preferences.addons[ADDON_ID].preferences
-            layout = self.layout
-            layout.prop(prefs,"nms_check_show_properties")
+        column.separator()
+        column.separator()
+        column.label(text = "Active_object properties")
+        column.prop(prefs,"nms_check_show_active_object_properties")
+        prop_row = column.row(align = True)
+        prop_row.enabled = prefs.nms_check_show_active_object_properties
+        prop_row.label(text = "Position :", icon = "BLANK1")
+        prop_row.prop(prefs,"nms_active_object_properties_position", expand = True)
         
-        context.window_manager.popup_menu(draw_menu, title="Workspace Settings", icon='SETTINGS')
-        return {'FINISHED'}
+        column.separator()
     
     def execute(self, context):
         return {"FINISHED"}
@@ -2144,23 +1859,9 @@ def curve_udpate_handler(scene, depsgraph):
         
     # Sync back down to the global tracking set 
     known_curves = current_curves
-            
-
-class NMSAddonPreferences(bpy.types.AddonPreferences):
-    bl_idname = ADDON_ID
-
-    nms_save_folder_path: StringProperty(
-        name="Save Directory",
-        description="Folder where save files are stored",
-        subtype='DIR_PATH',
-        default = str(save_editor_utils.get_default_save_folder())
-    )
     
-    nms_check_show_properties : BoolProperty(
-        name = "Display details in viewport",
-        description = "Display some details like Part Count or active-object details on bottom left side of 3-d viewport",
-        default = True
-    )
+    
+    
     
 
 preview_collections = {}
@@ -2168,7 +1869,9 @@ preview_collections = {}
 # Plugin Registration ---
 
 classes = (
-    NMSSettings,
+    NMSMain,
+    NMSBaseProperties,
+    
     Point,
     Connect,
     Divide,
@@ -2267,7 +1970,8 @@ def register():
     # Register Plugin
     for _class in classes:
         bpy.utils.register_class(_class)
-    bpy.types.Scene.nms_base_tool = PointerProperty(type=NMSSettings)
+    bpy.types.Scene.nms_main = PointerProperty(type=NMSMain)
+    bpy.types.Scene.nms_base_tool = PointerProperty(type = NMSBaseProperties)
     bpy.types.Scene.col = bpy.props.CollectionProperty(type=PartCollection)
     bpy.types.Scene.col_idx = bpy.props.IntProperty(default=0)
     bpy.types.Scene.nms_save_data = bpy.props.PointerProperty(type=SaveManager)
@@ -2299,6 +2003,7 @@ def unregister():
     for _class in reversed(classes):
         bpy.utils.unregister_class(_class)
         
+    del bpy.types.Scene.nms_main
     del bpy.types.Scene.nms_base_tool
     del bpy.types.Scene.nms_save_data
     del bpy.types.Scene.nms_build_tool
