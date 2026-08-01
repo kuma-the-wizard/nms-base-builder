@@ -24,59 +24,33 @@ class NMS_PT_save_editor_panel(Panel):
         layout = self.layout
         save_data = context.scene.nms_save_data
         nms_tool = context.scene.nms_base_tool
+        base_props = context.scene.nms_base_properties
         prefs = context.preferences.addons[ADDON_ID].preferences
         save_folder_path = prefs.nms_save_folder_path
         
         
         #display data related to a pinned base on top if there is any withing a blend file
-        #if save_data.pinned_base_check:
-        #    pinned_base_type  = save_data.get_base_type_string(save_data.pinned_base_type)
-        #    pinned_box = layout.box()
-        #    pinned_row = pinned_box.row(align = True)
-        #    pinned_title_col = pinned_row.column(align = True)
-        #    pinned_main_col = pinned_row.column(align = True)
-        #    
-        #    try:
-        #        slot_data = save_data.pinned_save_slot_name.split(": ")
-        #        slot_number = slot_data[0]
-        #        slot_name = slot_data[1]
-        #    except Exception:
-        #        slot_number = "slot"
-        #        slot_name = "unknown"
-        #    
-        #    pinned_title_col.scale_x = 0.2
-        #    pinned_title_col.label(text = "", icon = "PINNED")
-        #    pinned_title_col.separator()
-        #    pinned_title_condensed_col = pinned_title_col.column(align = True)
-        #    pinned_title_condensed_col.scale_y = 0.7
-        #    pinned_title_condensed_col.label(text = "Name")
-        #    pinned_title_condensed_col.label(text = f"{slot_number}")
-        #    
-        #    pinned_content_col = pinned_main_col.column(align = True)
-        #    pinned_content_row = pinned_content_col.row(align = True)
-        #    pinned_text_col = pinned_content_row.column(align = True)
-        #    pinned_buttons_col = pinned_content_row.column(align = True)
-        #    
-        #    pinned_text_col.label(text = f"Pinned {pinned_base_type}")
-        #    pinned_text_col.separator()
-        #    pinned_text_condensed_column = pinned_text_col.column(align = True)
-        #    pinned_text_condensed_column.scale_y = 0.7
-        #    pinned_text_condensed_column.label(text = f"{nms_tool.string_base}")
-        #    pinned_text_condensed_column.label(text = f"{slot_name}, (...{save_data.pinned_save_account[-3:]})")
-        #    
-        #    pinned_buttons_col.scale_x = 0.78
-        #    pinned_buttons_col.operator("object.nms_unpin_base", icon="UNPINNED", text = f"Unpin {pinned_base_type}")
-        #    pinned_buttons_col.operator("object.import_pinned_base", icon="IMPORT", text = "Import from Save")
-        #    #pinned_buttons_col.prop(save_data,"check_also_update_name")
+        if save_data.pinned_base_check:
+            pinned_base_type  = save_data.get_base_type_string(save_data.pinned_base_type)
+            pinned_box = layout.box()
             
+            pinned_content_row = pinned_box.row(align = False)
+            pinned_text_col = pinned_content_row.column(align = False)
+            pinned_buttons_col = pinned_content_row.column(align = True)
             
-        #    #pinned_text_col.prop(save_data,"check_also_update_name")
-        #    #pinned_text_col.separator()
-        #    pinned_export_button_row = pinned_box.row(align = False)
-        #    pinned_export_button_row.operator("object.export_pinned_base", icon="FILE_TICK", text = "Export to Save")
-        #    pinned_export_button_backup_row = pinned_export_button_row.row(align = True)
-        #    pinned_export_button_backup_row.scale_x = 0.7
-        #    pinned_export_button_backup_row.operator("object.make_pinned_savefile_backup",  icon = "COLLECTION_NEW", text = "Backup Save files")
+            pinned_text_col.label(text = f"{base_props.string_base} ({pinned_base_type})", icon = "PINNED")
+            pinned_text_condensed_column = pinned_text_col.column(align = True)
+            pinned_text_condensed_column.label(text = f"{save_data.pinned_save_slot_name}, (...{save_data.pinned_save_account[-3:]})")
+            
+            pinned_buttons_col.scale_x = 0.7
+            pinned_buttons_col.operator("object.nms_unpin_base", icon="UNPINNED", text = f"Unpin {pinned_base_type}")
+            pinned_buttons_col.operator("object.import_pinned_base", icon="IMPORT", text = "Import from Save")
+            
+            pinned_export_button_row = pinned_box.row(align = False)
+            pinned_export_button_row.operator("object.export_pinned_base", icon="FILE_TICK", text = "Export to Save")
+            pinned_export_button_backup_row = pinned_export_button_row.row(align = True)
+            pinned_export_button_backup_row.scale_x = 0.7
+            pinned_export_button_backup_row.operator("object.make_pinned_savefile_backup",  icon = "COLLECTION_NEW", text = "Backup Save files")
             
             
         #make a seprate section to display elements related to selecting bases

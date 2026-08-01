@@ -27,16 +27,6 @@ def draw_text( font_id, text, start_x = 0, start_y = 0):
     blf.position(font_id, start_x, start_y, 0)
     blf.draw(font_id, text)
 
-
-def measure_table(font_id, data_dict, line_spacing, column_padding):
-    """Returns (width, height) needed to draw the table."""
-    max_key_width = max(blf.dimensions(font_id, str(k))[0] for k in data_dict.keys())
-    max_val_width = max(blf.dimensions(font_id, str(v))[0] for v in data_dict.values())
-    width = max_key_width + column_padding + max_val_width
-    height = line_spacing * len(data_dict)
-    return width, height
-
-
 def draw_table(font_id,title, data_dict, start_x, start_y, line_spacing=15, column_padding=5):
     if not data_dict:
         return
@@ -47,7 +37,7 @@ def draw_table(font_id,title, data_dict, start_x, start_y, line_spacing=15, colu
     current_y = start_y
     
     for key, value in reversed(list(data_dict.items())):
-        key_str = str(key) + " :"
+        key_str = str(key) + " |"
         key_width = blf.dimensions(font_id, key_str)[0]
         key_x = value_x - column_padding - key_width
 
@@ -59,7 +49,8 @@ def draw_table(font_id,title, data_dict, start_x, start_y, line_spacing=15, colu
 
         current_y += line_spacing
         
-    draw_text(font_id, title, start_x, current_y + 3)
+    if title is not None:
+        draw_text(font_id, title, start_x, current_y + 3)
 
 def display_base_status(font_id, start_x = 20, start_y = 20):
     
@@ -73,14 +64,16 @@ def display_base_status(font_id, start_x = 20, start_y = 20):
         base_type = nms_base_tool.string_base_type
         base_type_string = "Corvette" if base_type == "PlayerShipBase" else "Base"
         
-        title = f"{base_type_string} imported :"
+        #title = f"{base_type_string} imported :"
+        title= None
         base_data["Name"] = nms_base_tool.string_base
+        #base_data["Base Type"] = base_type_string
+        start_y -= 20
     else:
         title = "No Base/Corvette imported :"
         
     base_data["Part Count"] = str(part_count)
     
-        
     draw_table(
         font_id=font_id, 
         data_dict=base_data,
@@ -127,12 +120,17 @@ def draw_callback_px(self, context):
             font_id  = 0
 
             blf.size(font_id, 11) # Font size
-            blf.color(font_id, 1.0, 1.0, 1.0, 0.8) # RGBA (White)
+            blf.color(font_id, 1.0, 1.0, 1.0, 1.0) # RGBA (White)
             blf.enable(font_id, blf.SHADOW)
-            blf.shadow(font_id, 3, 0, 0, 0, 0.8)
-            blf.shadow_offset(font_id, 1, -1)
+            blf.shadow(font_id, 3, 0, 0, 0, 1.0)
+            blf.shadow_offset(font_id, 0, -1)
             
-            display_base_status(font_id, start_x=20, start_y=20)
+            region = bpy.context.region
+            
+            base_prop_x_pos = 65 
+            base_prop_y_pos = region.height - 150
+            
+            display_base_status(font_id, start_x=base_prop_x_pos, start_y=base_prop_y_pos)
             display_active_object_prop(font_id, start_x=25, start_y=90 )
         
             

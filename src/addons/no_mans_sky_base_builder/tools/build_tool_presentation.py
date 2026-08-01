@@ -31,7 +31,7 @@ class NMS_PT_tools_panel(Panel):
         tools_column = tools_row.column(align = True)#tools_column
         snap_column.scale_x = 1.5
         # Create Part Count Box.
-        part_box = tools_column.box()
+        part_box = snap_column.box()
         splitter = part_box.split(factor=0.7)
         splitter.label(text="Part Count:" )# , icon = "GEOMETRY_NODES"
         part_count = build_tool.get_part_count()
@@ -69,23 +69,25 @@ class NMS_PT_tools_panel(Panel):
         tools_box = snap_column.box()
         tools_col = tools_box.column(align = True)
         tools_col.label(text="Common Tools")
-        tools_col.separator()
+        #tools_col.separator()
         tools_dup_row = tools_col.row(align = True)
         tools_dup_row.operator("object.nms_duplicate", icon="DUPLICATE")
         tools_dup_row.operator("object.nms_delete", icon="TRASH")
-        tools_col.separator()
-        tools_col.label(text="Curve")
+        #tools_col.separator()
+        #tools_col.label(text="Curve")
         tools_col.operator("object.nms_duplicate_along_curve", icon="MOD_DASH")
-        
-        presets_v2_col = tools_box.column(align = True)
-        presets_v2_col.label(text = "Grouping")
-        presets_v2_row = presets_v2_col.row(align = True)
+        tools_col.separator()
+        #presets_v2_col = tools_box.column(align = True)
+        tools_col.label(text = "Grouping")
+        presets_v2_row = tools_col.row(align = True)
         presets_v2_row.operator("object.nms_group_objects", text = "Group", icon = "OUTLINER_OB_POINTCLOUD" )
         presets_v2_row.operator("object.nms_ungroup_objects", text = "Ungroup",  icon = "OUTLINER_DATA_POINTCLOUD")
-        
         # Object orientation for corvette parts, mirror can work for non corvette parts too
-        orientation_box = tools_column.box()
-        mirror_col = orientation_box.column(align=True)
+        #orientation_box = tools_column.box()
+        # mirror_col = orientation_box.column(align=True)
+        
+        tools_col.separator()
+        mirror_col = tools_col
         mirror_col.label(text="Orientation") # icon = "ORIENTATION_GIMBAL"
         mirror_col_row = mirror_col.row(align = True)
         mirror_col_row.operator("object.nms_mirror", icon="ARROW_LEFTRIGHT")
@@ -93,13 +95,13 @@ class NMS_PT_tools_panel(Panel):
         
                     
         # Mirroring tools
-        mirroring_box = build_tools_col.box()
+        mirroring_box = tools_column.box()
         mirroring_box_column = mirroring_box.column(align = True)
         
         
         if not build_tool.check_show_advanced_options:
             mirroring_box_column_label_row = mirroring_box_column.row(align = True)
-            mirroring_box_column_label_row.label(text = "Mirror", icon = "MOD_MIRROR")
+            mirroring_box_column_label_row.label(text = "Mirror")
             mirroring_box_column_label_row.prop(build_tool,"check_show_advanced_options", text = "Show more options") # icon = "OPTIONS"
             mirroring_box_column.separator()
             mirroring_box_column.operator( "object.nms_universal_mirror_x", icon="ARROW_LEFTRIGHT" , text = "Mirror across X" )
@@ -109,24 +111,14 @@ class NMS_PT_tools_panel(Panel):
             mirroring_box_column_label_row.label(text = "Mirror", icon = "MOD_MIRROR")
             mirroring_box_column_label_row.prop(build_tool,"check_show_advanced_options", text = "Show more options") # icon = "OPTIONS"
             
-            mirroring_options_row = mirroring_box_column.row(align = True)
-            mirroring_options_col_1 = mirroring_options_row.column(align = False)
-            mirroring_options_col_2 = mirroring_options_row.column(align = False)
-            mirroring_options_col_1.scale_x = 1
-            mirroring_options_col_1.alignment = 'RIGHT'
+            mirroring_box_column.separator()
+            mirroring_options_col = mirroring_box_column.column(align = True)
+            mirroring_options_col.row(align = True).prop(build_tool,"center_of_reflection",expand=True)
+            mirroring_options_col.row(align = True).prop(build_tool,"mirror_direction",expand=True)
             
-            
-            mirroring_options_col_2.separator()
-            mirroring_options_col_1.separator()
-            
-            
-            mirroring_options_col_1.label(text = "Center ")
-            mirroring_options_col_1.label(text = "Direction ")
-            mirroring_options_col_2.row(align = True).prop(build_tool,"center_of_reflection",expand=True)
-            mirroring_options_col_2.row(align = True).prop(build_tool,"mirror_direction",expand=True)
-                        
-            mirroring_options_col_2.prop(build_tool,"check_auto_duplicate")
-            mirroring_options_col_2.operator("object.nms_advanced_mirror", icon = "MOD_MIRROR", text = "Perform Mirror")
+            mirroring_box_column.separator()
+            mirroring_box_column.prop(build_tool,"check_auto_duplicate")
+            mirroring_box_column.operator("object.nms_advanced_mirror", icon = "MOD_MIRROR", text = "Perform Mirror")
             
             
 
