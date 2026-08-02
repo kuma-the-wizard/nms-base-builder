@@ -412,14 +412,31 @@ class NMSMain(PropertyGroup):
             target_userdata = target_object["UserData"]
         elif "has_linked_objects" in target_object:
             target_userdata = target_object["dup_UserData"]
+            
+        unique_keys = {}
+        selected_objects = bpy.context.selected_objects
+        
+        for obj in selected_objects:
+            if "ObjectID" not in obj:
+                continue
+            obj_id = obj["ObjectID"]
+            if obj_id not in unique_keys:
+                obj.data = obj.data.copy()
+                _material.restore_material(obj, target_userdata)
         
         if target_userdata is not None:
-            selected_objects = bpy.context.selected_objects
+            
             for obj in selected_objects:
                 if "has_linked_objects" in obj and curve.is_bezier_or_nurbs_path(obj):
                     curve.apply_color(obj, target_userdata)
-                else :
-                    _material.restore_material(obj, target_userdata)
+                elif "ObjectID" in obj :
+                    obj_id = obj["ObjectID"]
+                    key = unique_keys.get(obj_id, None)
+                    if key is not None:
+                        obj.data = key.data
+                        obj["UserData"] = target_userdata
+                    else:
+                        _material.restore_material(obj, target_userdata)
         
         def clear_picker():
             self.color_picker = None
