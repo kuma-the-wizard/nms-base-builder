@@ -241,6 +241,9 @@ def apply_curve_transforms_and_detach(curve):
             if "curve_factor" in obj:
                 del obj["curve_factor"]
                 
+            if "radius" in obj:
+                del obj["radius"]
+                
             del obj["curve_parent"]
                 
             if constraints_to_remove:

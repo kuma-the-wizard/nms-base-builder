@@ -15,7 +15,7 @@ from bpy.props import (BoolProperty, EnumProperty, FloatProperty, IntProperty,
 from bpy.types import Panel, PropertyGroup
 from pathlib import Path
 
-from . import builder, icons, part, preset, group, viewport_overlay
+from . import builder, icons, part, preset, group, viewport_overlay, builder_v2
 from .base_properties import NMSBaseProperties
 from .addon_preferences import NMSAddonPreferences
 from .part_overrides import line
@@ -195,7 +195,8 @@ class NMSMain(PropertyGroup):
 
         # Start a new file
         self.deserialise_from_data(nms_import_data)
-        BUILDER.deserialise_from_data(nms_import_data)
+        builder_v2.deserialise_from_data(nms_import_data)
+        #BUILDER.deserialise_from_data(nms_import_data)
 
     def export_nms_data(self, objects_only=False):
         """Generate data and place it into the user's clipboard.
@@ -1765,123 +1766,103 @@ class WorkspaceSettings(bpy.types.Operator):
     
     
 
-# Track  curve objects
-known_curves = set()
+# Track objects
+known_curve_names = set()
+last_active = None
 
 # To reset toggle button of save editor and initialize curve registry
 @persistent
 def reset_plugin_state(dummy):
+    _material.optimise_materials()
     
     # collect all curves when a blend file is reopened
-    global known_curves
-    known_curves = set( obj for obj in bpy.data.objects  if obj.type == 'CURVE' and obj.get("has_linked_objects", False) )
+    global known_curve_names
+    known_curves = set( obj for obj in bpy.context.scene.objects  if obj.type == 'CURVE' and obj.get("has_linked_objects", False) )
+    known_curve_names = set( obj.name for obj in known_curves )
     curve.update_curves(known_curves)
     
-    #native_asset_browser_utils.add_asset_library_to_blender()
     
     # reset save editor's state to closed
     for scene in bpy.data.scenes:
         save_data = scene.nms_save_data
         save_data.check_plugin_enabled = False
 
-last_active = None
-# keep track of active object to display or hide additional options related to that object
-@persistent
-def active_object_watcher(scene, depsgraph):
-    global last_active
-
-    active = bpy.context.view_layer.objects.active
-    properties = scene.nms_properties
-    
-    # only continue when active object actually changes
-    if active != last_active:
-        if active is None:
-            return
-        properties.set_active_obect(active)
-        last_active = active
-
-def deferred_curve_update():
-    global _curve_update_pending
-    global known_curves
-    
-    _curve_update_pending = False
-    
-    # Run the heavy update logic here
-    from . import curve
-    curve.update_curves(known_curves)
-    
-    return None # Stops the timer from looping
-        
             
 # Whenever a curve is modified, automatically update whatever child objects that are associated with that curve.
 @persistent
-def curve_udpate_handler(scene, depsgraph):
-    global known_curves
-    active = bpy.context.view_layer.objects.active
+def udpates_handler(scene, depsgraph):
     
-    # check each object in scene to detect if their parent curve has been deleted by user or not
-    # if not, we update object's base scale to keep track of transformation changes made by user
-    current_curves = set()
-    for obj in bpy.data.objects:
-        # if object type is a linked curve
-        if obj.type == 'CURVE' and obj.get("has_linked_objects", False):
-            current_curves.add(obj)
-        # if object type is a child of curve
-        elif "curve_parent" in obj:
-            parent_curve = bpy.context.scene.objects.get(obj["curve_parent"],None)
-            # remove object if it's parent curve has been deleted
-            if parent_curve is None:
-                bpy.data.objects.remove(obj, do_unlink=True)
-            # Update base scale to persiste changes to scale made by user when curve mode is switched
-            elif not parent_curve.get("parent_selected", True):
-                if active is not None and parent_curve.name == active.name:
-                    obj["base_scale"] = curve.calculate_base_scale(parent_curve, obj)
+    global known_curve_names
+    global last_active
     
-    # Detect dead curves, cuerves that have been deleted by user through blender
-    dead_curves = known_curves - current_curves
-    if dead_curves:
-        known_curves.difference_update(dead_curves)
+    active_object = bpy.context.view_layer.objects.active
+
+    # keep track of active object to display or hide additional options related to that object
+    # only continue when active object actually changes
+    if active_object != last_active:
+        if active_object is None:
+            return
+        properties = scene.nms_properties
+        properties.set_active_obect(active_object)
+        last_active = active_object
     
-    # identify new curves
-    new_curves_detected = []
     
     # Collect curves that have recieved updates by user
-    updated_curves = set()
+    updated_curve_names = set()
+    # Collect deleted curves by user
+    deleted_curve_names = set()
     for update in depsgraph.updates:
         if isinstance(update.id, bpy.types.Object):
             # validate each object
             orig_obj = bpy.data.objects.get(update.id.name)
-            if orig_obj and orig_obj.type == 'CURVE' and orig_obj.get("has_linked_objects", False):
-                updated_curves.add(orig_obj)
-                if orig_obj not in known_curves and orig_obj not in new_curves_detected:
-                    # a completely new curve should not exist in know_curves set
-                    new_curves_detected.append(orig_obj)
+            if orig_obj.type == 'CURVE' and "CurveID" in orig_obj:
+                updated_curve_names.add(orig_obj.name)
+            elif "curve_parent" in orig_obj:
+                parent_curve_name = orig_obj["curve_parent"]
+                parent_curve = bpy.context.scene.objects.get(parent_curve_name,None)
+                if parent_curve is None:
+                    # delete object if its parent curve is deleted
+                    bpy.data.objects.remove(orig_obj, do_unlink=True)
+                    deleted_curve_names.add(parent_curve_name)
+                elif not parent_curve.get(curve.Curve.PROP_PARENT_SELECTED,True):
+                    #store base scale of object 
+                    orig_obj["base_scale"] = curve.calculate_base_scale(parent_curve, orig_obj)
                     
-    # Handle duplication syncing
-    if new_curves_detected and known_curves:
-        for new_curve in new_curves_detected:
+    # update trackers by removing deleted curve names from them
+    if deleted_curve_names:
+        known_curve_names.difference_update(deleted_curve_names)
+        updated_curve_names.difference_update(deleted_curve_names)
+    
+    # identify new curves
+    new_curve_names_detected = set()
+    if updated_curve_names:
+        new_curve_names_detected = updated_curve_names - known_curve_names
+                    
+    # Detect Shift+d duplication of curves and Handle syncing
+    if new_curve_names_detected and known_curve_names:
+        for new_curve_name in new_curve_names_detected:
             # if two curves have equal Curve.PROP_CURVE_ID, that means they have been duplicated using shift+d
             # we need to duplicate objects in similar way on new curve too
             try:
+                new_curve = bpy.context.scene.objects.get(new_curve_name,None)
                 new_uuid = new_curve.get(curve.Curve.PROP_CURVE_ID)
                 # Look for curves that have same unique_id as new curve
                 # if a duplciate unique_id found, new curve must be duplicate of that curve
-                matching_curve = next((c for c in known_curves if c.get(curve.Curve.PROP_CURVE_ID) == new_uuid and c != new_curve), None)
-                if matching_curve is not None:
-                    curve.sync_curves(new_curve, matching_curve)
+                for curve_name in known_curve_names:
+                    matching_curve = bpy.context.scene.objects.get(curve_name,None)
+                    if matching_curve.get(curve.Curve.PROP_CURVE_ID) == new_uuid and matching_curve.name != new_curve.name:
+                        curve.sync_curves(new_curve, matching_curve)
+                        break
             except ReferenceError as error:
                 print("Reference error :", error)
                 continue
     
-    # Loop through all curves and update their children's transformations
-    if active is not None and "CurveID" in active:
-        curve.update_curves([active])
+    # Update all children of active curve
+    if active_object is not None and "CurveID" in active_object:
+        curve.update_curves([active_object])
         
     # Sync back down to the global tracking set 
-    known_curves = current_curves
-    
-    
-    
+    known_curve_names |= updated_curve_names
     
 
 preview_collections = {}
@@ -2002,11 +1983,8 @@ def register():
     if reset_plugin_state not in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.append(reset_plugin_state)
     
-    if active_object_watcher not in bpy.app.handlers.depsgraph_update_post:
-        bpy.app.handlers.depsgraph_update_post.append(active_object_watcher)
-    
-    if curve_udpate_handler not in bpy.app.handlers.depsgraph_update_post:
-        bpy.app.handlers.depsgraph_update_post.append(curve_udpate_handler)
+    if udpates_handler not in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.append(udpates_handler)
         
     
     bpy.app.timers.register(viewport_overlay.register_draw, first_interval=0.01)
@@ -2032,12 +2010,9 @@ def unregister():
     
     if reset_plugin_state in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(reset_plugin_state)
-    
-    if active_object_watcher in bpy.app.handlers.depsgraph_update_post:
-        bpy.app.handlers.depsgraph_update_post.remove(active_object_watcher)
         
-    if curve_udpate_handler in bpy.app.handlers.depsgraph_update_post:
-        bpy.app.handlers.depsgraph_update_post.remove(curve_udpate_handler)
+    if udpates_handler in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.remove(udpates_handler)
         
     
     viewport_overlay.unregister_draw()

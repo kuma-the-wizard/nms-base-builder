@@ -56,5 +56,5 @@ def prefer_int(value):
     try:
         converted_value = int(value)
     except BaseException:
-        converted_value = value
+        converted_value = str(value)
     return converted_value

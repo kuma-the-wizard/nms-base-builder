@@ -155,15 +155,13 @@ def get_distance_between(matrix1, matrix2):
 def delete(bpy_object):
     """Remove the item and everything below it."""
     # Deselect all
-    bpy.ops.object.select_all(action="DESELECT")
+    #bpy.ops.object.select_all(action="DESELECT")
 
     # Parent items to control.
     for part in bpy_object.children:
-        part.hide_select = False
-        part.select_set(True)
+        bpy.data.objects.remove(part, do_unlink=True)
 
-    bpy_object.select_set(True)
-    bpy.ops.object.delete()
+    bpy.data.objects.remove(bpy_object, do_unlink=True)
     
     
 def find_duplicates(decimals = 4):

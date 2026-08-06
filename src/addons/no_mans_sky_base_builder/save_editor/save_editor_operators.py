@@ -133,6 +133,7 @@ class ExoprtPinnedBase(bpy.types.Operator):
         "Check export base name to update name along with objects.\n"
         "Base Name will be taken from 'Base Name' field in Base properties section"
     )
+    
         
     def execute(self, context):
         scene = context.scene

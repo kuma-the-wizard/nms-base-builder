@@ -20,34 +20,6 @@ from .utils import blend_utils
 from .utils import python as python_utils
 
 
-def _get_material_signature(bpy_object):
-    """Create unique identifier for an object's material configuration.
-    
-    Returns a hashable tuple that uniquely identifies the material setup.
-    Two objects with identical materials will have identical signatures.
-    """
-    material = bpy_object.active_material
-    
-    if not material:
-        return ("none",)
-    
-    # Build a signature from material properties
-    sig = [
-        material.name,
-        material.use_nodes,
-        len(material.node_tree.nodes) if material.use_nodes else 0,
-    ]
-    
-    # If using nodes, add node type sequence (fast hash of topology)
-    if material.use_nodes:
-        node_types = tuple(
-            node.type for node in material.node_tree.nodes
-        )
-        sig.append(node_types)
-    
-    return tuple(sig)
-
-
 class Builder(object):
 
     # Tool Level Paths ---
@@ -73,7 +45,7 @@ class Builder(object):
         bone.BONE: [
             os.path.splitext(filename)[0] for filename in os.listdir(FOSSIL_PARTS_PATH)
         ],
-        turret.TURRET: ["B_TUR_A", "B_TUR_B", "B_TUR_C", "B_TUR_D", "B_TUR_E"],
+        turret. TURRET: ["B_TUR_A", "B_TUR_B", "B_TUR_C", "B_TUR_D", "B_TUR_E"],
         u_powerline.U_POWERLINE: ["U_POWERLINE"],
         u_pipeline.U_PIPELINE: ["U_PIPELINE"],
         u_portalline.U_PORTALLINE: ["U_PORTALLINE"],
@@ -94,20 +66,20 @@ class Builder(object):
             "FOS_BIRD",
             "FOS_BIRD_DIS",
             "FOS_BI_DIS",
-            "FOS_BODY",
+            #"FOS_BODY",
             "FOS_BODY_DISP",
             "FOS_BODY_MNT",
             "FOS_GRUN",
             "FOS_GRUN_DIS",
-            "FOS_LIMBS",
+            #"FOS_LIMBS",
             "FOS_LIMBS_DISP",
             "FOS_LIMBS_MNT",
             "FOS_QUAD",
             "FOS_QUAD_DIS",
-            "FOS_SKULL",
+            #"FOS_SKULL",
             "FOS_SKULL_DISP",
             "FOS_SKULL_MNT",
-            "FOS_TAIL",
+            #"FOS_TAIL",
             "FOS_TAIL_DISP",
             "FOS_TAIL_MNT",
             "FOS_WORM",
@@ -140,12 +112,12 @@ class Builder(object):
         for pack_name, pack_folder in self.available_packs:
             for category in self.get_categories(pack=pack_name):
                 parts = self.get_objs_from_category(category, pack=pack_name)
-                for part_item in parts:
+                for part in parts:
                     # Get Unique ID.
-                    unique_id = os.path.splitext(part_item)[0]
+                    unique_id = os.path.splitext(part)[0]
                     # Construct full path.
                     search_path = pack_folder or self.MODEL_PATH
-                    part_path = os.path.join(search_path, category, part_item)
+                    part_path = os.path.join(search_path, category, part)
                     # Place part information into reference.
                     self.part_reference[unique_id] = {
                         "category": category,
@@ -234,29 +206,37 @@ class Builder(object):
         # Validate skip list
         skip_object_type = skip_object_type or []
 
-        # loop through all objects and gather all individual NMS parts.
-        flat_parts = []
-        for part_obj in bpy.context.scene.objects:
-            if "ObjectID" in part_obj:
-                if part_obj["ObjectID"] in skip_object_type:
-                    continue
-                if exclude_presets and part_obj.get("belongs_to_preset") == False:
-                    continue
-                flat_parts.append(part_obj)
-            # Include line conatrol points?
-            elif include_lines and "SnapID" in part_obj:
-                flat_parts.append(part_obj)
-            
+        # Get all individual NMS parts.
+        flat_parts = [part for part in bpy.data.objects if "ObjectID" in part]
+        flat_parts = [
+            part for part in flat_parts if part["ObjectID"] not in skip_object_type
+        ]
+
+        # Include line conatrol points?
+        if include_lines:
+            flat_parts.extend(
+                [
+                    part
+                    for part in bpy.data.objects
+                    if "SnapID" in part and not "ObjectID" in part
+                ]
+            )
+
+        # If exclude presets is on, just return the top level objects.
+        if exclude_presets:
+            flat_parts = [
+                part for part in flat_parts if part["belongs_to_preset"] == False
+            ]
         flat_parts = sorted(flat_parts, key=Builder.by_order)
         return flat_parts
 
     def get_all_presets(self):
         """Get all Builder preset items in the scene."""
-        return [part_obj for part_obj in bpy.context.scene.objects if "PresetID" in part_obj]
+        return [part for part in bpy.data.objects if "PresetID" in part]
     
     def get_all_groups(self):
         """Get all Builder preset items in the scene."""
-        return [part_obj for part_obj in bpy.context.scene.objects if "GroupID" in part_obj]
+        return [part for part in bpy.data.objects if "GroupID" in part]
 
     def add_part(self, object_id, user_data=None, build_rigs=True):
         """Add an item based on it's object ID."""
@@ -277,11 +257,6 @@ class Builder(object):
     def mirror_part(self, part_object):
         object_id = part_object["ObjectID"]
         new_object_id = part.Part.get_mirror_part_id(object_id)
-        
-        # If this mesh is shared by other objects, make a unique copy first
-        if part_object.data.users > 1:
-            part_object.data = part_object.data.copy()
-        
         # Flip mesh vertices across X
         mirror_matrix = Matrix.Scale(-1, 4, (1, 0, 0))
         part_object.data.transform(mirror_matrix)
@@ -297,11 +272,6 @@ class Builder(object):
     def flip_part(self, part_object):
         object_id = part_object["ObjectID"]
         new_object_id = part.Part.get_flip_part_id(object_id)
-        
-        # If this mesh is shared by other objects, make a unique copy first
-        if part_object.data.users > 1:
-            part_object.data = part_object.data.copy()
-        
         # Flip mesh vertices across Y
         mirror_matrix = Matrix.Scale(-1, 4, (0, 1, 0))
         part_object.data.transform(mirror_matrix)
@@ -359,15 +329,15 @@ class Builder(object):
                 )
                 preset_list.append(preset_obj.serialise())
             data["Presets"] = preset_list
+            
+        
 
         return data
 
     def deserialise_from_data(self, data):
-        """Given NMS data, reconstruct the base with mesh deduplication.
-        
-        Optimizations:
-        1. Build reverse class lookup once (O(n+m) instead of O(n*m))
-        2. Deduplicate mesh data for identical parts with same material
+        """Given NMS data, reconstruct the base.
+
+        We don't need to create a new class, we can act upon this one.
         """
 
         base_version = data.get("BaseVersion", 8)
@@ -376,92 +346,24 @@ class Builder(object):
         if base_version < 5:
             compensate_normal = False
 
-        # Build a reverse lookup of object_id -> class to avoid repeated
-        # dict searches in get_part_class(). This is O(n) once instead of
-        # O(n*m) where m is the number of override classes.
-        object_id_to_class = {}
-        for class_ref, part_list in self.override_classes.items():
-            for obj_id in part_list:
-                object_id_to_class[obj_id] = class_ref
+        # Reconstruct objects.
+        for part_data in data.get("Objects", []):
+            object_id = part_data.get("ObjectID").replace("^", "")
+            use_class = self.get_part_class(object_id)
+            use_class.deserialise_from_data(
+                part_data, self, compensate_normal=compensate_normal
+            )
 
-        # Suppress undo snapshots during bulk import—each FBX operator and
-        # primitive add would otherwise push a full undo snapshot, which
-        # becomes increasingly expensive as the scene grows.
-        edit_prefs = bpy.context.preferences.edit
-        previous_undo_state = edit_prefs.use_global_undo
-        edit_prefs.use_global_undo = False
+        # Reconstruct presets.
+        for preset_data in data.get("Presets", []):
+            preset.Preset.deserialise_from_data(
+                preset_data, self, compensate_normal=compensate_normal
+            )
 
-        try:
-            # ---- PASS 1: Create all objects and identify duplicates ----
-            objects_data = data.get("Objects", [])
-            created_objects = []  # List of (bpy_object, object_id, part_data)
-            
-            for part_data in objects_data:
-                object_id = part_data.get("ObjectID", "").replace("^", "")
-                # Use cached lookup instead of searching override_classes dict
-                use_class = object_id_to_class.get(object_id, part.Part)
-                
-                # Create the part normally (will fetch/cache mesh from file)
-                part_instance = use_class.deserialise_from_data(
-                    part_data, self, build_rigs=False, compensate_normal=compensate_normal
-                )
-                bpy_object = part_instance.object
-                
-                # Store for potential deduplication
-                created_objects.append((bpy_object, object_id, part_data))
-            
-            # ---- PASS 2: Deduplicate meshes for objects with same object_id + material ----
-            # Group by object_id for initial pass
-            by_object_id = defaultdict(list)
-            for bpy_obj, obj_id, p_data in created_objects:
-                by_object_id[obj_id].append((bpy_obj, p_data))
-            
-            meshes_to_remove = []
-            
-            for object_id, instances in by_object_id.items():
-                if len(instances) <= 1:
-                    continue  # No duplicates for this ID
-                
-                # Group instances by material signature
-                by_material = defaultdict(list)
-                for bpy_obj, p_data in instances:
-                    sig = _get_material_signature(bpy_obj)
-                    by_material[sig].append((bpy_obj, p_data))
-                
-                # For each material group with duplicates, share the mesh
-                for material_sig, material_group in by_material.items():
-                    if len(material_group) <= 1:
-                        continue  # No duplicates for this material
-                    
-                    # Keep first instance's mesh as the "master"
-                    master_obj = material_group[0][0]
-                    master_mesh = master_obj.data
-                    
-                    # Redirect all other instances to use the master mesh
-                    for dup_obj, _ in material_group[1:]:
-                        old_mesh = dup_obj.data
-                        dup_obj.data = master_mesh
-                        
-                        # Queue old mesh for removal (if no other users)
-                        meshes_to_remove.append(old_mesh)
-            
-            # Clean up unreferenced meshes
-            for mesh in meshes_to_remove:
-                if mesh.users == 0:
-                    bpy.data.meshes.remove(mesh)
-            
-            # ---- PASS 3: Rebuild rigs for parts that need them ----
-            self.build_rigs()
-            self.optimise_control_points()
-            
-            # ---- Reconstruct presets ----
-            for preset_data in data.get("Presets", []):
-                preset.Preset.deserialise_from_data(
-                    preset_data, self, compensate_normal=compensate_normal
-                )
-
-        finally:
-            edit_prefs.use_global_undo = previous_undo_state
+        # Build Rigs.
+        self.build_rigs()
+        # Optimise control points.
+        self.optimise_control_points()
 
     @staticmethod
     def by_order(bpy_object):
@@ -537,18 +439,18 @@ class Builder(object):
         # Get the associated model path.
         search_path = self.get_model_path_from_pack(pack)
         category_path = os.path.join(search_path, category)
-        all_objs = [part_item for part_item in os.listdir(category_path) if part_item.endswith(".fbx")]
+        all_objs = [part for part in os.listdir(category_path) if part.endswith(".fbx")]
         file_names = sorted(all_objs)
         return file_names
 
-    def get_obj_path(self, part_id):
+    def get_obj_path(self, part):
         """Get the path to the OBJ file from a part."""
-        part_dictionary = self.part_reference.get(part_id, {})
+        part_dictionary = self.part_reference.get(part, {})
         return part_dictionary.get("full_path", None)
 
-    def get_obj_parent_folder(self, part_id):
+    def get_obj_parent_folder(self, part):
         """Get the path to the OBJ file from a part."""
-        path = self.get_obj_path(part_id)
+        path = self.get_obj_path(part)
         folder = os.path.dirname(path).split(os.sep)[-1]
         return folder
 
@@ -587,11 +489,11 @@ class Builder(object):
                 parts.append(item)
         return sorted(parts)
 
-    def get_nice_name(self, part_id):
+    def get_nice_name(self, part):
         """Get a nice version of the part id."""
-        part_id = os.path.basename(part_id)
-        nice_name = part_id.title().replace("_", " ")
-        return self.nice_name_dictionary.get(part_id, nice_name)
+        part = os.path.basename(part)
+        nice_name = part.title().replace("_", " ")
+        return self.nice_name_dictionary.get(part, nice_name)
 
     def save_preset_to_file(self, preset_name):
         # Get a file path.
@@ -611,8 +513,8 @@ class Builder(object):
         """Get all items that require a rig and build them."""
         blend_utils.scene_refresh()
         parts = self.get_all_parts(exclude_presets=True)
-        for part_obj in parts:
-            builder_object = self.get_builder_object_from_bpy_object(part_obj)
+        for part in parts:
+            builder_object = self.get_builder_object_from_bpy_object(part)
             if hasattr(builder_object, "build_rig"):
                 builder_object.build_rig()
 

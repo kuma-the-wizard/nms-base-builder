@@ -362,18 +362,20 @@ class SaveManager(bpy.types.PropertyGroup):
             return "Error Exporting bases, base identifiers are None"
         
         # provide data to real export function
-        return self.export_base(context, base_identifiers, current_slot_data["saves"], objects_only= True)
+        return self.export_base(context, base_identifiers, current_slot_data["saves"])
         
     # collect data from scene and export it to save file
-    def export_base(self,context,  base_identifiers, save_links, objects_only = True):
+    def export_base(self,context,  base_identifiers, save_links):
         # convert scene to json representing base data
         nms_tools = context.scene.nms_main
-        serialised_base_objects_data  = nms_tools.serialise(objects_only = objects_only)
-        
-        print(serialised_base_objects_data)
+        serialised_base_objects_data  = nms_tools.serialise(objects_only = True)
+        prefs = context.scene.nms_base_tool
+        new_base_name = prefs.string_base
+        if not new_base_name or len(new_base_name) > 0:
+            new_base_name = None
         
         # provide data to utils and return status string to calling function
-        result = save_editor_utils.save_base_to_save_file(serialised_base_objects_data, base_identifiers, save_links, objects_only = objects_only)
+        result = save_editor_utils.save_base_to_save_file(serialised_base_objects_data, base_identifiers, save_links, base_name = new_base_name)
         
         # refresh UI
         self.refresh_bases_list()
@@ -522,7 +524,7 @@ class SaveManager(bpy.types.PropertyGroup):
         if base_identifiers is None:
             return "Pinned base identifiers are none"
         
-        result = self.export_base(context, base_identifiers, base_identifiers.save_slot, objects_only = False)
+        result = self.export_base(context, base_identifiers, base_identifiers.save_slot)
             
         return result
         

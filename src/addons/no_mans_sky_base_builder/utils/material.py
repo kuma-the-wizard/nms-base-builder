@@ -286,3 +286,22 @@ def assign_material(item, colour_index=0, material_index=0):
     set_material(item, material)
     return material
 
+# Optimise objects in a way that Objects with same "ObjectID" and "UserData" share same data block
+def optimise_materials():
+    unique_materials = {}
+    # loop through all objects
+    for obj in bpy.context.scene.objects:
+        if "ObjectID" in obj and obj.get("curve_parent") is None:
+            
+            obj_id = obj.get("ObjectID")
+            user_data = obj.get("UserData")
+            key = (obj_id, user_data)
+            
+            if key not in unique_materials:
+                # Ensures that data block is not shared by any other object
+                obj.data = obj.data.copy()
+                # store if key doesnt exist
+                unique_materials[key] = obj.data
+            else:
+                # assign data block from cache
+                obj.data = unique_materials[key] 

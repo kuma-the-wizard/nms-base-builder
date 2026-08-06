@@ -284,12 +284,11 @@ def import_paticular_base_from_save(base_identifier,  save_slot):
         
     #return bases after translating it to engish
     searched_base = save_translation.translate_to_eng_data(searched_base)
-    
-    #print(searched_base)
+
     return searched_base
     
 #save a base to save file
-def save_base_to_save_file(objects_data, base_identifier,  save_slot, objects_only = True):
+def save_base_to_save_file(objects_data, base_identifier,  save_slot, base_name = None):
     from .save_file import SaveFile
     for slot in save_slot:
         save_file = SaveFile(slot)
@@ -300,13 +299,18 @@ def save_base_to_save_file(objects_data, base_identifier,  save_slot, objects_on
         if in_base is None:
             return
         
-        if objects_only:
-            # update only objects list
-            in_base[SaveTranslation.objects] = save_translation.translate_to_obf_data(objects_data)
-        else:
-            # update entire base if objects only is False
-            in_base.clear()
-            in_base.update(save_translation.translate_to_obf_data(objects_data))
+        # here update objects list with list provided
+        in_base[SaveTranslation.objects] = save_translation.translate_to_obf_data(objects_data)
+        
+        # update name of base if provided
+        if base_name is not None:
+            # update name in PersistentPlayerBases
+            in_base[SaveTranslation.base_name] = base_name
+            
+            # update name in ship_ownsership
+            userdata = base_identifier["user_data"]
+            ship_ownsership_element = save_file.get_ship_ownsership_element(userdata)
+            ship_ownsership_element[SaveTranslation.base_name] = base_name
         
         # save the file and make backup after update it
         save_file.make_backup()
