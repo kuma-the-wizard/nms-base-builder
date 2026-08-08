@@ -3,12 +3,9 @@ import os
 from bpy.types import Panel
 
 from .. import icons
-from ..utils import python as python_utils
+from ..utils import dictionary
 
-FILE_PATH = os.path.dirname(os.path.realpath(__file__))
-NICE_JSON = os.path.join(FILE_PATH,"..","resources","nice_names.json")
-nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
-
+nice_name_dictionary = dictionary.get_nice_names_diictionary()
 
 # Base Property Panel ---
 class NMS_PT_base_prop_panel(Panel):

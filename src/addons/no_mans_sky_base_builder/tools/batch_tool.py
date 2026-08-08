@@ -2,18 +2,12 @@ from ..utils import mirror_utils
 import bpy
 import os
 import uuid
-from ..utils import blend_utils, curve, material
-from ..utils import python as python_utils
+from ..utils import blend_utils, curve, material, dictionary
 from .. import builder, part
 from ..utils.mirror_utils import ShowMessageBox
 
-FILE_PATH = os.path.dirname(os.path.realpath(__file__))
-NICE_JSON = os.path.join(FILE_PATH,"..","resources","nice_names.json")
 
-GHOSTED_JSON = os.path.join(FILE_PATH,"..", "resources", "ghosted.json")
-ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
-GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
-nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
+nice_name_dictionary = dictionary.get_nice_names_diictionary()
 BUILDER = builder.Builder()
 
 class BatchTool(bpy.types.PropertyGroup):

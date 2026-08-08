@@ -8,13 +8,10 @@ import time
 from mathutils import Matrix, Vector
 import uuid
 
-from .utils import blend_utils, mirror_utils
-from .utils import python as python_utils
+from .utils import blend_utils, mirror_utils, dictionary
 from .part import Part
 
-FILE_PATH = os.path.dirname(os.path.realpath(__file__))
-NICE_JSON = os.path.join(FILE_PATH,"resources","nice_names.json")
-nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
+nice_name_dictionary = dictionary.get_nice_names_diictionary()
 
 
 class Group:
@@ -201,12 +198,17 @@ class Group:
         if not cached_child_data:
             return None
         
+        master_user_data = parent_obj.get("UserData",None)
+        
         restored_objects = []
 
         for child_name, cache_data in cached_child_data.items():
 
             object_id = cache_data[Group.PROP_OBJECT_ID]
-            user_data = cache_data.get(Group.PROP_USER_DATA, 0)
+            if master_user_data is not None:
+                user_data = master_user_data 
+            else:
+                user_data = cache_data.get(Group.PROP_USER_DATA, 0) 
             time_stamp = cache_data.get(Group.PROP_TIMESTAMP, int(time.time()))
 
             # Add part via builder
@@ -248,12 +250,17 @@ class Group:
         cached_child_data, origin_matrix = Group.extract_cached_data(parent_obj)
         if not cached_child_data:
             return None
+        
+        master_user_data = parent_obj.get("UserData",None)
 
         serialized_objects = []
         for child_name, cache_data in cached_child_data.items():
 
             object_id = cache_data[Group.PROP_OBJECT_ID]
-            user_data = cache_data.get(Group.PROP_USER_DATA, 0)
+            if master_user_data is not None:
+                user_data = master_user_data 
+            else:
+                user_data = cache_data.get(Group.PROP_USER_DATA, 0) 
             time_stamp = cache_data.get(Group.PROP_TIMESTAMP, int(time.time()))
             message = cache_data.get(Group.PROP_MESSAGE)
 

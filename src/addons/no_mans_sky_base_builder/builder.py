@@ -13,11 +13,8 @@ import bpy
 from mathutils import Matrix
 
 from . import part, preset, group
-from .part_overrides import (bone, bone_replacer, line, locked, message,
-                             power_control, turret, u_bytebeatline, u_pipeline,
-                             u_portalline, u_powerline)
-from .utils import blend_utils
-from .utils import python as python_utils
+from .part_overrides import parts_override
+from .utils import blend_utils, dictionary
 
 
 class Builder(object):
@@ -26,66 +23,12 @@ class Builder(object):
     USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
     FILE_PATH = os.path.dirname(os.path.realpath(__file__))
     MODEL_PATH = os.path.join(FILE_PATH, "models")
-    FOSSIL_PARTS_PATH = os.path.join(FILE_PATH, "models", "fossil_parts")
-    NICE_JSON = os.path.join(FILE_PATH, "resources", "nice_names.json")
     MODS_PATH = os.path.join(USER_PATH, "mods")
     PRESET_PATH = os.path.join(USER_PATH, "presets")
 
     # Load in nice name information.
-    nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
-
-    override_classes = {
-        bone_replacer.BONE_REPLACER: [
-            "FOS_HEAD",
-            "FOS_SKULL",
-            "FOS_LIMBS",
-            "FOS_TAIL",
-            "FOS_BODY",
-        ],
-        bone.BONE: [
-            os.path.splitext(filename)[0] for filename in os.listdir(FOSSIL_PARTS_PATH)
-        ],
-        turret. TURRET: ["B_TUR_A", "B_TUR_B", "B_TUR_C", "B_TUR_D", "B_TUR_E"],
-        u_powerline.U_POWERLINE: ["U_POWERLINE"],
-        u_pipeline.U_PIPELINE: ["U_PIPELINE"],
-        u_portalline.U_PORTALLINE: ["U_PORTALLINE"],
-        u_bytebeatline.U_BYTEBEATLINE: ["U_BYTEBEATLINE"],
-        power_control.POWER_CONTROL: ["POWER_CONTROL"],
-        locked.LOCKED: [
-            "BASE_FLAG",
-            "BRIDGECONNECTOR",
-            "AIRLCKCONNECTOR",
-            "FREIGHTER_CORE",
-        ],
-        message.MESSAGE: [
-            "MESSAGEMODULE",
-            "BYTEBEAT",
-            "BYTEBEATSWITCH",
-            "HOLO_DISCO_0",
-            "FOS_BI",
-            "FOS_BIRD",
-            "FOS_BIRD_DIS",
-            "FOS_BI_DIS",
-            #"FOS_BODY",
-            "FOS_BODY_DISP",
-            "FOS_BODY_MNT",
-            "FOS_GRUN",
-            "FOS_GRUN_DIS",
-            #"FOS_LIMBS",
-            "FOS_LIMBS_DISP",
-            "FOS_LIMBS_MNT",
-            "FOS_QUAD",
-            "FOS_QUAD_DIS",
-            #"FOS_SKULL",
-            "FOS_SKULL_DISP",
-            "FOS_SKULL_MNT",
-            #"FOS_TAIL",
-            "FOS_TAIL_DISP",
-            "FOS_TAIL_MNT",
-            "FOS_WORM",
-            "FOS_WORM_DIS",
-        ],
-    }
+    nice_name_dictionary = dictionary.get_nice_names_diictionary()
+    override_classes = parts_override.override_classes
 
     def __init__(self):
         """Builder __init__."""
@@ -205,38 +148,29 @@ class Builder(object):
         """
         # Validate skip list
         skip_object_type = skip_object_type or []
-
-        # Get all individual NMS parts.
-        flat_parts = [part for part in bpy.data.objects if "ObjectID" in part]
-        flat_parts = [
-            part for part in flat_parts if part["ObjectID"] not in skip_object_type
-        ]
-
-        # Include line conatrol points?
-        if include_lines:
-            flat_parts.extend(
-                [
-                    part
-                    for part in bpy.data.objects
-                    if "SnapID" in part and not "ObjectID" in part
-                ]
-            )
-
-        # If exclude presets is on, just return the top level objects.
-        if exclude_presets:
-            flat_parts = [
-                part for part in flat_parts if part["belongs_to_preset"] == False
-            ]
+        
+        flat_parts = []
+        for item in bpy.context.scene.objects:
+            if "ObjectID" in item:
+                obj_id = item.get("ObjectID")
+                if obj_id in skip_object_type:
+                    continue
+                if exclude_presets and item.get("belongs_to_preset",False):
+                    continue
+                flat_parts.append(item)
+            elif include_lines and "SnapID" in item:
+                flat_parts.append(item)
+                
         flat_parts = sorted(flat_parts, key=Builder.by_order)
         return flat_parts
 
     def get_all_presets(self):
         """Get all Builder preset items in the scene."""
-        return [part for part in bpy.data.objects if "PresetID" in part]
+        return [part for part in bpy.context.scene.objects if "PresetID" in part]
     
     def get_all_groups(self):
         """Get all Builder preset items in the scene."""
-        return [part for part in bpy.data.objects if "GroupID" in part]
+        return [part for part in bpy.context.scene.objects if "GroupID" in part]
 
     def add_part(self, object_id, user_data=None, build_rigs=True):
         """Add an item based on it's object ID."""

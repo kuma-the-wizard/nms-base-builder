@@ -114,12 +114,15 @@ def select(selection, add=False):
         selection = [selection]
 
     for item in selection:
-        if item is not None:
+        # Check if item exists in the active view layer before selecting
+        if item is not None and item.name in bpy.context.view_layer.objects:
             item.select_set(True)
 
-    # Make the last item the active one.
-    selection[-1].select_set(True)
-    set_active_item(selection[-1])
+    # Make the last item the active one (only if valid)
+    if selection and selection[-1] is not None:
+        if selection[-1].name in bpy.context.view_layer.objects:
+            selection[-1].select_set(True)
+            set_active_item(selection[-1])
 
 
 def get_current_selection():
@@ -219,7 +222,8 @@ def duplicate_part(target):
         Return duplicated object
     """
     new_item = target.copy()
-    new_item.data = target.data.copy()
+    if new_item.data:
+        new_item.data = target.data.copy()
     for collection in target.users_collection:
         collection.objects.link(new_item)
     return new_item

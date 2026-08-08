@@ -288,12 +288,19 @@ def assign_material(item, colour_index=0, material_index=0):
 
 # Optimise objects in a way that Objects with same "ObjectID" and "UserData" share same data block
 def optimise_materials():
+    from ..part_overrides import parts_override
+    classes_dict = parts_override.get_override_classes()
+    
     unique_materials = {}
     # loop through all objects
     for obj in bpy.context.scene.objects:
         if "ObjectID" in obj and obj.get("curve_parent") is None:
             
             obj_id = obj.get("ObjectID")
+            # skip objects that are more complex
+            if obj_id in classes_dict:
+                continue
+            
             user_data = obj.get("UserData")
             key = (obj_id, user_data)
             

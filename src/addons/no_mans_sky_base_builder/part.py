@@ -9,6 +9,7 @@ import mathutils
 from .utils import blend_utils, material
 from .utils import python as python_utils
 
+z_compensate = mathutils.Matrix.Rotation(math.radians(-90.0), 4, "X")
 
 class Part(object):
 
@@ -31,6 +32,23 @@ class Part(object):
     PROP_AT = "At"
 
     SNAP_CACHE = {}
+    
+    
+    SUFFIX_COMPASS_ID_PAIRS = [
+        ("_NE", "_NW"),
+        ("_NE1", "_NW1"),
+        ("_NE2", "_NW2"),
+        ("_NE3", "_NW3"),
+        ("_NETB", "_NWTB"),
+        ("_NETB1", "_NWTB1"),
+        ("_NETB2", "_NWTB2"),
+        ("_NETB3", "_NWTB3"),
+        ("_E", "_W"),
+        ("_N", "_S"),
+        ("_0", "_1"),
+        
+        ("B_WNG_R", "B_WNG_R_R")
+    ]
 
     def __init__(
         self,
@@ -297,15 +315,26 @@ class Part(object):
             ]
             item = bpy.data.objects[new_objects[0]]
             item.name = object_id
-            # for convenience if saving obj/mtl files, delete any imported materials
             item.data.materials.clear()
-            item.select_set(False)
+            
+            # SAFE SELECTION
+            try:
+                item.select_set(False)
+            except RuntimeError:
+                pass 
+                
             blend_utils.add_to_scene(item)
             return item
 
-        # Create cube.
-        bpy.ops.mesh.primitive_cube_add()
-        item = bpy.data.objects[bpy.context.object.name]
+        # Create cube safely bypassing bpy.ops context constraints
+        try:
+            bpy.ops.mesh.primitive_cube_add()
+            item = bpy.context.active_object
+        except RuntimeError:
+            # If active collection is excluded, build object at the data level
+            mesh = bpy.data.meshes.new(object_id)
+            item = bpy.data.objects.new(object_id, mesh)
+            
         item.name = object_id
         blend_utils.add_to_scene(item)
         return item
@@ -318,40 +347,23 @@ class Part(object):
             dict: Dictionary of part information.
         """
         
-        # Is native asset
-        is_native_asset = self.__object.get("is_native_asset", False)
-        
         # Get Matrix Data
         world_matrix = self.matrix_world
         # Bring the matrix from Blender Z-Up space into standard Y-up space.
-        if is_native_asset:
-            world_matrix_offset = world_matrix
-        else :
-            z_compensate = mathutils.Matrix.Rotation(math.radians(-90.0), 4, "X")
-            world_matrix_offset = z_compensate @ world_matrix
+        world_matrix_offset = z_compensate @ world_matrix
         
         # Retrieve Position, Up and At vectors.
-        pos = world_matrix_offset.decompose()[0]
-        up = [
-            world_matrix_offset[0][1],
-            world_matrix_offset[1][1],
-            world_matrix_offset[2][1],
-        ]
-        at = mathutils.Vector(
-            (
-                world_matrix_offset[0][2],
-                world_matrix_offset[1][2],
-                world_matrix_offset[2][2],
-            )
-        )
-        at = at.normalized()
+        pos = world_matrix_offset.translation
+        up = world_matrix_offset.col[1].to_3d()
+        at = world_matrix_offset.col[2].to_3d().normalized()
+        
         return {
-            "ObjectID": self.object_id_format,
-            "Position": [pos[0], pos[1], pos[2]],
-            "Up": [up[0], up[1], up[2]],
-            "At": [at[0], at[1], at[2]],
-            "Timestamp": int(self.time_stamp),
-            "UserData": int(self.user_data),
+            Part.PROP_OBJECT_ID: self.object_id_format,
+            Part.PROP_POSITION : list(pos),
+            Part.PROP_UP: list(up),
+            Part.PROP_AT: list(at),
+            Part.PROP_TIMESTAMP: int(self.time_stamp),
+            Part.PROP_USER_DATA: int(self.user_data),
         }
 
     # Class Methods ---
@@ -396,60 +408,21 @@ class Part(object):
     @staticmethod
     def get_mirror_part_id(object_id):
         # Handle Compass
-        east_compass_ids = [
-            "NE",
-            "NE1",
-            "NE2",
-            "NE3",
-            "NETB",
-            "NETB1",
-            "NETB2",
-            "NETB3",
-            "E",
-            "N",
-        ]
-        west_compass_ids = [
-            "NW",
-            "NW1",
-            "NW2",
-            "NW3",
-            "NWTB",
-            "NWTB1",
-            "NWTB2",
-            "NWTB3",
-            "W",
-            "S"
-        ]
+        for compass_pairs in Part.SUFFIX_COMPASS_ID_PAIRS:
+            east_str = compass_pairs[0]
+            west_str = compass_pairs[1]
+            is_east = object_id.endswith(east_str)
+            is_west = object_id.endswith(west_str)
+            
+            if is_east:
+                object_id[: -(len(east_str))] + west_str
+                break
+            elif is_west:
+                object_id[: -(len(west_str))] + east_str
         
-        
-        for idx, east_compass_id in enumerate(east_compass_ids):
-            if object_id.endswith(f"_{east_compass_id}"):
-                return (
-                    object_id[: -(len(east_compass_id) + 1)]
-                    + "_"
-                    + west_compass_ids[idx]
-                )
-        for idx, west_compass_id in enumerate(west_compass_ids):
-            if object_id.endswith(f"_{west_compass_id}"):
-                return (
-                    object_id[: -(len(west_compass_id) + 1)]
-                    + "_"
-                    + east_compass_ids[idx]
-                )
-                
-        
-        
-        # Handle B_DEC) parts
-        if object_id.startswith("B_DECO"):
-            if object_id.endswith("_0") or object_id.endswith("_1"):
-                return object_id[:-1] + "1" if object_id.endswith("_0") else object_id[:-1] + "0"
-        
-         # Handle Winged
+        # Handle Winged
         if object_id.startswith("B_WNG"):
-            if object_id == "B_WNG_R" or object_id == "B_WNG_R_R":
-                #Exception case, Default Aeron Wing's object ID ends with R and mirror part's ID ends with R_R
-                return "B_WNG_R_R" if object_id == "B_WNG_R" else "B_WNG_R"
-            elif object_id.endswith("_R"):
+            if object_id.endswith("_R"):
                 return object_id[:-2]
             else:
                 return object_id + "_R"

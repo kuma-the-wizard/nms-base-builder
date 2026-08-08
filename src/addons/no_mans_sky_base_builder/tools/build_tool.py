@@ -3,24 +3,17 @@ import bpy
 import os
 import uuid
 import json
-from ..utils import blend_utils, curve
-from ..utils import python as python_utils
+from ..utils import blend_utils, curve, dictionary
 from .. import builder, part, group
 from ..utils.mirror_utils import ShowMessageBox
 
 from ..group import Group
 from ..utils.curve import Curve
 
-FILE_PATH = os.path.dirname(os.path.realpath(__file__))
-NICE_JSON = os.path.join(FILE_PATH,"..","resources","nice_names.json")
-
-GHOSTED_JSON = os.path.join(FILE_PATH,"..", "resources", "ghosted.json")
-ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
-GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
-nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
-BUILDER = builder.Builder()
-
 from mathutils import Vector,Matrix
+
+nice_name_dictionary = dictionary.get_nice_names_diictionary()
+BUILDER = builder.Builder()
 
 class BuildTool(bpy.types.PropertyGroup):
     
@@ -92,6 +85,19 @@ class BuildTool(bpy.types.PropertyGroup):
                 title="Mirror"
             )
             return
+        
+        #if auto_duplicate:
+        #    bpy.ops.object.duplicate(linked=False)
+        #    selected_objects = bpy.context.selected_objects if objects_to_mirror is None else objects_to_mirror
+        #    auto_duplicate = False
+        
+        #hierarchy_data = {}
+        #for obj in selected_objects:
+        #    if obj.parent:
+        #        hierarchy_data[obj.name] = obj.parent.name
+        #        current_world_matrix = obj.matrix_world.copy()
+        #        obj.parent = None
+        #        obj.matrix_world = current_world_matrix
         
         existing_groups = Group.get_all_groups() if objects_to_mirror is None else []
 
@@ -180,11 +186,34 @@ class BuildTool(bpy.types.PropertyGroup):
                     
                     # delete target if auto duplicate is not checked
                     if not auto_duplicate:
+                        group_name = target.name
                         bpy.data.objects.remove(target, do_unlink=True)
+                        mirrored_group.name = group_name
                         
                 # append newly generated morrors to existing_groups list for optimised search operations
                 existing_groups.append(mirrored_group)
                 new_items.append(mirrored_group)
+                
+            else:
+                if target is not None:
+                    if auto_duplicate:
+                        new_item = blend_utils.duplicate_part(target)
+                    else:
+                        new_item = target
+                    new_item.matrix_world = mirror_utils.mirror_matrix_world_universal(None, new_item.matrix_world, axis,center)
+                    new_items.append(new_item)
+        
+        #for obj_name, parent_name in hierarchy_data.items():
+        #    if parent_name:
+        #        parent = bpy.context.scene.objects.get(parent_name,None)
+        #        obj = bpy.context.scene.objects.get(obj_name,None)
+        #        # Re-parenting inherently alters the transform, so we force the 
+        #        # mirrored matrix_world back onto the object after reparenting
+        #        if parent and obj:
+        #            mirrored_world_matrix = obj.matrix_world.copy()
+        #            obj.parent = parent
+        #            obj.matrix_world = mirrored_world_matrix
+        #
         
         # filter out deleted objects
         new_items = [obj for obj in new_items if obj is not None]

@@ -2,9 +2,10 @@ import bpy
 import time
 import mathutils
 import math
-from . import builder, part, preset
+from . import builder, part, preset, group
 from .utils import material, collection_utils
 from .utils import python as ptyhon_utils
+from .part_overrides import parts_override
 
 BUILDER = builder.Builder()
 
@@ -12,30 +13,27 @@ BUILDER = builder.Builder()
 mat_rot = mathutils.Matrix.Rotation(math.radians(90.0), 4, "X")
 
 def deserialise_from_data(data):
+    
+        if data is None:
+            return
+
+        unique_objects = {}
+        unique_materials = {}
+        order = 0
+        
+        classes_dict = parts_override.get_override_classes()
         
         import_collection = collection_utils.get_collection("Collection")
         layer_collection = bpy.context.view_layer.layer_collection.children.get(import_collection.name)
         if layer_collection:
             layer_collection.exclude = True
         
-        unique_objects = {}
-        unique_materials = {}
-        order = 0
-        
-        override_classes = builder.Builder.override_classes
-        classes_dict = {}
-        for class_ref, part_list in override_classes.items():
-            for part in part_list:
-                classes_dict[part] = class_ref
-                print("storing", part,"    ",class_ref)
-        
         objects_data = data.get("Objects", [])
         for part_data in objects_data:
             object_id = part_data.get("ObjectID", None).replace("^", "")
             user_data = part_data.get("UserData", 0)
-            
-            message_key = (object_id,message_key)
-            material_key = (object_id,user_data)
+                
+            material_key = ( object_id, user_data )
             
             if object_id is None:
                 continue
@@ -45,25 +43,25 @@ def deserialise_from_data(data):
                 bpy_object = use_class.deserialise_from_data(
                     part_data, BUILDER, compensate_normal=True
                 )
-                
             else:
                 if object_id not in unique_objects:
-                    
                     bpy_object = improt_fbx_from_disk(object_id)
                     
-                    collection_utils.move_object_into_collection(import_collection, bpy_object)
-                    material.restore_material(bpy_object,user_data)
-                    restore_params(bpy_object,part_data, object_id)
-                    
-                    unique_objects[object_id] = bpy_object
-                    unique_materials[material_key] = bpy_object.data
+                    if bpy_object is not None:
+                        collection_utils.move_object_into_collection(import_collection, bpy_object)
+                        material.restore_material(bpy_object,user_data)
+                        restore_params(bpy_object,part_data, object_id)
+                        
+                        unique_objects[object_id] = bpy_object
+                        unique_materials[material_key] = bpy_object.data
                     
                 else:
                     unique_obj = unique_objects.get(object_id)
                     bpy_object = bpy.data.objects.new(unique_obj.name, unique_obj.data)
+                    import_collection.objects.link(bpy_object)
                     for key, value in unique_obj.items():
                         bpy_object[key] = value
-                    import_collection.objects.link(bpy_object)
+                    
                     
                     if material_key in unique_materials:
                         bpy_object.data = unique_materials.get(material_key)
@@ -77,21 +75,24 @@ def deserialise_from_data(data):
                 bpy_object["order"] = order
                 order += 1
         
+        
+            
+        if layer_collection:
+            layer_collection.exclude = False
+            bpy.context.view_layer.depsgraph.update()
+            
+        
         # Reconstruct presets.
         for preset_data in data.get("Presets", []):
             preset.Preset.deserialise_from_data(
                 preset_data, BUILDER, compensate_normal=True
             )
-        
+            
         # Build Rigs.
         BUILDER.build_rigs()
         # Optimise control points.
         BUILDER.optimise_control_points()
-        
-        if layer_collection:
-            layer_collection.exclude = False
-            bpy.context.view_layer.depsgraph.update()
-            
+
             
 def improt_fbx_from_disk(object_id):
     fbx_path = BUILDER.get_obj_path(object_id)

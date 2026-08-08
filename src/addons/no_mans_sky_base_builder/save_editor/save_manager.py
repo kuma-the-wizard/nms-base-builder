@@ -1,6 +1,6 @@
 import bpy
 import json
-from .. import builder
+from .. import builder, builder_v2
 from . import save_editor_dependencies
 from . import save_editor_utils
 from .save_editor_utils import BaseType, BaseData
@@ -344,7 +344,8 @@ class SaveManager(bpy.types.PropertyGroup):
         # Import json into scene
         nms_tools = context.scene.nms_main
         nms_tools.deserialise_from_data(nms_base_json)
-        BUILDER.deserialise_from_data(nms_base_json)
+        #BUILDER.deserialise_from_data(nms_base_json)
+        builder_v2.deserialise_from_data(nms_base_json)
         #return a string for operators for status message
         return "Base/Corvette imported sucessfully"
     

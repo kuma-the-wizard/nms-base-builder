@@ -31,7 +31,7 @@ from .tools.build_tool_presentation import NMS_PT_tools_panel
 from .tools.properties import Properties
 from .tools.properties_presentation import NMS_PT_base_prop_panel, NMS_PT_transformation_panel
 
-from .utils import blend_utils, collection_utils, curve, curve_utils
+from .utils import blend_utils, curve, dictionary
 from .utils import material as _material
 from .utils import python as python_utils
 from .utils import workspace
@@ -45,8 +45,7 @@ BUILDER = builder.Builder()
 GHOSTED_JSON = os.path.join(FILE_PATH, "resources", "ghosted.json")
 ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
 GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
-NICE_JSON = os.path.join(FILE_PATH, "resources", "nice_names.json")
-nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
+nice_name_dictionary = dictionary.get_nice_names_diictionary()
 
 ADDON_ID = __package__
 
@@ -361,6 +360,8 @@ class NMSMain(PropertyGroup):
                     if "curve_parent" in child_obj and child_obj["curve_parent"] == obj.name:
                         _material.assign_material(child_obj, int(colour_index), int(maeterial_index))
                         obj["dup_UserData"] = child_obj["UserData"]
+            elif "GroupID" in obj:
+                _material.assign_material(obj, int(colour_index), int(maeterial_index))
             # for any other object
             else :
                 if "ObjectID" in obj:

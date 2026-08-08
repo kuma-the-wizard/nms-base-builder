@@ -1,21 +1,10 @@
-from ..utils import mirror_utils
 import bpy
-import os
-import uuid
-from ..utils import blend_utils, curve
-from ..utils import python as python_utils
-from .. import builder, part
-from ..utils.mirror_utils import ShowMessageBox
-from ..utils.curve import Curve
+from ..utils import curve, dictionary
+from .. import builder
 import re
 
-FILE_PATH = os.path.dirname(os.path.realpath(__file__))
-NICE_JSON = os.path.join(FILE_PATH,"..","resources","nice_names.json")
+nice_name_dictionary = dictionary.get_nice_names_diictionary()
 
-GHOSTED_JSON = os.path.join(FILE_PATH,"..", "resources", "ghosted.json")
-ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
-GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
-nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
 BUILDER = builder.Builder()
 
 
@@ -88,6 +77,7 @@ class Properties(bpy.types.PropertyGroup):
         set=set_uniform_scale,
         min=0.0,
         default=1.0,
+        precision=6
     )
     
     copied_position: bpy.props.FloatVectorProperty(

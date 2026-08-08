@@ -1,13 +1,10 @@
 import bpy
 import blf
-import os
 import re
-from .utils import python as python_utils
+from .utils import dictionary
 from .part import Part
 
-FILE_PATH = os.path.dirname(os.path.realpath(__file__))
-NICE_JSON = os.path.join(FILE_PATH,"resources","nice_names.json")
-nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
+nice_name_dictionary = dictionary.get_nice_names_diictionary()
 
 ADDON_ID = __package__
 

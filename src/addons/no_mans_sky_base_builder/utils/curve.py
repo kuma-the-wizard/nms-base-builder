@@ -7,15 +7,13 @@ import bpy
 from .. import builder, part
 from . import (blend_utils, collection_utils, curve_utils, material,
                mirror_utils)
-from . import python as python_utils
+from . import dictionary
 from ..group import Group
 from ..part import Part
 
 BUILDER = builder.Builder()
 
-FILE_PATH = os.path.dirname(os.path.realpath(__file__))
-NICE_JSON = os.path.join(FILE_PATH,"..","resources","nice_names.json")
-nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
+nice_name_dictionary = dictionary.get_nice_names_diictionary()
 
 
 class Curve:
