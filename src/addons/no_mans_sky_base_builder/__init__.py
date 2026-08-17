@@ -15,7 +15,7 @@ from bpy.props import (BoolProperty, EnumProperty, FloatProperty, IntProperty,
 from bpy.types import Panel, PropertyGroup
 from pathlib import Path
 
-from . import builder, icons, part, preset, group, viewport_overlay, builder_v2
+from . import builder, icons, part, preset, group, builder_v2, viewport_overlay
 from .base_properties import NMSBaseProperties
 from .addon_preferences import NMSAddonPreferences
 from .part_overrides import line
@@ -23,18 +23,22 @@ from .save_editor import save_editor_operators, save_editor_utils
 from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel
 from .save_editor.save_manager import SaveManager
 
-from .tools import batch_tool_operators, build_tool_operators, prooperties_operators
+from .tools import batch_tool_operators, build_tool_operators, prooperties_operators, asset_browser_operators
 from .tools.batch_tool import BatchTool
 from .tools.batch_tool_presentation import NMS_PT_batch_tools_panel
 from .tools.build_tool import BuildTool
 from .tools.build_tool_presentation import NMS_PT_tools_panel
 from .tools.properties import Properties
 from .tools.properties_presentation import NMS_PT_base_prop_panel, NMS_PT_transformation_panel
+from .tools.asset_browser import AssetBrowser
+from .tools.asset_browser_presentation import NMS_PT_asset_browser_panel, NMS_PT_asset_browser_properties_panel
 
 from .utils import blend_utils, curve, dictionary
 from .utils import material as _material
 from .utils import python as python_utils
 from .utils import workspace
+
+
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
@@ -1797,47 +1801,35 @@ def udpates_handler(scene, depsgraph):
     global last_active
     
     active_object = bpy.context.view_layer.objects.active
+    if hasattr(bpy.context, "selected_objects"):
+        curves_to_update = bpy.context.selected_objects or []
+    else:
+        curves_to_update = []
 
     # keep track of active object to display or hide additional options related to that object
     # only continue when active object actually changes
-    if active_object != last_active:
-        if active_object is None:
-            return
+    if active_object is not None and active_object != last_active:
         properties = scene.nms_properties
         properties.set_active_obect(active_object)
         last_active = active_object
     
-    
     # Collect curves that have recieved updates by user
     updated_curve_names = set()
-    # Collect deleted curves by user
-    deleted_curve_names = set()
     for update in depsgraph.updates:
         if isinstance(update.id, bpy.types.Object):
             # validate each object
             orig_obj = bpy.data.objects.get(update.id.name)
-            if orig_obj.type == 'CURVE' and "CurveID" in orig_obj:
+            if orig_obj.type == 'CURVE' and curve.Curve.PROP_CURVE_ID in orig_obj:
                 updated_curve_names.add(orig_obj.name)
-            elif "curve_parent" in orig_obj:
-                parent_curve_name = orig_obj["curve_parent"]
+            elif curve.Curve.PROP_CURVE_PARENT in orig_obj:
+                parent_curve_name = orig_obj[curve.Curve.PROP_CURVE_PARENT]
                 parent_curve = bpy.context.scene.objects.get(parent_curve_name,None)
-                if parent_curve is None:
-                    # delete object if its parent curve is deleted
-                    bpy.data.objects.remove(orig_obj, do_unlink=True)
-                    deleted_curve_names.add(parent_curve_name)
-                elif not parent_curve.get(curve.Curve.PROP_PARENT_SELECTED,True):
+                if parent_curve is not None and not parent_curve.get(curve.Curve.PROP_PARENT_SELECTED,True):
                     #store base scale of object 
-                    orig_obj["base_scale"] = curve.calculate_base_scale(parent_curve, orig_obj)
-                    
-    # update trackers by removing deleted curve names from them
-    if deleted_curve_names:
-        known_curve_names.difference_update(deleted_curve_names)
-        updated_curve_names.difference_update(deleted_curve_names)
+                    orig_obj[curve.Curve.PROP_BASE_SCALE] = curve.calculate_base_scale(parent_curve, orig_obj)
     
     # identify new curves
-    new_curve_names_detected = set()
-    if updated_curve_names:
-        new_curve_names_detected = updated_curve_names - known_curve_names
+    new_curve_names_detected = updated_curve_names - known_curve_names
                     
     # Detect Shift+d duplication of curves and Handle syncing
     if new_curve_names_detected and known_curve_names:
@@ -1846,25 +1838,47 @@ def udpates_handler(scene, depsgraph):
             # we need to duplicate objects in similar way on new curve too
             try:
                 new_curve = bpy.context.scene.objects.get(new_curve_name,None)
+                if new_curve is None:
+                    continue
                 new_uuid = new_curve.get(curve.Curve.PROP_CURVE_ID)
                 # Look for curves that have same unique_id as new curve
                 # if a duplciate unique_id found, new curve must be duplicate of that curve
                 for curve_name in known_curve_names:
                     matching_curve = bpy.context.scene.objects.get(curve_name,None)
-                    if matching_curve.get(curve.Curve.PROP_CURVE_ID) == new_uuid and matching_curve.name != new_curve.name:
+                    if matching_curve is not None and matching_curve.get(curve.Curve.PROP_CURVE_ID) == new_uuid and matching_curve.name != new_curve.name:
                         curve.sync_curves(new_curve, matching_curve)
                         break
             except ReferenceError as error:
                 print("Reference error :", error)
                 continue
     
-    # Update all children of active curve
-    if active_object is not None and "CurveID" in active_object:
-        curve.update_curves([active_object])
+    if active_object is not None and curve.Curve.PROP_CURVE_ID in active_object:
+        # Update all children of active curve
+        if active_object not in curves_to_update:
+            curves_to_update.append(active_object)
+        curve.update_curves(curves_to_update)
+    
+    
+    dead_curve_names = set()
+    # check for deleted curve in know curves
+    for curve_name in known_curve_names:
+        if bpy.context.scene.objects.get(curve_name,None) is None:
+            dead_curve_names.add(curve_name)
+    # delete dead curves
+    if dead_curve_names:
+        known_curve_names.difference_update(dead_curve_names)
+        for obj in bpy.context.scene.objects:
+            if curve.Curve.PROP_CURVE_PARENT in obj and obj.get(curve.Curve.PROP_CURVE_PARENT) in dead_curve_names:
+                bpy.data.objects.remove(obj, do_unlink=True)
         
     # Sync back down to the global tracking set 
     known_curve_names |= updated_curve_names
     
+    
+
+    
+                
+                
 
 preview_collections = {}
 
@@ -1915,6 +1929,7 @@ classes = (
     Properties,
     BatchTool,
     WorkspaceSettings,
+    AssetBrowser,
     
     NMS_UL_actions_list,
     NMS_PT_hero_panel,
@@ -1928,6 +1943,8 @@ classes = (
     NMS_PT_batch_tools_panel,
     NMS_PT_build_panel,
     NMS_PT_nms_legacy_asset_browser,
+    NMS_PT_asset_browser_panel,
+    NMS_PT_asset_browser_properties_panel,
     
     NMSAddonPreferences,
     
@@ -1938,7 +1955,7 @@ classes = (
     UngroupObjects
 )
 
-classes = classes  + save_editor_operators.classes + build_tool_operators.classes + batch_tool_operators.classes + prooperties_operators.classes
+classes = classes  + save_editor_operators.classes + build_tool_operators.classes + batch_tool_operators.classes + prooperties_operators.classes + asset_browser_operators.classes
 
 
 
@@ -1980,15 +1997,16 @@ def register():
     bpy.types.Scene.nms_build_tool = bpy.props.PointerProperty(type=BuildTool)
     bpy.types.Scene.nms_properties = bpy.props.PointerProperty(type=Properties)
     bpy.types.Scene.nms_batch_tool = bpy.props.PointerProperty(type=BatchTool)
+    bpy.types.Scene.nms_asset_browser = bpy.props.PointerProperty(type=AssetBrowser)
     
     if reset_plugin_state not in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.append(reset_plugin_state)
     
     if udpates_handler not in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.append(udpates_handler)
-        
     
     bpy.app.timers.register(viewport_overlay.register_draw, first_interval=0.01)
+    
         
         
     
@@ -2008,13 +2026,13 @@ def unregister():
     del bpy.types.Scene.nms_build_tool
     del bpy.types.Scene.nms_properties
     del bpy.types.Scene.nms_batch_tool
+    del bpy.types.Scene.nms_asset_browser
     
     if reset_plugin_state in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(reset_plugin_state)
         
     if udpates_handler in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.remove(udpates_handler)
-        
     
     viewport_overlay.unregister_draw()
 

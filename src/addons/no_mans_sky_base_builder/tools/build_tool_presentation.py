@@ -1,5 +1,6 @@
 import bpy
 from bpy.types import Panel
+from .. import icons
 
 
 # Snap Panel ---
@@ -26,16 +27,23 @@ class NMS_PT_tools_panel(Panel):
         #split = layout.split(factor=0.5)
         #tools_column, snap_column = (split.column(align = True), split.column(align = True))
         build_tools_col = layout.column(align = True)
+        part_box = build_tools_col.box()
         tools_row = build_tools_col.row(align = True)
         snap_column = tools_row.column(align = True)
         tools_column = tools_row.column(align = True)#tools_column
         snap_column.scale_x = 1.5
+        
         # Create Part Count Box.
-        part_box = snap_column.box()
-        splitter = part_box.split(factor=0.7)
+        part_row = part_box.row(align = False)
+        part_row.scale_y = 1.2
+        part_count_section = part_row.row(align = True)
+        part_count_section.scale_x = 0.5
+        splitter = part_count_section.split(factor=0.7)
         splitter.label(text="Part Count:" )# , icon = "GEOMETRY_NODES"
         part_count = build_tool.get_part_count()
         splitter.label(text="{}".format(part_count))
+        
+        part_row.operator("object.nms_launch_asset_browser_window", text = "Asset Browser", icon = "ASSET_MANAGER")
         
         
         
@@ -70,10 +78,10 @@ class NMS_PT_tools_panel(Panel):
         tools_col = tools_box.column(align = True)
         tools_col.label(text="Common Tools")
         #tools_col.separator()
-        tools_dup_row = tools_col.row(align = True)
+        tools_dup_row = tools_col.column(align = False)
         tools_dup_row.operator("object.nms_duplicate", icon="DUPLICATE")
         tools_dup_row.operator("object.nms_delete", icon="TRASH")
-        #tools_col.separator()
+        tools_col.separator()
         #tools_col.label(text="Curve")
         tools_col.operator("object.nms_duplicate_along_curve", icon="MOD_DASH")
         tools_col.separator()
@@ -148,5 +156,3 @@ class NMS_PT_tools_panel(Panel):
         snap_source_next.next_source = True
         snap_source_next.prev_target = False
         snap_source_next.next_target = False
-        
-                        

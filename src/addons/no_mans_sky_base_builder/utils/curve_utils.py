@@ -90,7 +90,7 @@ def build_curve_eval_data(curve_obj, resolution=16):
 def get_exact_radius_tilt(eval_data, total_length, factor):
     """
     Binary search for exact radius/tilt with guard clauses.
-    Much faster than linear search for large eval_data arrays.
+    Uses Catmull-Rom cubic spline interpolation for smooth transitions.
     """
     data_len = len(eval_data)
     
@@ -118,7 +118,6 @@ def get_exact_radius_tilt(eval_data, total_length, factor):
         else:
             right = mid
     
-    # Interpolate between left and right
     dist_a, rad_a, tilt_a = eval_data[left]
     dist_b, rad_b, tilt_b = eval_data[right]
     segment_len = dist_b - dist_a
@@ -126,10 +125,40 @@ def get_exact_radius_tilt(eval_data, total_length, factor):
     if segment_len == 0:
         return rad_a, tilt_a
     
-    # Single linear interpolation
+    # Normalized position t in [0, 1]
     t = (target_length - dist_a) / segment_len
-    return (rad_a + t * (rad_b - rad_a), 
-            tilt_a + t * (tilt_b - tilt_a))
+    
+    # Neighbor indices for Catmull-Rom tangent calculation
+    idx_prev = max(0, left - 1)
+    idx_next = min(data_len - 1, right + 1)
+    
+    dist_prev, rad_prev, tilt_prev = eval_data[idx_prev]
+    dist_next, rad_next, tilt_next = eval_data[idx_next]
+    
+    def hermite_interp(y_prev, y_a, y_b, y_next, x_prev, x_a, x_b, x_next):
+        """Cubic Hermite interpolation accounting for non-uniform distance steps."""
+        dx_10 = x_b - x_prev
+        dx_31 = x_next - x_a
+        
+        # Calculate tangents scaled to segment length
+        m1 = (y_b - y_prev) * (segment_len / dx_10) if dx_10 > 0 else 0.0
+        m2 = (y_next - y_a) * (segment_len / dx_31) if dx_31 > 0 else 0.0
+        
+        t2 = t * t
+        t3 = t2 * t
+        
+        # Hermite basis functions
+        h00 = 2 * t3 - 3 * t2 + 1
+        h10 = t3 - 2 * t2 + t
+        h01 = -2 * t3 + 3 * t2
+        h11 = t3 - t2
+        
+        return h00 * y_a + h10 * m1 + h01 * y_b + h11 * m2
+
+    radius = hermite_interp(rad_prev, rad_a, rad_b, rad_next, dist_prev, dist_a, dist_b, dist_next)
+    tilt = hermite_interp(tilt_prev, tilt_a, tilt_b, tilt_next, dist_prev, dist_a, dist_b, dist_next)
+    
+    return radius, tilt
 
 
 def update_obj_transformations(obj, curve_obj, eval_data, total_length, objects_count_changed = False):
@@ -148,11 +177,11 @@ def update_obj_transformations(obj, curve_obj, eval_data, total_length, objects_
     curve_scale_multiplier = curve_obj.scale.x / curve_obj.get("initial_curve_scale", 1.0)
     radius_multiplier = curve_obj.get("radius_multiplier", 1.0)
     
-    if "radius" not in obj or bpy.context.mode in {'EDIT_CURVE'} or not objects_count_changed:
-        radius, tilt = get_exact_radius_tilt(eval_data, total_length, factor)
-        obj["radius"] = radius
-    else:
-        radius = obj["radius"]
+    #if "radius" not in obj or bpy.context.mode in {'EDIT_CURVE'} or not objects_count_changed:
+    radius, tilt = get_exact_radius_tilt(eval_data, total_length, factor)
+    obj["radius"] = radius
+    #else:
+        #radius = obj["radius"]
     
     # Compute scale once
     base_scale = obj.get("base_scale", 1.0)

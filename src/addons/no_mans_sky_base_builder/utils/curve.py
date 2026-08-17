@@ -43,24 +43,46 @@ class Curve:
 
 
 def update_curves(updated_curves):
+    if not updated_curves:
+        return
+    
     scene = bpy.context.scene
     properties = scene.nms_properties
+    
+    # Calculate relative changes (deltas)
+    count_delta = properties.active_curve_number_of_objects - properties.prev_curve_number_of_objects
+    radius_delta = properties.active_curve_radius_multiplier - properties.prev_curve_radius_multiplier
+    
     for curve_obj in updated_curves:
-        if curve_obj.name == properties.active_curve_name:
-            try:
-                new_radius_multiplier = properties.active_curve_radius_multiplier
-                new_number_of_objects = properties.active_curve_number_of_objects
+        if curve_obj is None or Curve.PROP_CURVE_ID not in curve_obj:
+            continue
+        
+        try:
+            # Get current values for this specific curve
+            current_count = curve_obj.get(Curve.PROP_OBJECTS_COUNT, 0)
+            current_radius = curve_obj.get(Curve.PROP_RADIUS_MULTIPLIER, 1.0)
+            
+            # Apply deltas
+            new_number_of_objects = max(1, current_count + count_delta)
+            new_radius_multiplier = max(0.001, current_radius + radius_delta)  # Prevent zero or negative radius
+            
+            objects_count_changed = new_number_of_objects != current_count
+            
+            # Update object counts
+            if objects_count_changed:
+                duplicate_along_curve(None, curve_obj, new_number_of_objects, new_radius_multiplier)
+                curve_obj[Curve.PROP_OBJECTS_COUNT] = new_number_of_objects
+            
+            # Update children
+            update_curve_children(curve_obj, new_radius_multiplier, objects_count_changed)
                 
-                objects_count_changed = new_number_of_objects != curve_obj[Curve.PROP_OBJECTS_COUNT]
-                radius_changed = new_radius_multiplier != curve_obj[Curve.PROP_RADIUS_MULTIPLIER]
-                
-                if objects_count_changed:
-                    duplicate_along_curve( None,curve_obj, new_number_of_objects, new_radius_multiplier)
-                    
-                update_curve_children(curve_obj, new_radius_multiplier, objects_count_changed)
-                    
-            except ReferenceError:
-                continue
+        except ReferenceError as error:
+            print(error)
+            continue
+            
+    # Save states for the next change
+    properties.prev_curve_number_of_objects = properties.active_curve_number_of_objects
+    properties.prev_curve_radius_multiplier = properties.active_curve_radius_multiplier
 
 # update children on curve
 def update_curve_children(curve_obj, new_radius_multier = None, objects_count_changed = False):
@@ -79,7 +101,7 @@ def update_curve_children(curve_obj, new_radius_multier = None, objects_count_ch
     for obj in bpy.context.scene.objects:
         if obj.get("curve_parent") == curve_obj.name:
             curve_utils.update_obj_transformations(obj, curve_obj, val_data, total_length, objects_count_changed)
-
+            
 
 def duplicate_along_curve( bpy_object, curve, number_of_duplicates=10, radius_multiplier=1.0):
     
@@ -105,7 +127,10 @@ def duplicate_along_curve( bpy_object, curve, number_of_duplicates=10, radius_mu
         
     
     # Calculate the fractional distance between bpy_objects. 
-    gap_distance = 1.0 / (number_of_duplicates - 1)
+    if number_of_duplicates <= 1:
+        gap_distance = 1.0
+    else:
+        gap_distance = 1.0 / (number_of_duplicates - 1)
     
     # Gather all bpy_objects currently following this curve
     existing_objs = [obj for obj in bpy.context.scene.objects if obj.get(Curve.PROP_CURVE_PARENT) == curve.name]
@@ -412,6 +437,22 @@ def reset_curve(curve):
         for obj in duplciates:
             bpy.data.objects.remove(obj, do_unlink=True)
     return curve_obj
+
+def duplicate_curve(curve_obj):
+    
+    if curve_obj is None:
+        return None
+    
+    new_curve_obj = curve_obj.copy()
+    new_curve_obj.data = curve_obj.data.copy()
+    new_curve_obj[Curve.PROP_CURVE_ID] = str(uuid.uuid4())
+    parent_collection = collection_utils.get_parent_collection(curve_obj)
+    parent_collection.objects.link(new_curve_obj)
+    
+    sync_curves(new_curve_obj, curve_obj)
+    
+    return new_curve_obj
+    
 
 # mirror a curve and objects dupicated along it
 def mirror_curve(build_tool,curve_obj, axis = "Z", center = None, auto_duplicate = False):

@@ -1,6 +1,13 @@
 import bpy
-from ..utils import blend_utils, curve
+from ..utils import blend_utils, curve, dictionary
 from ..utils.mirror_utils import ShowMessageBox
+from ..builder import Builder
+
+
+import ctypes
+from ctypes import wintypes
+
+BUILDER = Builder()
 
 from mathutils import Vector
 
@@ -140,7 +147,10 @@ class Duplicate(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         build_tool = scene.nms_build_tool
-        build_tool.duplicate()
+        duplicates = build_tool.duplicate()
+        if duplicates:
+            self.report({'INFO'}, f"Duplicated {len(duplicates)} objects")
+            blend_utils.select(duplicates)
         return {"FINISHED"}
 
 
@@ -154,7 +164,8 @@ class Delete(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         build_tool = scene.nms_build_tool
-        build_tool.delete()
+        deleted_count = build_tool.delete()
+        self.report({'INFO'}, f"Deleted {deleted_count} objects")
         return {"FINISHED"}
 
 
@@ -278,15 +289,21 @@ class CurveBreakApart(bpy.types.Operator):
     bl_description = "Break apart objects from curve and make them independent"
 
     def execute(self, context):
-        active_object = bpy.context.active_object
-        try:
-            curve_obj, duplicates = curve.apply_curve_transforms_and_detach(active_object)
-            if duplicates is not None:
-                blend_utils.select(duplicates)
-            detached_count = len(duplicates)
-            self.report({'INFO'}, f"Created {detached_count} objects")
-        except TypeError as error_message:
-            self.report({'ERROR'}, str(error_message))
+        selected_objects = bpy.context.selected_objects
+        unlinked_objects = []
+        detached_count = 0
+        for obj in selected_objects:
+            if "CurveID" in obj:
+                try:
+                    curve_obj, duplicates = curve.apply_curve_transforms_and_detach(obj)
+                    if duplicates is not None:
+                        unlinked_objects += duplicates
+                        detached_count += len(duplicates)
+                except TypeError as error_message:
+                    print(error_message)
+                    
+        blend_utils.select(unlinked_objects)
+        self.report({'INFO'}, f"Created {detached_count} objects")
         return {"FINISHED"}
     
 
@@ -361,6 +378,12 @@ class ShowCurveToolInfo(bpy.types.Operator):
         )
 
         return {'FINISHED'}
+    
+
+    
+
+    
+    
 
     
 classes = (
@@ -387,5 +410,4 @@ classes = (
     Snap,
     
     SelectDuplicates,
-    
 )

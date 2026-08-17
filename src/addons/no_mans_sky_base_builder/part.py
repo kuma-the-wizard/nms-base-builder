@@ -32,23 +32,6 @@ class Part(object):
     PROP_AT = "At"
 
     SNAP_CACHE = {}
-    
-    
-    SUFFIX_COMPASS_ID_PAIRS = [
-        ("_NE", "_NW"),
-        ("_NE1", "_NW1"),
-        ("_NE2", "_NW2"),
-        ("_NE3", "_NW3"),
-        ("_NETB", "_NWTB"),
-        ("_NETB1", "_NWTB1"),
-        ("_NETB2", "_NWTB2"),
-        ("_NETB3", "_NWTB3"),
-        ("_E", "_W"),
-        ("_N", "_S"),
-        ("_0", "_1"),
-        
-        ("B_WNG_R", "B_WNG_R_R")
-    ]
 
     def __init__(
         self,
@@ -403,6 +386,43 @@ class Part(object):
         part.user_data = data.get("UserData", 0)
         part.message = data.get("Message", "")
         return part
+    
+    SUFFIX_COMPASS_ID_PAIRS = [
+            ("_NE", "_NW"),
+            ("_NE1", "_NW1"),
+            ("_NE2", "_NW2"),
+            ("_NE3", "_NW3"),
+            ("_NETB", "_NWTB"),
+            ("_NETB1", "_NWTB1"),
+            ("_NETB2", "_NWTB2"),
+            ("_NETB3", "_NWTB3"),
+            ("_E", "_W"),
+            ("_N", "_S"),
+            ("_0", "_1"),
+        ]
+    
+    FLIP_COMPASS_IDS = [
+                "N",
+                "E",
+                "W",
+                "S",
+                "NE",
+                "NE1",
+                "NE2",
+                "NE3",
+                "NW",
+                "NW1",
+                "NW2",
+                "NW3",
+                "NETB",
+                "NETB1",
+                "NETB2",
+                "NETB3",
+                "NWTB",
+                "NWTB1",
+                "NWTB2",
+                "NWTB3",
+            ]
 
     # Static Methods ---
     @staticmethod
@@ -413,16 +433,17 @@ class Part(object):
             west_str = compass_pairs[1]
             is_east = object_id.endswith(east_str)
             is_west = object_id.endswith(west_str)
-            
             if is_east:
-                object_id[: -(len(east_str))] + west_str
-                break
+                return object_id[: -(len(east_str))] + west_str
             elif is_west:
-                object_id[: -(len(west_str))] + east_str
+                return object_id[: -(len(west_str))] + east_str
         
         # Handle Winged
         if object_id.startswith("B_WNG"):
-            if object_id.endswith("_R"):
+            if object_id == "B_WNG_R" or object_id == "B_WNG_R_R":
+                #Exception case, Default Aeron Wing's object ID ends with R and mirror part's ID ends with R_R
+                return "B_WNG_R_R" if object_id == "B_WNG_R" else "B_WNG_R"
+            elif object_id.endswith("_R"):
                 return object_id[:-2]
             else:
                 return object_id + "_R"
@@ -433,29 +454,8 @@ class Part(object):
         if "_Y_" in object_id:
             return object_id.replace("_Y_", "_")
         # Then check for unflipped.
-        compass_ids = [
-            "N",
-            "E",
-            "W",
-            "S",
-            "NE",
-            "NE1",
-            "NE2",
-            "NE3",
-            "NW",
-            "NW1",
-            "NW2",
-            "NW3",
-            "NETB",
-            "NETB1",
-            "NETB2",
-            "NETB3",
-            "NWTB",
-            "NWTB1",
-            "NWTB2",
-            "NWTB3",
-        ]
-        for compass_id in compass_ids:
+        
+        for compass_id in Part.FLIP_COMPASS_IDS:
             if object_id.endswith(f"_{compass_id}"):
                 return object_id[: -(len(compass_id) + 1)] + "_Y_" + compass_id
         return None

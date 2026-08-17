@@ -44,6 +44,10 @@ class Properties(bpy.types.PropertyGroup):
         soft_max=5.0   # Slider UI ceiling
     )
     
+    # Hidden properties to store the state from the previous update
+    prev_curve_number_of_objects: bpy.props.IntProperty(default=5)
+    prev_curve_radius_multiplier: bpy.props.FloatProperty(default=1.0)
+    
     # For displaying name of target curve selected
     active_curve_name: bpy.props.StringProperty(
         name="active curve name",
@@ -107,6 +111,11 @@ class Properties(bpy.types.PropertyGroup):
         self.active_curve_name = curve_obj.name
         self.active_curve_number_of_objects = curve_obj.get("objects_count",10)
         self.active_curve_radius_multiplier = curve_obj.get("radius_multiplier",1.0)
+        
+        self.prev_curve_number_of_objects = self.active_curve_number_of_objects
+        self.prev_curve_radius_multiplier = self.active_curve_radius_multiplier
+        
+        
         self.selected_curve_object_is_parent = curve_obj["parent_selected"]
 
     def hide_curve_edit_options(self):

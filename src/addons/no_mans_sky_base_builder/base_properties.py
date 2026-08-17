@@ -34,6 +34,7 @@ class NMSBaseProperties(PropertyGroup):
             ("PlayerShipBase", "Corvette", "Base type is a corvette"),
             ("HomePlanetBase", "Base", "Base type is normal base"),
             ("FreighterBase", "Freighter", "Base type is freighter"),
+            ("ExternalPlanetBase", "External", "Base type is External"),
         ]
     )
 

@@ -3,7 +3,7 @@ import bpy
 import os
 import uuid
 import json
-from ..utils import blend_utils, curve, dictionary
+from ..utils import blend_utils, curve, dictionary, material
 from .. import builder, part, group
 from ..utils.mirror_utils import ShowMessageBox
 
@@ -91,13 +91,17 @@ class BuildTool(bpy.types.PropertyGroup):
         #    selected_objects = bpy.context.selected_objects if objects_to_mirror is None else objects_to_mirror
         #    auto_duplicate = False
         
-        #hierarchy_data = {}
-        #for obj in selected_objects:
-        #    if obj.parent:
-        #        hierarchy_data[obj.name] = obj.parent.name
-        #        current_world_matrix = obj.matrix_world.copy()
-        #        obj.parent = None
-        #        obj.matrix_world = current_world_matrix
+        hierarchy_data = {}
+        if objects_to_mirror is None and not auto_duplicate:
+            for obj in selected_objects:
+                if obj is not None and curve.Curve.PROP_CURVE_PARENT in obj:
+                    continue
+                
+                if obj.parent:
+                    hierarchy_data[obj.name] = obj.parent.name
+                    current_world_matrix = obj.matrix_world.copy()
+                    obj.parent = None
+                    obj.matrix_world = current_world_matrix
         
         existing_groups = Group.get_all_groups() if objects_to_mirror is None else []
 
@@ -118,17 +122,18 @@ class BuildTool(bpy.types.PropertyGroup):
                 mirror_part_exist =  mirror_id in nice_name_dictionary.keys()
                 if mirror_part_exist:
                     new_item = BUILDER.mirror_part(target)
-                    
+                    new_item.data = new_item.data.copy()
+                     
                 if not change_orientation:
                     mirrored_matrix_world = mirror_utils.mirror_matrix_world_universal(
                         object_id, 
-                        new_item.matrix_world, 
+                        new_item.matrix_world.copy(), 
                         axis,center, 
                         mirror_part_exist = mirror_part_exist
                     )
                     new_item.matrix_world = mirrored_matrix_world
                 else :
-                    mirrored_matrix_world = mirror_utils.change_orientation(object_id,new_item.matrix_world, axis, mirror_part_exist)
+                    mirrored_matrix_world = mirror_utils.change_orientation(object_id,new_item.matrix_world.copy(), axis, mirror_part_exist)
                     new_item.matrix_world = mirrored_matrix_world
                         
                 if hasattr(new_item, "object"):
@@ -203,17 +208,18 @@ class BuildTool(bpy.types.PropertyGroup):
                     new_item.matrix_world = mirror_utils.mirror_matrix_world_universal(None, new_item.matrix_world, axis,center)
                     new_items.append(new_item)
         
-        #for obj_name, parent_name in hierarchy_data.items():
-        #    if parent_name:
-        #        parent = bpy.context.scene.objects.get(parent_name,None)
-        #        obj = bpy.context.scene.objects.get(obj_name,None)
-        #        # Re-parenting inherently alters the transform, so we force the 
-        #        # mirrored matrix_world back onto the object after reparenting
-        #        if parent and obj:
-        #            mirrored_world_matrix = obj.matrix_world.copy()
-        #            obj.parent = parent
-        #            obj.matrix_world = mirrored_world_matrix
-        #
+        if hierarchy_data:
+            for obj_name, parent_name in hierarchy_data.items():
+                if parent_name:
+                    parent = bpy.context.scene.objects.get(parent_name,None)
+                    obj = bpy.context.scene.objects.get(obj_name,None)
+                    # Re-parenting inherently alters the transform, so we force the 
+                    # mirrored matrix_world back onto the object after reparenting
+                    if parent and obj:
+                        obj.parent = parent
+                        obj.matrix_world = obj.matrix_world.copy()
+        
+        #material.optimise_materials()
         
         # filter out deleted objects
         new_items = [obj for obj in new_items if obj is not None]
@@ -345,15 +351,22 @@ class BuildTool(bpy.types.PropertyGroup):
                 message="Select an item to delete from the scene.", title="Delete"
             )
             return
-
+        deleted_count = 0
         for item in selected_objects:
-            blend_utils.delete(item)
+            if item:
+                if "CurveID" in item:
+                    curve.delete_curve_and_children(item)
+                else:
+                    blend_utils.delete(item)
+                deleted_count += 1
+                
+        return deleted_count
 
     def duplicate(self):
         """Snaps one object to another based on selection."""
         # Store selection.
         selected_objects = bpy.context.selected_objects
-
+        
         # Validate
         if not selected_objects:
             ShowMessageBox(
@@ -362,35 +375,46 @@ class BuildTool(bpy.types.PropertyGroup):
             return
 
         # Get Selected item.
-        target = blend_utils.get_current_selection()
+        #target = blend_utils.get_current_selection()
+        duplicates = []
+        for target in selected_objects:
+            
+            if "ObjectID" not in target and "PresetID" not in target and "CurveID" not in target:
+                message = (
+                    "This item can not be duplicated via the No Man's Sky tool. "
+                    "Try using Blender hotkey instead (Shift-D)."
+                )
+                ShowMessageBox(message=message, title="Duplicate")
+                return
+            if "CurveID" in target:
+                new_item = curve.duplicate_curve(target)
+                duplicates.append(new_item)
+            else:
+                # Part
+                if "ObjectID" in target:
+                    object_id = target["ObjectID"]
+                    user_data = target["UserData"]
+                    # Build Item.
+                    new_item = BUILDER.add_part(object_id, user_data=user_data)
+                    duplicates.append(new_item)
+                elif "PresetID" in target:
+                    preset_id = target["PresetID"]
+                    # Build Item.
+                    new_item = BUILDER.add_preset(preset_id)
+                    duplicates.append(new_item)
+                else:
+                    new_item = None
 
-        if "ObjectID" not in target and "PresetID" not in target:
-            message = (
-                "This item can not be duplicated via the No Man's Sky tool. "
-                "Try using Blender hotkey instead (Shift-D)."
-            )
-            ShowMessageBox(message=message, title="Duplicate")
-            return
-
-        # Part
-        if "ObjectID" in target:
-            object_id = target["ObjectID"]
-            user_data = target["UserData"]
-            # Build Item.
-            new_item = BUILDER.add_part(object_id, user_data=user_data)
-            new_item.select()
-        if "PresetID" in target:
-            preset_id = target["PresetID"]
-            # Build Item.
-            new_item = BUILDER.add_preset(preset_id)
-            new_item.select()
-
-        # Build Rig if need to.
-        if hasattr(new_item, "build_rig"):
-            new_item.build_rig()
-        # Snap.
-        target = BUILDER.get_builder_object_from_bpy_object(target)
-        new_item.snap_to(target)
+                if new_item is not None:
+                    # Build Rig if need to.
+                    if hasattr(new_item, "build_rig"):
+                        new_item.build_rig()
+                    # Snap.
+                    target = BUILDER.get_builder_object_from_bpy_object(target)
+                    new_item.snap_to(target)
+                    
+        return duplicates
+        
         
     def snap(
         self, next_source=False, prev_source=False, next_target=False, prev_target=False

@@ -96,8 +96,8 @@ def display_active_object_prop(font_id, start_x=10, start_y=100 ):
     object_table_data = {"Part ID" : object_id}
     if object_id in nice_name_dictionary:
         object_table_data["Part Name"] = to_title_case(nice_name_dictionary.get(object_id))
-    object_table_data["Colour"] = f"{active_object.get("readonly:Colour")}"
-    object_table_data["Material"] = f"{active_object.get("readonly:Material")}"
+    object_table_data["Colour"] = f"{active_object.get('readonly:Colour')}"
+    object_table_data["Material"] = f"{active_object.get('readonly:Material')}"
     
     draw_table(
         font_id=font_id, 

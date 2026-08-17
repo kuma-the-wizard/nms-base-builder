@@ -162,10 +162,10 @@ class NMS_PT_transformation_panel(Panel):
             active_curve_box_col.label(text = "Edit Active-Curve Parameters", icon = "NORMALIZE_FCURVES")
             
             active_curve_box_col.separator()
-            active_curve_box_col_label_split = active_curve_box_col.split(factor = 0.7)
-            active_curve_box_col_label, active_curve_box_col_delete = (active_curve_box_col_label_split.column(), active_curve_box_col_label_split.column())
-            active_curve_box_col_label.label(text = f"Target : {properties.active_curve_name}")
-            active_curve_box_col_delete.operator("object.nms_curve_delete", icon="TRASH",text = "Delete Curve and Children")
+            #active_curve_box_col_label_split = active_curve_box_col.split(factor = 0.7)
+            #active_curve_box_col_label, active_curve_box_col_delete = (active_curve_box_col_label_split.column(), active_curve_box_col_label_split.column())
+            active_curve_box_col.label(text = f"Target : {properties.active_curve_name}")
+            #active_curve_box_col_delete.operator("object.nms_curve_delete", icon="TRASH",text = "Delete Curve and Children")
             #active_curve_box_col.separator()
             
             if properties.selected_curve_object_is_parent:
