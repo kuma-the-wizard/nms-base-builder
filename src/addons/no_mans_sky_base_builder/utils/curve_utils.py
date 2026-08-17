@@ -1,4 +1,6 @@
 import bpy
+import time
+import math
 
 from mathutils import Vector
 from mathutils.geometry import interpolate_bezier
@@ -161,11 +163,12 @@ def get_exact_radius_tilt(eval_data, total_length, factor):
     return radius, tilt
 
 
-def update_obj_transformations(obj, curve_obj, eval_data, total_length, objects_count_changed = False):
+def update_obj_transformations(obj, curve_obj, eval_data, total_length):
     """
     Optimized transformation update with early returns and inline calculations.
     """
     factor = obj.get("curve_factor")
+    update_object_factor(obj , curve_obj, factor)
     
     if factor is None:
         return
@@ -193,7 +196,12 @@ def update_obj_transformations(obj, curve_obj, eval_data, total_length, objects_
     
     # Single assignment with tuple (more efficient than 3 separate assignments)
     obj.scale = (scale, scale, scale)
-
+    
+def update_object_factor(obj , curve_obj, factor):
+    constraint = next(( c for c in obj.constraints if c.type == 'FOLLOW_PATH' and c.target == curve_obj), None)
+    if constraint:
+        constraint.offset_factor = factor
+    obj["curve_factor"] = factor
 
 def mirror_curve(curve_obj, axis='X', center = Vector((0,0,0))):
     """
@@ -298,3 +306,210 @@ def normalise_curve_scale(curve_obj):
     # Update cached scale if present
     if "initial_curve_scale" in curve_obj and scale_x != 0:
         curve_obj["initial_curve_scale"] = curve_obj["initial_curve_scale"] / scale_x
+                    
+def get_control_points(curve_obj):
+    if not curve_obj or not curve_obj.type == 'CURVE':
+        return None
+
+    curve_data = curve_obj.data
+    # A curve can contain multiple splines
+    spline = curve_data.splines[0]
+    
+    # 1. Bezier Curves store points in 'bezier_points'
+    if spline.type == 'BEZIER':
+        return spline.bezier_points
+    # 2. Poly or NURBS Curves store points in 'points'
+    elif spline.type in {'POLY', 'NURBS'}:
+        return spline.points
+            
+    return None
+
+
+def get_nearest_control_point_factor(control_points, target_factor):
+    """
+    Returns the curve factor (0.0 to 1.0) and the index of the nearest 
+    control point relative to a target factor.
+    
+    :param control_points: List of Vector, tuple/list coords, or Blender point objects
+    :param target_factor: Float between 0.0 and 1.0
+    :return: Tuple (nearest_factor: float, nearest_index: int)
+    """
+    if not control_points:
+        return 0.0, 0
+    if len(control_points) == 1:
+        return 0.0, 0
+
+    # Extract 3D coordinates (handles Vector, tuple, or Blender point objects)
+    def extract_co(p):
+        if hasattr(p, 'co'):
+            return Vector(p.co.xyz)
+        return Vector(p[:3])
+
+    coords = [extract_co(p) for p in control_points]
+
+    # 1. Calculate cumulative segment lengths between consecutive control points
+    cum_lengths = [0.0]
+    total_length = 0.0
+    
+    for i in range(1, len(coords)):
+        dist = (coords[i] - coords[i - 1]).length
+        total_length += dist
+        cum_lengths.append(total_length)
+
+    # If all points overlap at the exact same location
+    if total_length == 0.0:
+        return 0.0, 0
+
+    # 2. Convert cumulative lengths to normalized factors (0.0 to 1.0)
+    cp_factors = [l / total_length for l in cum_lengths]
+
+    # 3. Clamp target_factor between 0.0 and 1.0
+    target_factor = max(0.0, min(1.0, target_factor))
+
+    # 4. Find index of the control point closest to target_factor
+    nearest_index = min(range(len(cp_factors)), key=lambda i: abs(cp_factors[i] - target_factor))
+    
+    return cp_factors[nearest_index], nearest_index
+
+
+def get_segment_midpoint_factor(control_points, target_factor):
+    """
+    Finds which control point segment the target_factor falls into and 
+    returns the factor representing the exact midpoint of that segment.
+    
+    :param control_points: List of Vector, tuple/list coords, or Blender point objects
+    :param target_factor: Float between 0.0 and 1.0
+    :return: Float factor between 0.0 and 1.0 (midpoint of the segment)
+    """
+    if not control_points or len(control_points) < 2:
+        return 0.0
+
+    # Helper to extract 3D Vector position
+    def extract_co(p):
+        if hasattr(p, 'co'):
+            return Vector(p.co.xyz)
+        return Vector(p[:3])
+
+    coords = [extract_co(p) for p in control_points]
+
+    # 1. Calculate cumulative length at each control point
+    cum_lengths = [0.0]
+    total_length = 0.0
+    
+    for i in range(1, len(coords)):
+        dist = (coords[i] - coords[i - 1]).length
+        total_length += dist
+        cum_lengths.append(total_length)
+
+    if total_length == 0.0:
+        return 0.0
+
+    # 2. Clamp target_factor between 0.0 and 1.0
+    target_factor = max(0.0, min(1.0, target_factor))
+    target_length = target_factor * total_length
+
+    # 3. Identify the segment [i-1, i] containing target_length
+    for i in range(1, len(cum_lengths)):
+        start_len = cum_lengths[i - 1]
+        end_len = cum_lengths[i]
+
+        # Check if target falls in this segment
+        if start_len <= target_length <= end_len:
+            # Midpoint length of this segment
+            mid_length = (start_len + end_len) / 2.0
+            # Return midpoint as a 0.0 - 1.0 factor of total curve length
+            return mid_length / total_length
+
+    # Fallback for edge cases (e.g. target_factor == 1.0)
+    last_seg_mid = (cum_lengths[-2] + cum_lengths[-1]) / 2.0
+    return last_seg_mid / total_length
+
+
+def smoothstep(t):
+    return t * t * (3.0 - 2.0 * t)
+
+def get_density(density_map,factor):
+    if len(density_map) == 1:
+        return density_map[0]
+    position = factor * (len(density_map) - 1)
+    index = min(int(position), len(density_map) - 2)
+    t = position - index
+    # Smooth transition between control points
+    t = smoothstep(t)
+    a = density_map[index]
+    b = density_map[index + 1]
+
+    return a + (b - a) * t
+
+def factor_from_density(cumulative_density, sample_factors , target):
+    low = 0
+    high = len(cumulative_density) - 1
+
+    while low < high:
+        mid = (low + high) // 2
+        if cumulative_density[mid] < target:
+            low = mid + 1
+        else:
+            high = mid
+
+    index = max(1, low)
+
+    d0 = cumulative_density[index - 1]
+    d1 = cumulative_density[index]
+    f0 = sample_factors[index - 1]
+    f1 = sample_factors[index]
+
+    if d1 == d0:
+        return f0
+    t = (target - d0) / (d1 - d0)
+
+    return f0 + (f1 - f0) * t
+
+def calculate_curve_factors(curve, existing_objs):
+    
+    density_map = get_density_map(curve)
+    
+    # Sample the density curve
+    sample_count = max(128, len(existing_objs) * 16)
+    sample_factors = []
+    sample_density = []
+
+    for i in range(sample_count):
+        factor = i / (sample_count - 1)
+        sample_factors.append(factor)
+        sample_density.append(get_density(density_map,factor))
+    # Integrate density along the curve
+    cumulative_density = [0.0]
+    for i in range(1, sample_count):
+        dx = sample_factors[i] - sample_factors[i - 1]
+        density = ( sample_density[i - 1] + sample_density[i]) * 0.5
+        cumulative_density.append( cumulative_density[-1] + density * dx)
+
+    total_density = cumulative_density[-1]
+
+    # Calculate object positions
+    object_count = len(existing_objs)
+    if object_count == 1:
+        existing_objs[0]["curve_factor"] = 0.0
+    else:
+        for index, obj in enumerate(existing_objs):
+            position = index / (object_count - 1)
+            target_density = position * total_density
+            factor = factor_from_density(cumulative_density,sample_factors,target_density)
+            obj["curve_factor"] = factor
+            
+def exponential_scale(x: float, steepness: float = 5.0) -> float:
+    return math.exp(steepness * (x - 0.5))
+            
+def get_density_map(curve):
+    control_points = get_control_points(curve)
+    density_map = []
+    for point in control_points:
+        weight = exponential_scale(point.weight_softbody)
+        density_map.append(weight)
+    return density_map
+
+def half_the_weight_points(curve):
+    control_points = get_control_points(curve)
+    for point in control_points:
+        point.weight_softbody = 0.5

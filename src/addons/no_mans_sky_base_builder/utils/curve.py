@@ -1,6 +1,7 @@
 import math
 import os
 import uuid
+import random
 
 import bpy
 
@@ -27,6 +28,8 @@ class Curve:
     PROP_PARENT_SELECTED = "parent_selected"
     PROP_CURVE_PARENT = "curve_parent"
     PROP_BASE_SCALE = "base_scale"
+    PROP_CURVE_FACTOR = "base_scale"
+    PROP_IS_INITIALISED = "is_initialised"
 
     # Duplicated object data
     PROP_DUP_OBJECT_ID = f"dup_{Part.PROP_OBJECT_ID}"
@@ -74,7 +77,7 @@ def update_curves(updated_curves):
                 curve_obj[Curve.PROP_OBJECTS_COUNT] = new_number_of_objects
             
             # Update children
-            update_curve_children(curve_obj, new_radius_multiplier, objects_count_changed)
+            update_curve_children(curve_obj, new_radius_multiplier)
                 
         except ReferenceError as error:
             print(error)
@@ -85,7 +88,7 @@ def update_curves(updated_curves):
     properties.prev_curve_radius_multiplier = properties.active_curve_radius_multiplier
 
 # update children on curve
-def update_curve_children(curve_obj, new_radius_multier = None, objects_count_changed = False):
+def update_curve_children(curve_obj, new_radius_multier = None, curve_children = None):
     """Refreshes transformations for all objects assigned to this curve."""
     if not curve_obj.get(Curve.PROP_HAS_LINKED_OBJECTS):
         return
@@ -98,16 +101,26 @@ def update_curve_children(curve_obj, new_radius_multier = None, objects_count_ch
     if new_radius_multier is not None:
         curve_obj[Curve.PROP_RADIUS_MULTIPLIER] = new_radius_multier
     
-    for obj in bpy.context.scene.objects:
+    if curve_children == None:
+        children = [obj for obj in bpy.context.scene.objects if obj.get(Curve.PROP_CURVE_PARENT) == curve_obj.name]
+    else:
+        children = curve_children
+        
+    curve_utils.calculate_curve_factors(curve_obj, children)
+    for obj in children:
         if obj.get("curve_parent") == curve_obj.name:
-            curve_utils.update_obj_transformations(obj, curve_obj, val_data, total_length, objects_count_changed)
+            curve_utils.update_obj_transformations(obj, curve_obj, val_data, total_length)
             
 
 def duplicate_along_curve( bpy_object, curve, number_of_duplicates=10, radius_multiplier=1.0):
     
-    if curve.get(Curve.PROP_HAS_LINKED_OBJECTS,False):
+    if curve.get(Curve.PROP_HAS_LINKED_OBJECTS, False):
         curve_utils.normalise_curve_scale(curve)
     
+    if not curve.get(Curve.PROP_IS_INITIALISED, False):
+        curve_utils.half_the_weight_points(curve)
+        curve[Curve.PROP_IS_INITIALISED] = True
+        
     curve[Curve.PROP_HAS_LINKED_OBJECTS] = True
     curve[Curve.PROP_RADIUS_MULTIPLIER] = radius_multiplier
     
@@ -126,104 +139,92 @@ def duplicate_along_curve( bpy_object, curve, number_of_duplicates=10, radius_mu
             curve[Curve.PROP_DUP_IS_GROUP] = False
         
     
-    # Calculate the fractional distance between bpy_objects. 
-    if number_of_duplicates <= 1:
-        gap_distance = 1.0
-    else:
-        gap_distance = 1.0 / (number_of_duplicates - 1)
-    
     # Gather all bpy_objects currently following this curve
-    existing_objs = [obj for obj in bpy.context.scene.objects if obj.get(Curve.PROP_CURVE_PARENT) == curve.name]
+    existing_objs = get_all_curve_children(curve)
     current_count = len(existing_objs)
     
     # here we check if number of objects needed on curve are more or less than previously duplicated objects.
     # if number objects previously duplicated is more than what we need on curve, we remove extra objects
     if number_of_duplicates < current_count:
         remove_count = current_count - number_of_duplicates
-        removed = 0
-        
-        # Loop backwards through the list to safely pop items without breaking index order
-        for i in range(len(existing_objs) - 1, -1, -1):
-            if removed >= remove_count:
-                break
-                
-            obj_to_remove = existing_objs[i]
-            existing_objs.pop(i)
-            bpy.data.objects.remove(obj_to_remove, do_unlink=True)
-            removed += 1
+        removeobjects_from_curve(remove_count, existing_objs)
                 
     # Add additional obejcts if needed to reach desired number of objects
     elif number_of_duplicates > current_count:
-        
-        linked_curve_obj_col = collection_utils.get_collection(collection_utils.LINKED_CURVE_OBJ_COL)
-        
-        for _ in range(number_of_duplicates - current_count):
-            
-            if len(existing_objs) == 0:
-                if bpy_object is not None:
-                    new_obj = bpy_object.copy()
-                    new_obj.data = bpy_object.data.copy()
-                    for constraint in list(new_obj.constraints):
-                        new_obj.constraints.remove(constraint)
-                        
-                    if curve[Curve.PROP_DUP_IS_GROUP] is True:
-                        new_obj[Group.PROP_GROUP_ID] = curve[Curve.PROP_DUP_GROUP_ID]
-                    else:
-                        material.restore_material(new_obj, curve[Curve.PROP_DUP_USER_DATA])
-                else:
-                    if curve[Curve.PROP_DUP_IS_GROUP] is True:
-                        child_cache = curve[Curve.PROP_GROUP_CHILD_CACHE]
-                        origin_matrix = Group.str_to_matrix(curve[Curve.PROP_ORIGIN_MATRIX])
-                        if origin_matrix is None:
-                            origin_matrix = Group.get_default_origin_matrix()
-                        
-                        new_obj = Group.deserialise_to_group(BUILDER, child_cache, origin_matrix)
-                        new_obj[Group.PROP_GROUP_ID] = curve[Curve.PROP_DUP_GROUP_ID]
-                        
-                    else:
-                        object_id = curve[Curve.PROP_DUP_OBJECT_ID]
-                        user_data = curve[Curve.PROP_DUP_USER_DATA]
-                        new_item = BUILDER.add_part(object_id, user_data=user_data)
-                        new_obj = new_item.object
-                        material.restore_material(new_obj, user_data)
-                    
-                constraint = new_obj.constraints.new(type='FOLLOW_PATH')
-                constraint.target = curve
-                constraint.use_fixed_location = True
-                constraint.use_curve_follow = True
-                
-                new_obj[Curve.PROP_CURVE_PARENT] = curve.name
-                new_obj[Curve.PROP_BASE_SCALE] = 1.0
-                new_obj.rotation_euler = (math.pi,0,0)
-                new_obj.location = (0,0,0)
-                new_obj.hide_select = True
-                
-                collection_utils.move_object_into_collection(linked_curve_obj_col, new_obj)
-                
-            else :
-                new_obj = existing_objs[-1].copy()
-                new_obj[Curve.PROP_CURVE_PARENT] = curve.name
-                linked_curve_obj_col.objects.link(new_obj)
-                
-            existing_objs.append(new_obj)
+        add_count = number_of_duplicates - current_count
+        newly_added_obejcts = add_objects_to_curve(add_count,curve, existing_objs,bpy_object)
+        existing_objs.extend(newly_added_obejcts)
 
-    # calcuate segment_length and total length of curve once
-    val_data, total_length = curve_utils.build_curve_eval_data(curve, resolution=16)
-
-    # itreate over all objects and update their transformations
-    for i, obj in enumerate(existing_objs):
-        percentage_count = i * gap_distance
-        
-        constraint = next((c for c in obj.constraints if c.type == 'FOLLOW_PATH' and c.target == curve), None)
-        if constraint:
-            constraint.offset_factor = percentage_count
-            
-        obj["curve_factor"] = percentage_count
-        curve_utils.update_obj_transformations(obj, curve, val_data, total_length)
-        
-    curve[Curve.PROP_OBJECTS_COUNT] = len(existing_objs)
-    
+    update_curve_children(curve, radius_multiplier, existing_objs)
     return existing_objs
+
+def removeobjects_from_curve(number_to_remove, existing_objs):
+    #remove_count = current_count - number_of_duplicates
+    removed = 0
+    
+    # Loop backwards through the list to safely pop items without breaking index order
+    for i in range(len(existing_objs) - 1, -1, -1):
+        if removed >= number_to_remove:
+            break
+            
+        obj_to_remove = existing_objs[i]
+        existing_objs.pop(i)
+        bpy.data.objects.remove(obj_to_remove, do_unlink=True)
+        removed += 1
+
+def add_objects_to_curve(number_to_add, curve, existing_objs, bpy_object = None):
+    newly_added_objects = []
+    linked_curve_obj_col = collection_utils.get_collection(collection_utils.LINKED_CURVE_OBJ_COL)
+    for _ in range(number_to_add):
+        if len(existing_objs) == 0:
+            if bpy_object is not None:
+                new_obj = bpy_object.copy()
+                new_obj.data = bpy_object.data.copy()
+                for constraint in list(new_obj.constraints):
+                    new_obj.constraints.remove(constraint)
+                    
+                if curve[Curve.PROP_DUP_IS_GROUP] is True:
+                    new_obj[Group.PROP_GROUP_ID] = curve[Curve.PROP_DUP_GROUP_ID]
+                else:
+                    material.restore_material(new_obj, curve[Curve.PROP_DUP_USER_DATA])
+            else:
+                if curve[Curve.PROP_DUP_IS_GROUP] is True:
+                    child_cache = curve[Curve.PROP_GROUP_CHILD_CACHE]
+                    origin_matrix = Group.str_to_matrix(curve[Curve.PROP_ORIGIN_MATRIX])
+                    if origin_matrix is None:
+                        origin_matrix = Group.get_default_origin_matrix()
+                    
+                    new_obj = Group.deserialise_to_group(BUILDER, child_cache, origin_matrix)
+                    new_obj[Group.PROP_GROUP_ID] = curve[Curve.PROP_DUP_GROUP_ID]
+                    
+                else:
+                    object_id = curve[Curve.PROP_DUP_OBJECT_ID]
+                    user_data = curve[Curve.PROP_DUP_USER_DATA]
+                    new_item = BUILDER.add_part(object_id, user_data=user_data)
+                    new_obj = new_item.object
+                    material.restore_material(new_obj, user_data)
+                
+            constraint = new_obj.constraints.new(type='FOLLOW_PATH')
+            constraint.target = curve
+            constraint.use_fixed_location = True
+            constraint.use_curve_follow = True
+            
+            new_obj[Curve.PROP_CURVE_PARENT] = curve.name
+            new_obj[Curve.PROP_BASE_SCALE] = 1.0
+            new_obj.rotation_euler = (math.pi,0,0)
+            new_obj.location = (0,0,0)
+            new_obj.hide_select = True
+            
+            collection_utils.move_object_into_collection(linked_curve_obj_col, new_obj)
+            
+        else :
+            new_obj = existing_objs[-1].copy()
+            new_obj[Curve.PROP_CURVE_PARENT] = curve.name
+            linked_curve_obj_col.objects.link(new_obj)
+            
+        newly_added_objects.append(new_obj)
+    return newly_added_objects
+
 
 # check if given object is a supported curve or not
 def is_bezier_or_nurbs_path(curve):
@@ -359,6 +360,16 @@ def select_children_of_curve(curve):
     curve.hide_select = True
     curve[Curve.PROP_PARENT_SELECTED] = False
     blend_utils.select(children)
+    
+def get_all_curve_children(curve_obj):
+    if curve_obj is None:
+        return None
+    
+    if Curve.PROP_CURVE_ID not in curve_obj:
+        return None
+    
+    children = [obj for obj in bpy.context.scene.objects if obj.get(Curve.PROP_CURVE_PARENT) == curve_obj.name]
+    return children
     
 # return objects if object is a curve and has lihked objects
 # or object is not curve, check if it is part of a curve, and returh curve linked to it
