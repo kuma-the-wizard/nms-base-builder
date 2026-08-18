@@ -497,6 +497,23 @@ def calculate_curve_factors(curve, existing_objs):
             target_density = position * total_density
             factor = factor_from_density(cumulative_density,sample_factors,target_density)
             obj["curve_factor"] = factor
+
+
+def get_total_curve_density(curve, object_count=10):
+    density_map = get_density_map(curve)
+    sample_count = max(128, object_count * 16)
+    sample_factors = [i / (sample_count - 1) for i in range(sample_count)]
+    
+    cumulative_density = 0.0
+    for i in range(1, sample_count):
+        dx = sample_factors[i] - sample_factors[i - 1]
+        density_a = get_density(density_map, sample_factors[i - 1])
+        density_b = get_density(density_map, sample_factors[i])
+        density = (density_a + density_b) * 0.5
+        cumulative_density += density * dx
+        
+    return cumulative_density            
+            
             
 def exponential_scale(x: float, steepness: float = 5.0) -> float:
     return math.exp(steepness * (x - 0.5))
@@ -513,3 +530,54 @@ def half_the_weight_points(curve):
     control_points = get_control_points(curve)
     for point in control_points:
         point.weight_softbody = 0.5
+        
+
+def evaluate_curve_density(curve_obj, t):
+    """
+    Evaluates density at curve factor t (0.0 to 1.0).
+    Extract this from your existing smoothstep / weight math in get_total_curve_density().
+    """
+    # Retrieve curve density bounds / parameters from object
+    edge0 = curve_obj.get("density_start", 0.0)
+    edge1 = curve_obj.get("density_end", 1.0)
+    
+    if edge1 == edge0:
+        return 1.0
+        
+    # Clamp factor to bounds
+    x = max(0.0, min(1.0, (t - edge0) / (edge1 - edge0)))
+    
+    # Smoothstep interpolation weight
+    return x * x * (3 - 2 * x)
+        
+
+def build_density_cdf(curve_obj, samples=64):
+    """Pre-computes cumulative density array (CDF) in a single pass."""
+    cdf = [0.0]
+    total_density = 0.0
+    dt = 1.0 / samples
+    
+    for i in range(samples):
+        t = i * dt
+        density = evaluate_curve_density(curve_obj, t)
+        total_density += density * dt
+        cdf.append(total_density)
+        
+    return total_density, cdf
+
+def get_factor_from_cdf(cdf, target_val):
+    """Fast binary search lookup on pre-computed CDF array."""
+    if not cdf or cdf[-1] == 0:
+        return 0.0
+    
+    normalized_target = target_val * cdf[-1]
+    low, high = 0, len(cdf) - 1
+    
+    while low < high:
+        mid = (low + high) // 2
+        if cdf[mid] < normalized_target:
+            low = mid + 1
+        else:
+            high = mid
+            
+    return low / (len(cdf) - 1)

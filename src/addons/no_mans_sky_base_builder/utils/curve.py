@@ -30,6 +30,8 @@ class Curve:
     PROP_BASE_SCALE = "base_scale"
     PROP_CURVE_FACTOR = "base_scale"
     PROP_IS_INITIALISED = "is_initialised"
+    PROP_DENSITY_STEP = "density_step"
+    PROP_RADIUS = "radius"
 
     # Duplicated object data
     PROP_DUP_OBJECT_ID = f"dup_{Part.PROP_OBJECT_ID}"
@@ -65,9 +67,25 @@ def update_curves(updated_curves):
             current_count = curve_obj.get(Curve.PROP_OBJECTS_COUNT, 0)
             current_radius = curve_obj.get(Curve.PROP_RADIUS_MULTIPLIER, 1.0)
             
-            # Apply deltas
             new_number_of_objects = max(1, current_count + count_delta)
             new_radius_multiplier = max(0.001, current_radius + radius_delta)  # Prevent zero or negative radius
+            
+            # Compute total density to dynamically handle weight changes
+            total_density = curve_utils.get_total_curve_density(curve_obj, current_count)
+            
+            # Adjust count vs density step
+            if count_delta != 0 or Curve.PROP_DENSITY_STEP not in curve_obj:
+                # User changed count manually via UI, store the new density step
+                denom = max(1, new_number_of_objects - 1)
+                curve_obj[Curve.PROP_DENSITY_STEP] = total_density / denom
+            else:
+                # Weight changed (no UI count change), dynamically calculate new object count to maintain spacing
+                density_step = curve_obj[Curve.PROP_DENSITY_STEP]
+                if density_step > 0:
+                    new_number_of_objects = max(1, int(round((total_density / density_step) + 1)))
+                    # Update UI property so it doesn't get out of sync if this is the active curve
+                    if bpy.context.active_object == curve_obj:
+                        properties.active_curve_number_of_objects = new_number_of_objects
             
             objects_count_changed = new_number_of_objects != current_count
             
@@ -96,7 +114,7 @@ def update_curve_children(curve_obj, new_radius_multier = None, curve_children =
     val_data = curve_obj.get("val_data",None)
     total_length = curve_obj.get("total_length",None)
     if val_data is None:
-        val_data, total_length = curve_utils.build_curve_eval_data(curve_obj, resolution=64)
+        val_data, total_length = curve_utils.build_curve_eval_data(curve_obj, resolution=16)
     
     if new_radius_multier is not None:
         curve_obj[Curve.PROP_RADIUS_MULTIPLIER] = new_radius_multier
@@ -152,8 +170,7 @@ def duplicate_along_curve( bpy_object, curve, number_of_duplicates=10, radius_mu
     # Add additional obejcts if needed to reach desired number of objects
     elif number_of_duplicates > current_count:
         add_count = number_of_duplicates - current_count
-        newly_added_obejcts = add_objects_to_curve(add_count,curve, existing_objs,bpy_object)
-        existing_objs.extend(newly_added_obejcts)
+        add_objects_to_curve(add_count,curve, existing_objs,bpy_object)
 
     update_curve_children(curve, radius_multiplier, existing_objs)
     return existing_objs
@@ -173,7 +190,6 @@ def removeobjects_from_curve(number_to_remove, existing_objs):
         removed += 1
 
 def add_objects_to_curve(number_to_add, curve, existing_objs, bpy_object = None):
-    newly_added_objects = []
     linked_curve_obj_col = collection_utils.get_collection(collection_utils.LINKED_CURVE_OBJ_COL)
     for _ in range(number_to_add):
         if len(existing_objs) == 0:
@@ -222,8 +238,7 @@ def add_objects_to_curve(number_to_add, curve, existing_objs, bpy_object = None)
             new_obj[Curve.PROP_CURVE_PARENT] = curve.name
             linked_curve_obj_col.objects.link(new_obj)
             
-        newly_added_objects.append(new_obj)
-    return newly_added_objects
+        existing_objs.append(new_obj)
 
 
 # check if given object is a supported curve or not
@@ -251,61 +266,57 @@ def apply_curve_transforms_and_detach(curve):
     # If we don't do this, 'obj.matrix_world' might return stale data from before 
     bpy.context.view_layer.update()
     
-    
     unlinked_curve_obj_col = collection_utils.get_collection(collection_utils.UNLINKED_CURVE_OBJ_COL)
+    
+    child_props_to_delete = [
+        Curve.PROP_BASE_SCALE,
+        Curve.PROP_CURVE_FACTOR,
+        Curve.PROP_RADIUS,
+        Curve.PROP_CURVE_PARENT
+    ]
     
     for obj in bpy.context.scene.objects:
         if obj.get("curve_parent") == curve.name:
-            constraints_to_remove = [c for c in obj.constraints if c.type == 'FOLLOW_PATH' and c.target == curve]
+            
             
             # Clean up custom properties
-            if "base_scale" in obj:
-                del obj["base_scale"]
-                
-            if "curve_factor" in obj:
-                del obj["curve_factor"]
-                
-            if "radius" in obj:
-                del obj["radius"]
-                
-            del obj["curve_parent"]
-                
+            for prop in child_props_to_delete:
+                if prop in obj:
+                    del obj[prop]
+            
+            # Capture the exact 3D space matrix dictated by the constraint
+            baked_matrix = obj.matrix_world.copy()
+            
+            constraints_to_remove = [c for c in obj.constraints if c.type == 'FOLLOW_PATH' and c.target == curve]
             if constraints_to_remove:
-                # Capture the exact 3D space matrix dictated by the constraint
-                baked_matrix = obj.matrix_world.copy()
-                
                 for c in constraints_to_remove:
                     obj.constraints.remove(c)
                     
-                # Re-apply the matrix so the object doesn't physically move when the constraint drops
-                obj.matrix_world = baked_matrix
-                detached_count += 1
+            # Re-apply the matrix so the object doesn't physically move when the constraint drops
+            obj.matrix_world = baked_matrix
+            detached_count += 1
             
-            obj.data = obj.data.copy()
+            #obj.data = obj.data.copy()
             obj.hide_select = False
             obj.lock_location = (False, False, False)
             duplicates.append(obj)
             
             collection_utils.move_object_into_collection(unlinked_curve_obj_col , obj)
     
-    #blend_utils.select(duplicates)
     
-    # Clean up custom curve properties
-    if Curve.PROP_HAS_LINKED_OBJECTS in curve:
-        del curve[Curve.PROP_HAS_LINKED_OBJECTS]
+    curve_props_to_delete = [
+        Curve.PROP_CURVE_ID,
+        Curve.PROP_HAS_LINKED_OBJECTS,
+        Curve.PROP_DUP_OBJECT_ID,
+        Curve.PROP_DUP_USER_DATA,
+        Curve.PROP_RADIUS_MULTIPLIER,
+        Curve.PROP_OBJECTS_COUNT,
+        Curve.PROP_DENSITY_STEP
+    ]
     
-    if Curve.PROP_DUP_OBJECT_ID in curve:
-        del curve[Curve.PROP_DUP_OBJECT_ID]
-        del curve[Curve.PROP_DUP_USER_DATA]
-        
-    if Curve.PROP_RADIUS_MULTIPLIER in curve:
-        del curve[Curve.PROP_RADIUS_MULTIPLIER]
-        
-    if Curve.PROP_OBJECTS_COUNT in curve:
-        del curve[Curve.PROP_OBJECTS_COUNT]
-        
-    if Curve.PROP_CURVE_ID in curve:
-        del curve[Curve.PROP_CURVE_ID]
+    for prop in curve_props_to_delete:
+        if prop in curve:
+            del curve[prop]
         
     return curve, duplicates
 
@@ -569,7 +580,7 @@ def sync_curves(target_curve, source_curve, do_mirror = False, axis = None, from
                 target.rotation_euler.z += math.pi
 
     # Refresh evaluation data for the newly synced children
-    update_curve_children(target_curve, radius_multiplier)
+    # update_curve_children(target_curve, radius_multiplier)
     
 # scale of a child object of curve is mix of multiple products
 # base scale is scale of object before getting influenced by curve's points
