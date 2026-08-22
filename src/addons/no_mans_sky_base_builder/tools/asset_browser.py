@@ -42,9 +42,9 @@ class AssetBrowser(bpy.types.PropertyGroup):
     asset_browser_icon_size: bpy.props.IntProperty(
         name="Size",
         description="Icons Size",
-        default = 3,
+        default = 4,
         min = 1,
-        max = 8,
+        max = 10,
         options={'TEXTEDIT_UPDATE'}
     )
     
@@ -62,7 +62,7 @@ class AssetBrowser(bpy.types.PropertyGroup):
         description="Icons Size",
         default = 2,
         min = 1,
-        max = 6,
+        max = 10,
         options={'TEXTEDIT_UPDATE'}
     )
     
@@ -71,7 +71,7 @@ class AssetBrowser(bpy.types.PropertyGroup):
         description="Number of elements to display in each row",
         default = 3,
         min = 1,
-        max = 6,
+        max = 16,
         options={'TEXTEDIT_UPDATE'}
     )
     
@@ -80,7 +80,7 @@ class AssetBrowser(bpy.types.PropertyGroup):
         description="Icons Size",
         default = 3,
         min = 1,
-        max = 6,
+        max = 10,
         options={'TEXTEDIT_UPDATE'}
     )
     
@@ -89,7 +89,7 @@ class AssetBrowser(bpy.types.PropertyGroup):
         description="Number of elements to display in each row",
         default = 3,
         min = 1,
-        max = 6,
+        max = 10,
         options={'TEXTEDIT_UPDATE'}
     )
     
@@ -141,31 +141,38 @@ class AssetBrowser(bpy.types.PropertyGroup):
             categories_data = dictionary.get_category_vise_objects()
             for category in categories_data:
                 AssetBrowser.enum_categories.append((category,category,category))
-            self.on_category_selected()
+            AssetBrowser.enum_sub_categories = self.extract_enum_sub_categories()
         return AssetBrowser.enum_categories
 
     def on_category_selected(self):
+        AssetBrowser.enum_sub_categories = self.extract_enum_sub_categories()
+        self.asset_browser_sub_caterogies = "All"
+        
+    def extract_enum_sub_categories(self):
         prop_caterogies = self.asset_browser_caterogies
         categories_data = dictionary.get_category_vise_objects()
         
+        sub_categories = [("All","All","All")]
+        
         if not prop_caterogies or prop_caterogies not in categories_data:
-            AssetBrowser.enum_sub_categories = []
-            return
+            return sub_categories
         
         categories_data_cat = categories_data[prop_caterogies]
-        sub_categories = [("All","All","All")]
         if categories_data_cat:
             for subcategories_name, object_ids in categories_data_cat.items():
                 sub_categories.append((subcategories_name,subcategories_name,subcategories_name))
-        AssetBrowser.enum_sub_categories = sub_categories
+        return sub_categories
         
     def get_categories_data(self):
         if not AssetBrowser.categories_data:
             AssetBrowser.categories_data = dictionary.get_category_vise_objects()
         return AssetBrowser.categories_data
     
+    def get_enum_categories_list(self):
+        return AssetBrowser.enum_categories
+    
     def get_enum_sub_categories_list(self):
-        return AssetBrowser.enum_sub_categories
+            return AssetBrowser.enum_sub_categories
     
     def on_search_entered(self):
         search_filter = self.asset_broser_search_query

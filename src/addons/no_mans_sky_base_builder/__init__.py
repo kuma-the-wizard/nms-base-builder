@@ -31,7 +31,7 @@ from .tools.build_tool_presentation import NMS_PT_tools_panel
 from .tools.properties import Properties
 from .tools.properties_presentation import NMS_PT_base_prop_panel, NMS_PT_transformation_panel
 from .tools.asset_browser import AssetBrowser
-from .tools.asset_browser_presentation import NMS_PT_asset_browser_panel, NMS_PT_asset_browser_properties_panel
+from .tools import asset_browser_presentation
 
 from .utils import blend_utils, curve, dictionary
 from .utils import material as _material
@@ -1774,6 +1774,7 @@ class WorkspaceSettings(bpy.types.Operator):
 # Track objects
 known_curve_names = set()
 last_active = None
+first_update_skipped = False
 
 # To reset toggle button of save editor and initialize curve registry
 @persistent
@@ -1852,7 +1853,7 @@ def udpates_handler(scene, depsgraph):
                 print("Reference error :", error)
                 continue
     
-    if active_object is not None and curve.Curve.PROP_CURVE_ID in active_object:
+    if active_object is not None and curve.Curve.PROP_CURVE_ID in active_object and last_active is not None:
         # Update all children of active curve
         if active_object not in curves_to_update:
             curves_to_update.append(active_object)
@@ -1943,9 +1944,6 @@ classes = (
     NMS_PT_batch_tools_panel,
     NMS_PT_build_panel,
     NMS_PT_nms_legacy_asset_browser,
-    NMS_PT_asset_browser_panel,
-    NMS_PT_asset_browser_properties_panel,
-    
     NMSAddonPreferences,
     
     SwitchWorkspace,
@@ -1954,6 +1952,8 @@ classes = (
     GroupObjects,
     UngroupObjects
 )
+
+classes = classes + asset_browser_presentation.classes
 
 classes = classes  + save_editor_operators.classes + build_tool_operators.classes + batch_tool_operators.classes + prooperties_operators.classes + asset_browser_operators.classes
 

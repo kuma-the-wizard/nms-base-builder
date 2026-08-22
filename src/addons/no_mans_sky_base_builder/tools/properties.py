@@ -1,7 +1,8 @@
 import bpy
-from ..utils import curve, dictionary
+from ..utils import curve, dictionary, blend_utils
 from .. import builder
 import re
+from ..utils.mirror_utils import ShowMessageBox
 
 nice_name_dictionary = dictionary.get_nice_names_diictionary()
 
@@ -125,12 +126,51 @@ class Properties(bpy.types.PropertyGroup):
     def select_parent_curve(self):
         self.selected_curve_object_is_parent = True
         active_object = bpy.context.active_object
-        curve.select_parent_curve(active_object)
+        selected_objects = bpy.context.selected_objects
+        
+        if active_object not in selected_objects:
+            selected_objects.append(active_object)
+        
+        visited_curves_names = []
+        curves_to_select = []
+        for obj in selected_objects:
+            if curve.Curve.PROP_CURVE_PARENT in obj and curve.Curve.PROP_CURVE_ID not in obj:
+                parent_curve_name = obj.get(curve.Curve.PROP_CURVE_PARENT)
+                if parent_curve_name in visited_curves_names:
+                    continue
+                
+                parent_curve = curve.select_parent_curve(obj)
+                if parent_curve is None:
+                    continue
+                
+                visited_curves_names.append(parent_curve.name)
+                curves_to_select.append(parent_curve)
+        
+        if curves_to_select:
+            blend_utils.select(curves_to_select)
         
     def select_children_of_curve(self):
         self.selected_curve_object_is_parent = False
         active_object = bpy.context.active_object
-        curve.select_children_of_curve(active_object)
+        selected_objects = bpy.context.selected_objects
+        
+        for obj in selected_objects:
+            if "CurveID" not in obj:
+                ShowMessageBox(
+                    message="All selected objects are not curves",
+                    title="Selection Failed"
+                )
+                return
+            
+        children_to_select = []
+        if active_object is not None and curve.Curve.PROP_CURVE_ID in active_object:
+            for curve_obj in selected_objects:
+                children = curve.select_children_of_curve(curve_obj)
+                if children:
+                    children_to_select.extend(children)
+                    
+        if children_to_select:
+            blend_utils.select(children_to_select)
         
     def active_curve_is_highlighted(self):
         selected_objects = bpy.context.selected_objects

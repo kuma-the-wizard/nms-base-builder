@@ -86,11 +86,6 @@ class BuildTool(bpy.types.PropertyGroup):
             )
             return
         
-        #if auto_duplicate:
-        #    bpy.ops.object.duplicate(linked=False)
-        #    selected_objects = bpy.context.selected_objects if objects_to_mirror is None else objects_to_mirror
-        #    auto_duplicate = False
-        
         hierarchy_data = {}
         if objects_to_mirror is None and not auto_duplicate:
             for obj in selected_objects:

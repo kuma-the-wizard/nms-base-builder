@@ -201,8 +201,8 @@ def add_objects_to_curve(number_to_add, curve, existing_objs, bpy_object = None)
                     
                 if curve[Curve.PROP_DUP_IS_GROUP] is True:
                     new_obj[Group.PROP_GROUP_ID] = curve[Curve.PROP_DUP_GROUP_ID]
-                else:
-                    material.restore_material(new_obj, curve[Curve.PROP_DUP_USER_DATA])
+                    if Curve.PROP_DUP_USER_DATA in curve:
+                        new_obj[Part.PROP_USER_DATA] = curve[Curve.PROP_DUP_USER_DATA] 
             else:
                 if curve[Curve.PROP_DUP_IS_GROUP] is True:
                     child_cache = curve[Curve.PROP_GROUP_CHILD_CACHE]
@@ -213,12 +213,17 @@ def add_objects_to_curve(number_to_add, curve, existing_objs, bpy_object = None)
                     new_obj = Group.deserialise_to_group(BUILDER, child_cache, origin_matrix)
                     new_obj[Group.PROP_GROUP_ID] = curve[Curve.PROP_DUP_GROUP_ID]
                     
+                    if Curve.PROP_DUP_USER_DATA in curve:
+                        new_obj[Part.PROP_USER_DATA] = curve[Curve.PROP_DUP_USER_DATA]
+                    
                 else:
                     object_id = curve[Curve.PROP_DUP_OBJECT_ID]
                     user_data = curve[Curve.PROP_DUP_USER_DATA]
                     new_item = BUILDER.add_part(object_id, user_data=user_data)
                     new_obj = new_item.object
-                    material.restore_material(new_obj, user_data)
+                    
+            if Curve.PROP_DUP_USER_DATA in curve:    
+                material.restore_material(new_obj, curve[Curve.PROP_DUP_USER_DATA])
                 
             constraint = new_obj.constraints.new(type='FOLLOW_PATH')
             constraint.target = curve
@@ -343,15 +348,13 @@ def select_parent_curve(object):
         return
     
     parent_curve = bpy.data.objects.get(parent_curve_name)
-    if parent_curve is not None:
+    if parent_curve is not None and not parent_curve[Curve.PROP_PARENT_SELECTED]:
         parent_curve.hide_select = False
         parent_curve[Curve.PROP_PARENT_SELECTED] = True
         for obj in bpy.context.scene.objects:
             if obj.get(Curve.PROP_CURVE_PARENT) == parent_curve.name:
                 obj.hide_select = True
-                #obj.lock_location = (True, True, True)
-                #obj["base_scale"] = obj.scale.x/(parent_curve[Curve.PROP_RADIUS_MULTIPLIER]*obj["radius"])
-        blend_utils.select(parent_curve)
+    return parent_curve
             
 # select all children of curve present
 # make all children linked to curve selectable and make curve unselectable
@@ -370,7 +373,8 @@ def select_children_of_curve(curve):
     
     curve.hide_select = True
     curve[Curve.PROP_PARENT_SELECTED] = False
-    blend_utils.select(children)
+    #blend_utils.select(children)
+    return children
     
 def get_all_curve_children(curve_obj):
     if curve_obj is None:
@@ -556,6 +560,9 @@ def sync_curves(target_curve, source_curve, do_mirror = False, axis = None, from
         target = target_dupe_obejcts[0]
         material.restore_material(target, target["UserData"])
         
+    if Curve.PROP_DUP_USER_DATA in source_curve:
+        apply_color(target_curve, source_curve.get(Curve.PROP_DUP_USER_DATA,0))
+        
     
     # these curves are almost identical
     # blender stores bpy.context.scene.objects in sorted order, so duplicated objects will alsmo match that order.
@@ -578,6 +585,8 @@ def sync_curves(target_curve, source_curve, do_mirror = False, axis = None, from
             if axis is not None and axis == "Z" and target_is_group:
                 target.rotation_euler.x += math.pi
                 target.rotation_euler.z += math.pi
+                
+    
 
     # Refresh evaluation data for the newly synced children
     # update_curve_children(target_curve, radius_multiplier)

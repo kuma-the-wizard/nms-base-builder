@@ -339,7 +339,7 @@ class Group:
         return merged_group
     
     @staticmethod
-    def deserialise_to_objects(builder,child_cache, origin_matrix = None):
+    def deserialise_to_objects(builder,child_cache, origin_matrix = None, overall_userdata = None):
         """
         Deserialise string to ungrouped obejcts
         Args:
@@ -356,7 +356,7 @@ class Group:
             cached_child_data = json.loads(child_cache)
         except (json.JSONDecodeError, Exception) as error:
             print("Error deserialise_to_group ", error)
-            return None
+            return None 
         
         restored_objects = []
         for child_name, cache_data in cached_child_data.items():

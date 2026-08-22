@@ -52,7 +52,6 @@ def get_category_vise_objects():
     
     for _, part in part_definition.items():
         
-        
         object_id = part[0].replace("^","")
         category = part[2]
         sub_category = part[4]
@@ -67,22 +66,20 @@ def get_category_vise_objects():
         
         nice_name = to_title_case(nice_name)
         
-        
         if category not in categories_list:
             categories_list[category] = {}
-        
         if sub_category not in categories_list[category]:
             categories_list[category][sub_category] = {}
             
         sub_cat = categories_list[category][sub_category]
         
         
-        
         if varaint_of == "None":
             if object_id not in sub_cat:
                 sub_cat[object_id] = {}
-                
+
             sub_cat[object_id]["name"] = nice_name
+            
         else:
             if varaint_of not in sub_cat:
                 sub_cat[varaint_of] = {
@@ -91,7 +88,6 @@ def get_category_vise_objects():
                 
             if "variants" not in sub_cat[varaint_of]:
                 sub_cat[varaint_of]["variants"] = []
-            
             sub_cat[varaint_of]["variants"].append(object_id)
             
             

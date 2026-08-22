@@ -1,4 +1,5 @@
 import bpy
+import json
 from ..utils import blend_utils,dictionary
 from ..builder import Builder
 
@@ -13,16 +14,17 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
     bl_idname = "object.nms_launch_asset_browser_window"
     bl_label = "Object_selected"
     bl_description = "Show tips on how to use curve tool"
-    
-    
-    target_width: bpy.props.IntProperty(default = 1200)
-    target_height: bpy.props.IntProperty(default = 900)
 
-    
+    target_width: bpy.props.IntProperty(default=1200)
+    target_height: bpy.props.IntProperty(default=900)
+
     def execute(self, context):
-        # Create the new Blender window
+        
+        scene = context.scene
+        asset_browser = scene.nms_asset_browser
+        asset_browser.asset_browser_number_of_columns_other = 8
+        
         bpy.ops.wm.window_new()
-        # Get the newly created window.
         wm = context.window_manager
         if not wm.windows:
             return {'CANCELLED'}
@@ -35,70 +37,88 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
             target_area.type = 'PROPERTIES'
         except (ReferenceError, RuntimeError, TypeError):
             return {'CANCELLED'}
+        
+        attempts_count = 0
+        
+        def get_timeout():
+            nonlocal attempts_count
+            attempts_count +=1
+            if attempts_count >= 20:
+                return None
+            return 0.02
+        
+        def configure_areas():
+            try:
+                window_exists = any(w == new_window for w in wm.windows)
+                if not window_exists:
+                    return None
+                if len(new_window.screen.areas) < 2:
+                    return get_timeout()
 
-        created_objects = set()
-        # finished creating the new window.
+                areas_sorted = sorted(new_window.screen.areas, key=lambda a: a.x)
+                left_area, right_area = areas_sorted[0], areas_sorted[1]
+
+                prev_dummy_obj = bpy.data.objects.get("Asset Browser Window",None)
+                if prev_dummy_obj is not None:
+                    bpy.data.objects.remove(prev_dummy_obj, do_unlink=True)
+                    
+                bpy.ops.mesh.primitive_cube_add(size=0.1, location=(0, 0, 0))
+                dummy_obj = context.active_object
+                dummy_obj.name = "Asset Browser Window"
+                
+                for area, ctx_type in ((left_area, 'CONSTRAINT'), (right_area, 'MODIFIER')):
+                    area.type = 'PROPERTIES'
+                    space = area.spaces.active
+                    space.context = ctx_type
+                    space.show_region_header = False
+                    space.use_pin_id = True
+                    space.pin_id = dummy_obj
+                    
+                for collection in list(dummy_obj.users_collection):
+                    collection.objects.unlink(dummy_obj)
+                #dummy_obj.use_fake_user = True
+                    
+                return None
+            except (ReferenceError, RuntimeError, TypeError, AttributeError):
+                return get_timeout()
+
         def switch_tab():
             try:
-                # Check that the window still exists.
-                window_exists = False
-                for window in wm.windows:
-                    if window == new_window:
-                        window_exists = True
-                        break
-                    
+                window_exists = any(w == new_window for w in wm.windows)
                 if not window_exists:
                     return None
 
                 if target_area.type != 'PROPERTIES':
-                    return 0.05
+                    return get_timeout()
                 space = target_area.spaces.active
                 if space is None or space.type != 'PROPERTIES':
-                    return 0.05
+                    return get_timeout()
 
                 nav_region = None
+                window_region = None
                 for region in target_area.regions:
                     if region.type == 'NAVIGATION_BAR':
                         nav_region = region
-                        break
-                    
-                # Hide navigation bar
+                    elif region.type == 'WINDOW':
+                        window_region = region
+
+                if window_region is None:
+                    return get_timeout()
+
                 if nav_region and nav_region.width > 1:
-                    with bpy.context.temp_override( window=new_window, area=target_area, region=nav_region):
+                    with bpy.context.temp_override(window=new_window, area=target_area, region=nav_region):
                         bpy.ops.screen.region_toggle(region_type='NAVIGATION_BAR')
-                        
-                        
-                bpy.ops.mesh.primitive_cube_add(
-                    size=2,
-                    location=(0, 0, 0)
-                )
-                if created_objects:
-                    for obj in created_objects:
-                        bpy.data.objects.remove(obj, do_unlink=True)
-                        
-                dummy_obj = context.active_object
-                dummy_obj.name = "Asset Browser Window"
-                created_objects.add(dummy_obj)
-                
-                # Configure Properties editor
-                space.context = 'MODIFIER'
-                space.show_region_header = False
-                space.use_pin_id = True
-                space.pin_id = dummy_obj
-                
-                bpy.ops.object.delete()
-     
+
+                with bpy.context.temp_override(window=new_window, area=target_area, region=window_region):
+                    bpy.ops.screen.area_split(direction='VERTICAL', factor=0.2)
+
+                bpy.app.timers.register(configure_areas, first_interval=0.02)
                 return None
             except (ReferenceError, RuntimeError, TypeError, AttributeError):
-                # Try again later.
-                return 0.05
+                return get_timeout()
 
-        bpy.app.timers.register(
-            switch_tab,
-            first_interval=0.1
-        )
+        bpy.app.timers.register(switch_tab, first_interval=0.02)
 
-        # Resize the native Windows window
         try:
             user32 = ctypes.windll.user32
             hwnd = user32.GetForegroundWindow()
@@ -106,7 +126,7 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
                 user32.SetWindowTextW(hwnd, "Asset Browser")
                 rect = wintypes.RECT()
                 if user32.GetWindowRect(hwnd, ctypes.byref(rect)):
-                    user32.MoveWindow( hwnd, rect.left, rect.top, self.target_width, self.target_height, True)
+                    user32.MoveWindow(hwnd, rect.left, rect.top, self.target_width, self.target_height, True)
         except Exception:
             pass
 
@@ -116,18 +136,42 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
 class AssetBrowserObjectSelected(bpy.types.Operator):
     bl_idname = "object.nms_asset_browser_object_selected"
     bl_label = "Object_selected"
-    bl_description = "Show tips on how to use curve tool"
 
     object_id: bpy.props.StringProperty()
+    has_variants : bpy.props.BoolProperty(
+        default = False
+    )
+    variants : bpy.props.StringProperty()
+    
+    @classmethod
+    def description(cls, context, properties):
+        return f"ObjectID : {properties.object_id}"
+    
     
     def execute(self, context):
-        if self.object_id in dictionary.get_nice_names_diictionary():
-            item = BUILDER.add_part(self.object_id)
-            bpy_obj = item.object
-            blend_utils.select(bpy_obj)
-            self.report({'INFO'}, f"Added {self.object_id} to scene")
+        variants = self.variants
+        
+        if self.has_variants:
+            def draw_popup(self, context):
+                layout = self.layout
+                nice_names = dictionary.get_nice_names_diictionary()
+                layout.label(text="Select Variants")
+                variants_list = json.loads(variants)
+                for variant_obj_id in variants_list:
+                    if variant_obj_id in nice_names:
+                        variant_name = nice_names[variant_obj_id]
+                        button = layout.operator("object.nms_asset_browser_object_selected", text = variant_name)
+                        button.object_id = variant_obj_id
+                        button.has_variants = False
+            context.window_manager.popup_menu(draw_popup)
         else:
-            self.report({'ERROR'}, f"Could not add {self.object_id} to scene")
+            if self.object_id in dictionary.get_nice_names_diictionary():
+                item = BUILDER.add_part(self.object_id)
+                bpy_obj = item.object
+                blend_utils.select(bpy_obj)
+                self.report({'INFO'}, f"Added {self.object_id} to scene")
+            else:
+                self.report({'ERROR'}, f"Could not add {self.object_id} to scene")
         return {'FINISHED'}
     
 class AssetBrowserCategorySelected(bpy.types.Operator):

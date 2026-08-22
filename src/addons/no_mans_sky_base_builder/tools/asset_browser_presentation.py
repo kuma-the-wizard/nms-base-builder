@@ -1,4 +1,5 @@
 import bpy
+import json
 from .. import icons
 
 def draw_sub_category(pcoll , container, label, elements_list, number_of_columns, icon_size, grid_type = "Grid" ):
@@ -16,6 +17,7 @@ def draw_sub_category(pcoll , container, label, elements_list, number_of_columns
             subcategory_row = sub_category_column.row(align = True)
         
         has_variants = True if "variants" in part_data and len(part_data["variants"]) > 0 else False
+        variants = part_data.get("variants",None)
         
         drawing_function = draw_list_element if grid_type == "List" else draw_grid_element
         drawing_function(
@@ -25,7 +27,7 @@ def draw_sub_category(pcoll , container, label, elements_list, number_of_columns
             asset_name = asset_name,
             operator = "object.nms_asset_browser_object_selected",
             asset_icon_value = asset_icon_id,
-            has_variants = has_variants
+            variants = variants
         )
         
     remaining_rows = number_of_columns - len(elements_list)%number_of_columns
@@ -33,7 +35,9 @@ def draw_sub_category(pcoll , container, label, elements_list, number_of_columns
         for _ in range(remaining_rows):
             subcategory_row.column(align = True).label(text = "")
 
-def draw_grid_element( grid, grid_icon_size, object_id, asset_name, operator, asset_icon_value = None, has_variants = False ):
+def draw_grid_element( grid, grid_icon_size, object_id, asset_name, operator, asset_icon_value = None, variants = None ):
+    
+    has_variants = variants is not None
     
     if not asset_name:
         return
@@ -48,13 +52,38 @@ def draw_grid_element( grid, grid_icon_size, object_id, asset_name, operator, as
     except:
         enum_items = bpy.types.UILayout.bl_rna.functions['label'].parameters['icon'].enum_items["MONKEY"].value
         asset_column.template_icon( icon_value = enum_items,scale= grid_icon_size)
+        
     
-    asset_column_text_row = asset_column.row(align = True)
-    asset_column_text_row.scale_y = 0.5
+    if has_variants:
+        variants_copy = variants.copy()
+        variants_copy.insert(0,object_id)
+    else:
+        variants_copy = None
+    
+    asset_column_text_row = asset_column.row(align = False)
+    asset_column_text_button_row = asset_column_text_row.row(align = True)
+    asset_column_text_button_row.scale_y = 0.5
     button = asset_column_text_row.operator(operator, text = asset_name, emboss = False)
     button.object_id = object_id
+    button.has_variants = has_variants
+    if has_variants:
+        variants_json = json.dumps(variants_copy)
+        button.variants = variants_json
     
-def draw_list_element( grid, grid_icon_size, object_id, asset_name, operator, asset_icon_value = None, has_variants = False  ):
+    button = asset_column_text_row.operator(operator, text = "", icon = "ADD")
+    button.object_id = object_id
+    button.has_variants = has_variants
+    if has_variants:
+        variants_json = json.dumps(variants_copy)
+        button.variants = variants_json
+    
+        
+    
+    
+def draw_list_element( grid, grid_icon_size, object_id, asset_name, operator, asset_icon_value = None, variants = None  ):
+    
+    has_variants = variants is not None
+    
     element_row = grid.box().row(align = True)
     element_icon_row = element_row.row(align = True)
     element_icon_row.scale_x = 1.8
@@ -69,7 +98,6 @@ def draw_list_element( grid, grid_icon_size, object_id, asset_name, operator, as
         element_row_right.label(text = asset_name)
         add_button_row = element_row_right.row(align = True)
         add_button_2 = add_button_row.operator(operator, text = "", emboss = True, icon = "COLOR" if has_variants else "ADD")
-        add_button_2.object_id = object_id
         
     else:
         element_row_right = element_row.column(align = True)
@@ -79,7 +107,13 @@ def draw_list_element( grid, grid_icon_size, object_id, asset_name, operator, as
         add_button_row = element_row_right.row(align = True)
         add_button_row.label(text = "")
         add_button_2 = add_button_row.operator(operator, text = "", emboss = True, icon = "ADD")
-        add_button_2.object_id = object_id
+        
+    add_button_2.object_id = object_id
+    add_button_2.has_variants = has_variants
+    if has_variants:
+        variants_json = json.dumps(variants)
+        add_button_2.variants = variants_json
+    
 
 
 def draw_asset_browser(asset_browser_box, scene):
@@ -164,7 +198,8 @@ def draw_asset_browser(asset_browser_box, scene):
             top_category_column.label(text = "Categories")
             cats_per_row = 4
             cat_row = None
-            for index, category in enumerate(categories_data):
+            for index, category_element in enumerate(asset_browser.get_enum_categories_list()):
+                category = category_element[0]
                 if index % cats_per_row == 0:
                     cat_row = top_category_column.row(align = True)
                 cat_button = cat_row.operator(
@@ -209,6 +244,70 @@ def draw_asset_browser(asset_browser_box, scene):
             icon_size = icon_size,
             grid_type = grid_type
         )
+        
+
+def draw_asset_browser_left_options(asset_browser_box, scene):
+    asset_browser = scene.nms_asset_browser
+    grid_type = asset_browser.enum_asset_browser_mode
+    
+    ab_category = asset_browser.asset_browser_caterogies
+    ab_sub_category = asset_browser.asset_browser_sub_caterogies
+    
+    icon_size, number_of_columns = asset_browser.get_grid_sizes()
+    show_serch_results = asset_browser.check_display_search_results
+    
+    search_column= asset_browser_box.column(align=True)
+    search_column.label(text = "Search")
+    search_column.prop(asset_browser, "asset_broser_search_query", text="", icon='VIEWZOOM')
+    
+    asset_browser_box.operator("object.nms_asset_browser_list_settings", icon = "SETTINGS", text = "Size options")
+    
+    asset_browser_box.separator()
+    categories_col = asset_browser_box.column(align = True)
+    categories_col.enabled = not asset_browser.check_display_search_results
+    categories_col.label(text="Categories" )
+    categories_col.prop(asset_browser,"asset_browser_caterogies", expand = True)
+    
+    sub_cat_column = categories_col.column(align = True)
+    sub_cat_column.separator()
+    sub_cat_column.label(text = "Sub-Categories")
+    sub_cat_column.prop( asset_browser, "asset_browser_sub_caterogies", expand = True)
+    
+    
+
+def draw_asset_browser_right_options(asset_browser_box, scene):
+    asset_browser = scene.nms_asset_browser
+    grid_type = asset_browser.enum_asset_browser_mode
+    
+    ab_category = asset_browser.asset_browser_caterogies
+    ab_sub_category = asset_browser.asset_browser_sub_caterogies
+    
+    icon_size, number_of_columns = asset_browser.get_grid_sizes()
+    show_serch_results = asset_browser.check_display_search_results
+    
+    pcoll = icons.get_asset_icons_pcoll()
+    categories_data = asset_browser.get_categories_data()
+    
+    
+    if show_serch_results:
+        sub_cat_dict = asset_browser.get_search_results()
+    elif not ab_sub_category or ab_sub_category == "All":
+        sub_cat_dict = categories_data[ab_category]
+    else:
+        cat_dict = categories_data[ab_category][ab_sub_category]
+        sub_cat_dict = {ab_sub_category: cat_dict}
+    
+    for subcategories, object_ids in sub_cat_dict.items():
+        asset_browser_box.separator()
+        draw_sub_category(
+            pcoll = pcoll, 
+            container = asset_browser_box, 
+            label = subcategories,
+            elements_list = object_ids, 
+            number_of_columns = number_of_columns,
+            icon_size = icon_size,
+            grid_type = grid_type
+        )
 
 
 
@@ -223,7 +322,7 @@ class NMS_PT_asset_browser_properties_panel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout     
         scene = context.scene
-        draw_asset_browser(layout, scene)
+        draw_asset_browser_right_options(layout, scene)
 
 
 class NMS_PT_asset_browser_panel(bpy.types.Panel):
@@ -239,4 +338,40 @@ class NMS_PT_asset_browser_panel(bpy.types.Panel):
         layout = self.layout     
         scene = context.scene
         draw_asset_browser(layout, scene)
+        
+        
+class NMS_PT_asset_browser_new_window_panel_left(bpy.types.Panel):
+    bl_label       = "Asset Browser"
+    bl_idname      = "MY_PT_asset_browser_new_window_panel_left"
+    bl_space_type  = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context     = 'constraint'
+    bl_order       = 0 
+    
+    def draw(self, context):
+        layout = self.layout     
+        scene = context.scene
+        draw_asset_browser_left_options(layout, scene)
+        
+
+class NMS_PT_asset_browser_new_window_panel_right(bpy.types.Panel):
+    bl_label       = "Asset Browser"
+    bl_idname      = "MY_PT_asset_browser_new_window_panel_right"
+    bl_space_type  = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context     = 'modifier'
+    bl_order       = 0 
+    
+    def draw(self, context):
+        layout = self.layout     
+        scene = context.scene
+        draw_asset_browser_right_options(layout, scene)
+        
+        
+classes = (
+    NMS_PT_asset_browser_properties_panel,
+    NMS_PT_asset_browser_panel,
+    NMS_PT_asset_browser_new_window_panel_left,
+    #NMS_PT_asset_browser_new_window_panel_right
+)
         
