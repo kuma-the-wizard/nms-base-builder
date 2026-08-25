@@ -6,6 +6,11 @@ from bpy.props import (BoolProperty, EnumProperty, FloatProperty, IntProperty,
 from bpy.types import Panel, PropertyGroup
 
 class NMSBaseProperties(PropertyGroup):
+    """
+    Store Metadata related to imported base
+    
+    """
+    
     string_base: StringProperty(
         name="Base Name",
         description="The name of the base set in game.",
@@ -181,7 +186,7 @@ class NMSBaseProperties(PropertyGroup):
         name="AutoPowerSetting", description="AutoPowerSetting.", default="UseDefault"
     )
     
-    
+    # extract base properties from json data provided and store them in fields
     def deserialise_from_data(self, nms_data):
         # Start bringing the data in.
         if "GalacticAddress" in nms_data:
@@ -247,39 +252,7 @@ class NMSBaseProperties(PropertyGroup):
                 "PersistentBaseDifficultyFlags", 0
             )
     
-    def new_file(self):
-        self.string_address = ""
-        self.string_userdata = ""
-        self.string_base = ""
-        self.string_lid = ""
-        self.string_ts = ""
-        self.string_uid = ""
-        self.string_usn = ""
-        self.string_ptk = ""
-        self.float_pos_x = 0
-        self.float_pos_y = 0
-        self.float_pos_z = 0
-        self.float_ori_x = 0
-        self.float_ori_y = 0
-        self.float_ori_z = 0
-        self.string_last_ts = ""
-        self.LastEditedById = ""
-        self.original_base_version = 3
-        self.LastEditedByUsername_value = ""
-        self.screenshot_at_x = 1
-        self.screenshot_at_y = 0
-        self.screenshot_at_z = 0
-        self.screenshot_up_x = 0
-        self.screenshot_up_y = 1
-        self.screenshot_up_z = 0
-        self.game_mode = "Unspecified"
-        self.platform_token = ""
-        self.is_reported = False
-        self.is_featured = False
-        self.difficulty_preset = "Creative"
-        self.difficulty_flags = 0
-        self.auto_power_setting = "UseDefault"
-        
+    # Convert all the metadata into a dict
     def serialise(self):
         # Try making the address an int, if not it should be a string.
         data = {
@@ -324,3 +297,37 @@ class NMSBaseProperties(PropertyGroup):
         }
         
         return data
+    
+    # Reset all fields
+    def new_file(self):
+        self.string_address = ""
+        self.string_userdata = ""
+        self.string_base = ""
+        self.string_lid = ""
+        self.string_ts = ""
+        self.string_uid = ""
+        self.string_usn = ""
+        self.string_ptk = ""
+        self.float_pos_x = 0
+        self.float_pos_y = 0
+        self.float_pos_z = 0
+        self.float_ori_x = 0
+        self.float_ori_y = 0
+        self.float_ori_z = 0
+        self.string_last_ts = ""
+        self.LastEditedById = ""
+        self.original_base_version = 3
+        self.LastEditedByUsername_value = ""
+        self.screenshot_at_x = 1
+        self.screenshot_at_y = 0
+        self.screenshot_at_z = 0
+        self.screenshot_up_x = 0
+        self.screenshot_up_y = 1
+        self.screenshot_up_z = 0
+        self.game_mode = "Unspecified"
+        self.platform_token = ""
+        self.is_reported = False
+        self.is_featured = False
+        self.difficulty_preset = "Creative"
+        self.difficulty_flags = 0
+        self.auto_power_setting = "UseDefault"

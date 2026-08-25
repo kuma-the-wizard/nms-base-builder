@@ -175,12 +175,17 @@ class Builder(object):
     def add_part(self, object_id, user_data=None, build_rigs=True):
         """Add an item based on it's object ID."""
         use_class = self.get_part_class(object_id)
+        
+        active_object = bpy.context.active_object
         item = use_class(
             object_id=object_id,
             builder_object=self,
             user_data=user_data,
             build_rigs=build_rigs,
         )
+        
+        if active_object is not None:
+            item.object.matrix_world = active_object.matrix_world.copy()
         return item
 
     def add_preset(self, preset_id):

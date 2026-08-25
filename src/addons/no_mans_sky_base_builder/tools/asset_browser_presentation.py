@@ -1,6 +1,7 @@
 import bpy
 import json
 from .. import icons
+ADDON_ID = __package__.rsplit(".", 1)[0]
 
 def draw_sub_category(pcoll , container, label, elements_list, number_of_columns, icon_size, grid_type = "Grid" ):
             
@@ -61,16 +62,7 @@ def draw_grid_element( grid, grid_icon_size, object_id, asset_name, operator, as
         variants_copy = None
     
     asset_column_text_row = asset_column.row(align = False)
-    asset_column_text_button_row = asset_column_text_row.row(align = True)
-    asset_column_text_button_row.scale_y = 0.5
     button = asset_column_text_row.operator(operator, text = asset_name, emboss = False)
-    button.object_id = object_id
-    button.has_variants = has_variants
-    if has_variants:
-        variants_json = json.dumps(variants_copy)
-        button.variants = variants_json
-    
-    button = asset_column_text_row.operator(operator, text = "", icon = "ADD")
     button.object_id = object_id
     button.has_variants = has_variants
     if has_variants:
@@ -116,7 +108,7 @@ def draw_list_element( grid, grid_icon_size, object_id, asset_name, operator, as
     
 
 
-def draw_asset_browser(asset_browser_box, scene):
+def draw_asset_browser(context, asset_browser_box, scene):
     
     asset_browser = scene.nms_asset_browser
     grid_type = asset_browser.enum_asset_browser_mode
@@ -124,7 +116,13 @@ def draw_asset_browser(asset_browser_box, scene):
     ab_category = asset_browser.asset_browser_caterogies
     ab_sub_category = asset_browser.asset_browser_sub_caterogies
     
-    icon_size, number_of_columns = asset_browser.get_grid_sizes()
+    prefs = context.preferences.addons[ADDON_ID].preferences
+    if grid_type == "List":
+        icon_size = prefs.asset_browser_icon_size_list
+        number_of_columns = prefs.asset_browser_number_of_columns_list
+    else:
+        icon_size = prefs.asset_browser_icon_size
+        number_of_columns = prefs.asset_browser_number_of_columns
     
     
     show_serch_results = asset_browser.check_display_search_results
@@ -138,9 +136,10 @@ def draw_asset_browser(asset_browser_box, scene):
     grid_options_row = search_row.row(align = True)
     grid_options_row.scale_x = 0.3
     grid_options_row.prop(asset_browser,"enum_asset_browser_mode", text = "View type", expand = True)
-    search_row.operator("object.nms_asset_browser_list_settings", icon = "SETTINGS", text = "")
+    setting_button = search_row.operator("object.nms_asset_browser_list_settings", icon = "SETTINGS", text = "")
+    setting_button.grid_type = grid_type
     
-    if grid_type == "Grid":
+    if grid_type == "Other":
         main_split = asset_browser_box.split(factor=0.13)
         left_col = main_split.column(align=True)
         right_box = main_split.column(align = True)
@@ -179,21 +178,6 @@ def draw_asset_browser(asset_browser_box, scene):
             result_row.label(text = f"No matching parts found")
     else:
         if grid_type == "Grid":
-            sub_category_column = top_category_row.column(align = True)
-            sub_category_column.label(text = "Sub-Category")
-            sub_categories_row = sub_category_column.row(align = True)
-            sub_categories_row.scale_y = 1.5
-            sub_categories_row.prop( asset_browser, "asset_browser_sub_caterogies", expand = True)
-        elif grid_type == "List":
-            top_category_column = top_category_row.column(align = True)
-            top_category_column.label(text = "Category")
-            top_categories_row = top_category_column.row(align = True)
-            top_categories_row.prop(asset_browser,"asset_browser_caterogies", expand = False, text = "" ) 
-            sub_category_column = top_category_row.column(align = True)
-            sub_category_column.label(text = "Sub-Category")
-            sub_categories_row = sub_category_column.row(align = True)
-            sub_categories_row.prop( asset_browser, "asset_browser_sub_caterogies", expand = False, text = "" )
-        else:
             top_category_column = top_category_row.column(align = True)
             top_category_column.label(text = "Categories")
             cats_per_row = 4
@@ -231,6 +215,15 @@ def draw_asset_browser(asset_browser_box, scene):
             if cat_row and remaining_rows != cats_per_row:
                 for _ in range(remaining_rows):
                     cat_row.column(align = True).label(text = "")
+        elif grid_type == "List":
+            top_category_column = top_category_row.column(align = True)
+            top_category_column.label(text = "Category")
+            top_categories_row = top_category_column.row(align = True)
+            top_categories_row.prop(asset_browser,"asset_browser_caterogies", expand = False, text = "" ) 
+            sub_category_column = top_category_row.column(align = True)
+            sub_category_column.label(text = "Sub-Category")
+            sub_categories_row = sub_category_column.row(align = True)
+            sub_categories_row.prop( asset_browser, "asset_browser_sub_caterogies", expand = False, text = "" )
 
     
     for subcategories, object_ids in sub_cat_dict.items():
@@ -253,36 +246,78 @@ def draw_asset_browser_left_options(asset_browser_box, scene):
     ab_category = asset_browser.asset_browser_caterogies
     ab_sub_category = asset_browser.asset_browser_sub_caterogies
     
-    icon_size, number_of_columns = asset_browser.get_grid_sizes()
-    show_serch_results = asset_browser.check_display_search_results
-    
     search_column= asset_browser_box.column(align=True)
     search_column.label(text = "Search")
     search_column.prop(asset_browser, "asset_broser_search_query", text="", icon='VIEWZOOM')
     
     asset_browser_box.operator("object.nms_asset_browser_list_settings", icon = "SETTINGS", text = "Size options")
+    #settings_row = asset_browser_box.row(align = True)
+    #settings_row.prop(asset_browser,"enum_asset_browser_mode", text = "View type", expand = True)
     
     asset_browser_box.separator()
-    categories_col = asset_browser_box.column(align = True)
+    asset_browser_box.label(text="Categories" )
+    categories_col = asset_browser_box.box().column(align = True)
     categories_col.enabled = not asset_browser.check_display_search_results
-    categories_col.label(text="Categories" )
-    categories_col.prop(asset_browser,"asset_browser_caterogies", expand = True)
-    
-    sub_cat_column = categories_col.column(align = True)
-    sub_cat_column.separator()
-    sub_cat_column.label(text = "Sub-Categories")
-    sub_cat_column.prop( asset_browser, "asset_browser_sub_caterogies", expand = True)
+    for category_element in asset_browser.get_enum_categories_list():
+        category = category_element[0]
+        is_active = category == ab_category
+        
+        cat_container_row = categories_col.row(align = True)
+        #if is_active:
+        #    cat_container_row.alert = True
+            
+        cat_row = cat_container_row.row(align = True)
+        cat_row.alignment = "LEFT"
+        cat_button = cat_row.operator(
+            "object.nms_asset_browser_category_selected",
+            text = category,
+            depress = is_active,
+            emboss = False,
+            icon = "TRIA_DOWN" if is_active else "TRIA_RIGHT"
+        )
+        cat_button.category = category
+        
+        cat_fav_button_row = cat_container_row.row(align = True)
+        cat_fav_button_row.alignment = "RIGHT"
+        fav_button = cat_fav_button_row.row(align = True).operator("object.nms_asset_browser_category_favourite", text = "", icon = "HEART", emboss = False)
+        fav_button.category = category
+        
+        if is_active:
+            sub_cat_col = categories_col.column(align = True)
+            for sub_cat in asset_browser.get_enum_sub_categories_list():
+                sub_category = sub_cat[0]
+                is_sub_active = sub_category == ab_sub_category
+                
+                sub_cat_row = sub_cat_col.row(align = True)
+                sub_cat_row.alignment = "LEFT"
+                sub_cat_icon_row = sub_cat_row.row(align = True)
+                sub_cat_icon_row.alignment = "LEFT"
+                sub_cat_icon_row.scale_x = 0.8
+                sub_cat_icon_row.label(text = " ")
+                sub_cat_icon_row.label(
+                    text = "", 
+                    icon = "RIGHTARROW" if is_sub_active else "BLANK1"
+                )
+                sub_cat_button = sub_cat_row.operator(
+                    "object.nms_asset_browser_sub_category_selected",
+                    text = sub_category,
+                    depress = is_sub_active,
+                    emboss = False
+                )
+                sub_cat_button.sub_category = sub_category
     
     
 
-def draw_asset_browser_right_options(asset_browser_box, scene):
+def draw_asset_browser_right_options(context,asset_browser_box, scene, grid_type = "Grid"):
     asset_browser = scene.nms_asset_browser
-    grid_type = asset_browser.enum_asset_browser_mode
     
     ab_category = asset_browser.asset_browser_caterogies
     ab_sub_category = asset_browser.asset_browser_sub_caterogies
     
-    icon_size, number_of_columns = asset_browser.get_grid_sizes()
+    prefs = context.preferences.addons[ADDON_ID].preferences
+    
+    icon_size = prefs.asset_browser_icon_size_other
+    number_of_columns = prefs.asset_browser_number_of_columns_other
     show_serch_results = asset_browser.check_display_search_results
     
     pcoll = icons.get_asset_icons_pcoll()
@@ -322,7 +357,7 @@ class NMS_PT_asset_browser_properties_panel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout     
         scene = context.scene
-        draw_asset_browser_right_options(layout, scene)
+        draw_asset_browser_right_options(context, layout, scene)
 
 
 class NMS_PT_asset_browser_panel(bpy.types.Panel):
@@ -337,7 +372,7 @@ class NMS_PT_asset_browser_panel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout     
         scene = context.scene
-        draw_asset_browser(layout, scene)
+        draw_asset_browser(context,layout, scene)
         
         
 class NMS_PT_asset_browser_new_window_panel_left(bpy.types.Panel):
@@ -354,24 +389,11 @@ class NMS_PT_asset_browser_new_window_panel_left(bpy.types.Panel):
         draw_asset_browser_left_options(layout, scene)
         
 
-class NMS_PT_asset_browser_new_window_panel_right(bpy.types.Panel):
-    bl_label       = "Asset Browser"
-    bl_idname      = "MY_PT_asset_browser_new_window_panel_right"
-    bl_space_type  = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context     = 'modifier'
-    bl_order       = 0 
-    
-    def draw(self, context):
-        layout = self.layout     
-        scene = context.scene
-        draw_asset_browser_right_options(layout, scene)
         
         
 classes = (
     NMS_PT_asset_browser_properties_panel,
     NMS_PT_asset_browser_panel,
-    NMS_PT_asset_browser_new_window_panel_left,
-    #NMS_PT_asset_browser_new_window_panel_right
+    NMS_PT_asset_browser_new_window_panel_left
 )
         

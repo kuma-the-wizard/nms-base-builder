@@ -13,12 +13,12 @@ from .part import Part
 
 nice_name_dictionary = dictionary.get_nice_names_diictionary()
 
-
-class Group:
-    """
+"""
     Manages grouping and ungrouping of NMS objects with safe caching.
     Handles relative matrix calculations, serialization, and restoration.
-    """
+"""
+
+class Group:
     
     # object properties
     PROP_OBJECT_ID = Part.PROP_OBJECT_ID

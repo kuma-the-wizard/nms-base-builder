@@ -2,12 +2,11 @@ import bpy
 import json
 from ..utils import blend_utils,dictionary
 from ..builder import Builder
-
-
 import ctypes
 from ctypes import wintypes
 
 BUILDER = Builder()
+ADDON_ID = __package__.rsplit(".", 1)[0]
 
     
 class LaunchAssetBrowserWindow(bpy.types.Operator):
@@ -187,6 +186,19 @@ class AssetBrowserCategorySelected(bpy.types.Operator):
         asset_browser.asset_browser_caterogies = self.category
         return {'FINISHED'}
     
+class AssetBrowserCategoryFavourite(bpy.types.Operator):
+    bl_idname = "object.nms_asset_browser_category_favourite"
+    bl_label = "Object_selected"
+    bl_description = "Show tips on how to use curve tool"
+
+    category: bpy.props.StringProperty()
+    
+    def execute(self, context):
+        scene = context.scene
+        asset_browser = scene.nms_asset_browser
+        asset_browser.asset_browser_caterogies = self.category
+        return {'FINISHED'}
+    
 class AssetBrowserCategorySubSelected(bpy.types.Operator):
     bl_idname = "object.nms_asset_browser_sub_category_selected"
     bl_label = "Object_selected"
@@ -208,6 +220,11 @@ class AssetBrowserListSettings(bpy.types.Operator):
     bl_idname = "object.nms_asset_browser_list_settings"
     bl_label = "List Settingsr"
     bl_options = {'REGISTER', 'UNDO'}
+    
+    grid_type : bpy.props.StringProperty(
+        default = "Other"
+    )
+    
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(
             self,
@@ -219,21 +236,29 @@ class AssetBrowserListSettings(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
+        prefs = context.preferences.addons[ADDON_ID].preferences
         
-        scene = context.scene
-        asset_browser = scene.nms_asset_browser
+        grid_type = self.grid_type
+        if grid_type == "Grid":
+            icon_size_prop = "asset_browser_icon_size"
+            number_of_columns_prop = "asset_browser_number_of_columns"
+        elif grid_type == "List":
+            icon_size_prop = "asset_browser_icon_size_list"
+            number_of_columns_prop = "asset_browser_number_of_columns_list"
+        else:
+            icon_size_prop = "asset_browser_icon_size_other"
+            number_of_columns_prop = "asset_browser_number_of_columns_other"
         
-        icon_size_prop, number_of_columns_prop = asset_browser.get_grid_size_prop_string()
-        
-        layout.prop(asset_browser, icon_size_prop,text = "Icon Size")
+        layout.prop(prefs, icon_size_prop,text = "Icon Size")
         layout.separator()
-        layout.prop(asset_browser, number_of_columns_prop, text = "Columns")
+        layout.prop(prefs, number_of_columns_prop, text = "Columns")
         
 classes = (
     LaunchAssetBrowserWindow,
     AssetBrowserObjectSelected,
     AssetBrowserListSettings,
     AssetBrowserCategorySelected,
-    AssetBrowserCategorySubSelected
+    AssetBrowserCategorySubSelected,
+    AssetBrowserCategoryFavourite
     
 )

@@ -34,63 +34,10 @@ class AssetBrowser(bpy.types.PropertyGroup):
     )
     
     asset_browser_sub_caterogies: bpy.props.EnumProperty(
-        name="Categories",
-        description="Catagories",
+        name="Subcategory",
+        description="Subcategory",
         items = lambda self, context: AssetBrowser.enum_sub_categories,
-    )
-    
-    asset_browser_icon_size: bpy.props.IntProperty(
-        name="Size",
-        description="Icons Size",
-        default = 4,
-        min = 1,
-        max = 10,
-        options={'TEXTEDIT_UPDATE'}
-    )
-    
-    asset_browser_number_of_columns: bpy.props.IntProperty(
-        name="Nomber of Columns",
-        description="Number of elements to display in each row",
-        default = 10,
-        min = 4,
-        max = 15,
-        options={'TEXTEDIT_UPDATE'}
-    )
-    
-    asset_browser_icon_size_list: bpy.props.IntProperty(
-        name="Size",
-        description="Icons Size",
-        default = 2,
-        min = 1,
-        max = 10,
-        options={'TEXTEDIT_UPDATE'}
-    )
-    
-    asset_browser_number_of_columns_list: bpy.props.IntProperty(
-        name="Nomber of Columns",
-        description="Number of elements to display in each row",
-        default = 3,
-        min = 1,
-        max = 16,
-        options={'TEXTEDIT_UPDATE'}
-    )
-    
-    asset_browser_icon_size_other: bpy.props.IntProperty(
-        name="Size",
-        description="Icons Size",
-        default = 3,
-        min = 1,
-        max = 10,
-        options={'TEXTEDIT_UPDATE'}
-    )
-    
-    asset_browser_number_of_columns_other: bpy.props.IntProperty(
-        name="Nomber of Columns",
-        description="Number of elements to display in each row",
-        default = 3,
-        min = 1,
-        max = 10,
-        options={'TEXTEDIT_UPDATE'}
+        update=lambda self, context: self.on_sub_category_selected(),
     )
     
     enum_asset_browser_mode: bpy.props.EnumProperty(
@@ -98,10 +45,9 @@ class AssetBrowser(bpy.types.PropertyGroup):
         description="Asset Browser View Mode",
         items = [
             ("List", "List", "List","ALIGN_LEFT", 0),
-            ("Grid", "Grid", "Grid","LIGHTPROBE_VOLUME",1),
-            ("Other", "Other", "Other","FILE_VOLUME",2),
+            ("Grid", "Grid", "Grid","LIGHTPROBE_VOLUME",1)
         ],
-        default = "Other"
+        default = "Grid"
     )
     
     categories_data = {}
@@ -113,12 +59,9 @@ class AssetBrowser(bpy.types.PropertyGroup):
         if grid_type == "Grid":
             icon_size_prop = "asset_browser_icon_size"
             number_of_columns_prop = "asset_browser_number_of_columns"
-        elif grid_type == "List":
+        else :
             icon_size_prop = "asset_browser_icon_size_list"
             number_of_columns_prop = "asset_browser_number_of_columns_list"
-        else:
-            icon_size_prop = "asset_browser_icon_size_other"
-            number_of_columns_prop = "asset_browser_number_of_columns_other"
         return icon_size_prop, number_of_columns_prop
         
     
@@ -127,12 +70,9 @@ class AssetBrowser(bpy.types.PropertyGroup):
         if grid_type == "Grid":
             icon_size = self.asset_browser_icon_size
             number_of_columns = self.asset_browser_number_of_columns
-        elif grid_type == "List":
+        else :
             icon_size = self.asset_browser_icon_size_list
             number_of_columns = self.asset_browser_number_of_columns_list
-        else:
-            icon_size = self.asset_browser_icon_size_other
-            number_of_columns = self.asset_browser_number_of_columns_other
         return icon_size, number_of_columns
     
     
@@ -147,6 +87,9 @@ class AssetBrowser(bpy.types.PropertyGroup):
     def on_category_selected(self):
         AssetBrowser.enum_sub_categories = self.extract_enum_sub_categories()
         self.asset_browser_sub_caterogies = "All"
+        
+    def get_enum_sub_categories(self):
+        return self.extract_enum_sub_categories()
         
     def extract_enum_sub_categories(self):
         prop_caterogies = self.asset_browser_caterogies

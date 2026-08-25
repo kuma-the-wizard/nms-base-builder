@@ -53,3 +53,67 @@ class NMSAddonPreferences(bpy.types.AddonPreferences):
         ],
         default = "Bottom"
     )
+    
+    asset_browser_icon_size_other: bpy.props.IntProperty(
+        name="Size",
+        description="Icons Size",
+        default = 4,
+        min = 1,
+        max = 10,
+        options={'TEXTEDIT_UPDATE'}
+    )
+    
+    asset_browser_number_of_columns_other: bpy.props.IntProperty(
+        name="Nomber of Columns",
+        description="Number of elements to display in each row",
+        default = 10,
+        min = 4,
+        max = 15,
+        options={'TEXTEDIT_UPDATE'}
+    )
+    
+    asset_browser_icon_size_list: bpy.props.IntProperty(
+        name="Size",
+        description="Icons Size",
+        default = 2,
+        min = 1,
+        max = 10,
+        options={'TEXTEDIT_UPDATE'}
+    )
+    
+    asset_browser_number_of_columns_list: bpy.props.IntProperty(
+        name="Nomber of Columns",
+        description="Number of elements to display in each row",
+        default = 3,
+        min = 1,
+        max = 16,
+        options={'TEXTEDIT_UPDATE'}
+    )
+    
+    asset_browser_icon_size: bpy.props.IntProperty(
+        name="Size",
+        description="Icons Size",
+        default = 3,
+        min = 1,
+        max = 10,
+        options={'TEXTEDIT_UPDATE'}
+    )
+    
+    asset_browser_number_of_columns: bpy.props.IntProperty(
+        name="Nomber of Columns",
+        description="Number of elements to display in each row",
+        default = 3,
+        min = 1,
+        max = 10,
+        options={'TEXTEDIT_UPDATE'}
+    )
+    
+    enum_asset_browser_mode: bpy.props.EnumProperty(
+        name="View Mode",
+        description="Asset Browser View Mode",
+        items = [
+            ("List", "List", "List","ALIGN_LEFT", 0),
+            ("Grid", "Grid", "Grid","LIGHTPROBE_VOLUME",1)
+        ],
+        default = "Grid"
+    )

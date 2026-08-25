@@ -392,7 +392,7 @@ def get_segment_midpoint_factor(control_points, target_factor):
 
     coords = [extract_co(p) for p in control_points]
 
-    # 1. Calculate cumulative length at each control point
+    # Calculate cumulative length at each control point
     cum_lengths = [0.0]
     total_length = 0.0
     
@@ -404,11 +404,11 @@ def get_segment_midpoint_factor(control_points, target_factor):
     if total_length == 0.0:
         return 0.0
 
-    # 2. Clamp target_factor between 0.0 and 1.0
+    # Clamp target_factor between 0.0 and 1.0
     target_factor = max(0.0, min(1.0, target_factor))
     target_length = target_factor * total_length
 
-    # 3. Identify the segment [i-1, i] containing target_length
+    # Identify the segment [i-1, i] containing target_length
     for i in range(1, len(cum_lengths)):
         start_len = cum_lengths[i - 1]
         end_len = cum_lengths[i]
@@ -420,7 +420,7 @@ def get_segment_midpoint_factor(control_points, target_factor):
             # Return midpoint as a 0.0 - 1.0 factor of total curve length
             return mid_length / total_length
 
-    # Fallback for edge cases (e.g. target_factor == 1.0)
+    # Fallback for edge cases
     last_seg_mid = (cum_lengths[-2] + cum_lengths[-1]) / 2.0
     return last_seg_mid / total_length
 
@@ -453,7 +453,6 @@ def factor_from_density(cumulative_density, sample_factors , target):
             high = mid
 
     index = max(1, low)
-
     d0 = cumulative_density[index - 1]
     d1 = cumulative_density[index]
     f0 = sample_factors[index - 1]
@@ -461,8 +460,8 @@ def factor_from_density(cumulative_density, sample_factors , target):
 
     if d1 == d0:
         return f0
+    
     t = (target - d0) / (d1 - d0)
-
     return f0 + (f1 - f0) * t
 
 def calculate_curve_factors(curve, existing_objs):

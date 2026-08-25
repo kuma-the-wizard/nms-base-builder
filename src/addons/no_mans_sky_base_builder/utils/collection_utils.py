@@ -102,4 +102,22 @@ def get_parent_collection(item):
     # If no parent is found, it is orphaned or deleted
     return None
 
+def set_collection_visibility(collection_name="Collection", visible=True):
+    """
+    Sets whether a Blender collection is included in the active view layer.
+    
+    Parameters:
+        collection_name (str): Target collection's name. Default is
+        "Collection".
+        visible (bool): True to show/include in view layer, False to hide/exclude.
+        Default is True.
+    """
+    
+    import_collection = get_collection(collection_name)
+    if not import_collection:
+        return
+
+    layer_collection = bpy.context.view_layer.layer_collection.children.get(import_collection.name)
+    if layer_collection:
+        layer_collection.exclude = not visible
 

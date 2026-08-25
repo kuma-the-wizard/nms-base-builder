@@ -61,7 +61,7 @@ class SaveFile:
             self.json_data,
             separators=(",", ":"),
             ensure_ascii=False
-        ).encode("utf-8")
+        ).encode("utf-8") + b"\x00"
 
         blocks = []
 

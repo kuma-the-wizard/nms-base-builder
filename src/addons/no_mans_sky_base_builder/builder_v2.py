@@ -2,96 +2,114 @@ import bpy
 import time
 import mathutils
 import math
-from . import builder, part, preset, group
+from . import builder, preset
 from .utils import material, collection_utils
-from .utils import python as ptyhon_utils
 from .part_overrides import parts_override
 
 BUILDER = builder.Builder()
 
 # This is to compensate blender's Z up axis.
-mat_rot = mathutils.Matrix.Rotation(math.radians(90.0), 4, "X")
+X_ROT_90 = mathutils.Matrix.Rotation(math.radians(90.0), 4, "X")
 
+# name of collection to import objects to
+IMPORT_COLLECTION_NAME = "Collection"
+
+
+# An optimised way to import objects,
+# First exclude view layer from outliner
+# then collect each unique material and unique object and restore their duplicates from that cache while traversing objects in json
 def deserialise_from_data(data):
     
-        if data is None:
-            return
+    if data is None:
+        return
 
-        unique_objects = {}
-        unique_materials = {}
-        order = 0
-        
-        classes_dict = parts_override.get_override_classes()
-        
-        import_collection = collection_utils.get_collection("Collection")
-        layer_collection = bpy.context.view_layer.layer_collection.children.get(import_collection.name)
-        if layer_collection:
-            layer_collection.exclude = True
-        
-        objects_data = data.get("Objects", [])
-        for part_data in objects_data:
-            object_id = part_data.get("ObjectID", None).replace("^", "")
-            user_data = part_data.get("UserData", 0)
-                
-            material_key = ( object_id, user_data )
+    unique_objects = {}
+    unique_materials = {}
+    order = 0
+    
+    # Use these only an object requires special steps to be imported
+    classes_dict = parts_override.get_override_classes()
+    
+    # exclude view layer from blender 
+    # so that importing and updating scene witn new objects doesnt get reflected immidieatly 
+    # after each disk I/O or object creation
+    import_collection = collection_utils.get_collection(IMPORT_COLLECTION_NAME)
+    collection_utils.set_collection_visibility(import_collection.name, visible = False)
+    
+    objects_data = data.get("Objects", [])
+    for part_data in objects_data:
+        object_id = part_data.get("ObjectID", None).replace("^", "")
+        user_data = part_data.get("UserData", 0)
             
-            if object_id is None:
-                continue
-            
-            if object_id in classes_dict:
-                use_class = classes_dict[object_id]
-                bpy_object = use_class.deserialise_from_data(
-                    part_data, BUILDER, compensate_normal=True
-                )
-            else:
-                if object_id not in unique_objects:
-                    bpy_object = improt_fbx_from_disk(object_id)
-                    
-                    if bpy_object is not None:
-                        collection_utils.move_object_into_collection(import_collection, bpy_object)
-                        material.restore_material(bpy_object,user_data)
-                        restore_params(bpy_object,part_data, object_id)
-                        
-                        unique_objects[object_id] = bpy_object
-                        unique_materials[material_key] = bpy_object.data
-                    
-                else:
-                    unique_obj = unique_objects.get(object_id)
-                    bpy_object = bpy.data.objects.new(unique_obj.name, unique_obj.data)
-                    import_collection.objects.link(bpy_object)
-                    for key, value in unique_obj.items():
-                        bpy_object[key] = value
-                    
-                    
-                    if material_key in unique_materials:
-                        bpy_object.data = unique_materials.get(material_key)
-                    else:
-                        bpy_object.data = bpy_object.data.copy()
-                        material.restore_material(bpy_object,user_data)
-                        unique_materials[material_key] = bpy_object.data
-                
-                matrix_world = deserialise_matrix_world(part_data)
-                bpy_object.matrix_world = matrix_world
-                bpy_object["order"] = order
-                order += 1
+        material_key = ( object_id, user_data )
         
+        if object_id is None:
+            continue
         
-            
-        if layer_collection:
-            layer_collection.exclude = False
-            bpy.context.view_layer.depsgraph.update()
-            
-        
-        # Reconstruct presets.
-        for preset_data in data.get("Presets", []):
-            preset.Preset.deserialise_from_data(
-                preset_data, BUILDER, compensate_normal=True
+        # use override clases only when needed
+        if object_id in classes_dict:
+            use_class = classes_dict[object_id]
+            bpy_object = use_class.deserialise_from_data(
+                part_data, BUILDER, compensate_normal=True
             )
             
-        # Build Rigs.
-        BUILDER.build_rigs()
-        # Optimise control points.
-        BUILDER.optimise_control_points()
+        # import object_id from disk when visiting it first time
+        else:
+            
+            if object_id not in unique_objects:
+                # import object from disk when visiting that object_id for fiest time
+                bpy_object = improt_fbx_from_disk(object_id)
+                if bpy_object is not None:
+                    collection_utils.move_object_into_collection(import_collection, bpy_object)
+                    material.restore_material(bpy_object,user_data)
+                    
+                    # store it in temp cache
+                    unique_objects[object_id] = bpy_object
+                    unique_materials[material_key] = bpy_object.data
+                    
+            # if object is already visited, check if a same object with same userdata exists
+            # this is to avoid creating data block for each object with same object_ids 
+            else:
+                
+                unique_obj = unique_objects.get(object_id)
+                bpy_object = bpy.data.objects.new(unique_obj.name, unique_obj.data)
+                import_collection.objects.link(bpy_object)
+                for key, value in unique_obj.items():
+                    bpy_object[key] = value
+                
+                # choose to either create new material or use existing one if it exists
+                if material_key in unique_materials:
+                    bpy_object.data = unique_materials.get(material_key)
+                else:
+                    bpy_object.data = bpy_object.data.copy()
+                    material.restore_material(bpy_object,user_data)
+                    unique_materials[material_key] = bpy_object.data
+            
+            # restore matrix world
+            restore_params(bpy_object,part_data, object_id)
+            matrix_world = deserialise_matrix_world(part_data)
+            bpy_object.matrix_world = matrix_world
+            
+            # provide order
+            bpy_object["order"] = order
+            order += 1
+    
+    
+    # include import collection to outliner and update view layer
+    collection_utils.set_collection_visibility(import_collection.name, visible = True)
+    bpy.context.view_layer.depsgraph.update()
+        
+    
+    # Reconstruct presets.
+    for preset_data in data.get("Presets", []):
+        preset.Preset.deserialise_from_data(
+            preset_data, BUILDER, compensate_normal=True
+        )
+        
+    # Build Rigs.
+    BUILDER.build_rigs()
+    # Optimise control points.
+    BUILDER.optimise_control_points()
 
             
 def improt_fbx_from_disk(object_id):
@@ -110,7 +128,8 @@ def improt_fbx_from_disk(object_id):
     bpy_object.select_set(False)
     
     return bpy_object
-            
+
+# copy params from part json to bpy_object
 def restore_params(part, part_data, object_id):
     # Apply metadata
     part["ObjectID"] = object_id
@@ -127,11 +146,14 @@ def restore_params(part, part_data, object_id):
         
     return part
 
+# convert position, up and at to matrix world for blender object
 def deserialise_matrix_world(part_data):
     # Get location data.
     pos = part_data.get("Position", [0.0, 0.0, 0.0])
     up = part_data.get("Up", [0.0, 0.0, 0.0])
     at = part_data.get("At", [0.0, 0.0, 0.0])
+    
+    # combine three vectors above to constrict matrix world
     return create_matrix_from_vectors(pos, up, at)
                 
                 
@@ -164,6 +186,6 @@ def create_matrix_from_vectors(pos, up, at):
         (0.0, 0.0, 0.0, 1.0),
     ))
     
-    return mat_rot @ mat
+    return X_ROT_90 @ mat
                 
             
