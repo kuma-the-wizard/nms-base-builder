@@ -94,6 +94,36 @@ def get_asset_icons_pcol():
 
     return pcoll
 
+def load_asset_icons():
+    """
+    Scans a folder for PNGs and loads them into a Blender preview collection.
+    """
+    # Create a new preview collection
+    pcoll = bpy.utils.previews.new()
+    
+    directory_path = os.path.realpath(
+        os.path.join(os.path.dirname(__file__), "images","asset_icons")
+    )
+    
+    
+    if not os.path.exists(directory_path):
+        print(f"Directory not found: {directory_path}")
+        return None
+
+    # Loop through the directory and find all PNGs
+    for filename in os.listdir(directory_path):
+        if filename.lower().endswith(".png"):
+            filepath = os.path.join(directory_path, filename)
+            
+            # Use the filename without the .png extension as the icon identifier
+            icon_name = os.path.splitext(filename)[0]
+            
+            # Load the image into the preview collection
+            # 'IMAGE' type is required for UI icons
+            pcoll.load(icon_name, filepath, 'IMAGE')
+
+    return pcoll
+
 def get_asset_icons_pcoll():
     return preview_collections["asset_icons"]
 
@@ -102,10 +132,11 @@ def get_icons_pscroll():
 
 def register_icons():
     pcoll = extract_pcoll()
-    asset_pcoll = get_asset_icons_pcol()
+    asset_pcoll = load_asset_icons()
     
     preview_collections["ui_icons"] = pcoll
-    preview_collections["asset_icons"] = asset_pcoll
+    if asset_pcoll:
+        preview_collections["asset_icons"] = asset_pcoll
 
 
 def unregister_icons():

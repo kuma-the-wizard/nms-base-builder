@@ -11,8 +11,8 @@ ADDON_ID = __package__.rsplit(".", 1)[0]
     
 class LaunchAssetBrowserWindow(bpy.types.Operator):
     bl_idname = "object.nms_launch_asset_browser_window"
-    bl_label = "Object_selected"
-    bl_description = "Show tips on how to use curve tool"
+    bl_label = "Asset Browser"
+    bl_description = "Launch an Asset Browser in new Window"
 
     target_width: bpy.props.IntProperty(default=1200)
     target_height: bpy.props.IntProperty(default=900)
@@ -134,13 +134,13 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
     
 class AssetBrowserObjectSelected(bpy.types.Operator):
     bl_idname = "object.nms_asset_browser_object_selected"
-    bl_label = "Object_selected"
+    bl_label = "Add Object"
+    bl_description = "Click to add this obejct to scene"
 
     object_id: bpy.props.StringProperty()
-    has_variants : bpy.props.BoolProperty(
-        default = False
-    )
+    has_variants : bpy.props.BoolProperty( default = False )
     variants : bpy.props.StringProperty()
+    is_preset : bpy.props.BoolProperty( default = False )
     
     @classmethod
     def description(cls, context, properties):
@@ -149,8 +149,15 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
     
     def execute(self, context):
         variants = self.variants
+        scene = context.scene
+        asset_browser = scene.nms_asset_browser
         
-        if self.has_variants:
+        if self.is_preset:
+            item_id = self.object_id
+            new_item = BUILDER.add_preset(item_id)
+            if new_item:
+                new_item.select()
+        elif self.has_variants:
             def draw_popup(self, context):
                 layout = self.layout
                 nice_names = dictionary.get_nice_names_diictionary()
@@ -168,6 +175,7 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
                 item = BUILDER.add_part(self.object_id)
                 bpy_obj = item.object
                 blend_utils.select(bpy_obj)
+                asset_browser.add_to_recents_list(self.object_id)
                 self.report({'INFO'}, f"Added {self.object_id} to scene")
             else:
                 self.report({'ERROR'}, f"Could not add {self.object_id} to scene")
@@ -175,8 +183,8 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
     
 class AssetBrowserCategorySelected(bpy.types.Operator):
     bl_idname = "object.nms_asset_browser_category_selected"
-    bl_label = "Object_selected"
-    bl_description = "Show tips on how to use curve tool"
+    bl_label = "Category Selected"
+    bl_description = "Category of objects"
 
     category: bpy.props.StringProperty()
     
@@ -188,21 +196,71 @@ class AssetBrowserCategorySelected(bpy.types.Operator):
     
 class AssetBrowserCategoryFavourite(bpy.types.Operator):
     bl_idname = "object.nms_asset_browser_category_favourite"
-    bl_label = "Object_selected"
-    bl_description = "Show tips on how to use curve tool"
+    bl_label = "Mark Favourite"
+    bl_description = "Mark this category favourite"
 
     category: bpy.props.StringProperty()
     
     def execute(self, context):
         scene = context.scene
         asset_browser = scene.nms_asset_browser
-        asset_browser.asset_browser_caterogies = self.category
+        prefs = context.preferences.addons[ADDON_ID].preferences
+        
+        fav_cats_str = prefs.favourite_categories
+        try:
+            fav_cats = json.loads(fav_cats_str) if fav_cats_str else []
+        except json.JSONDecodeError:
+            fav_cats = []
+            
+        if self.category in fav_cats:
+            fav_cats.remove(self.category)
+        else:
+            fav_cats.append(self.category)
+            
+        prefs.favourite_categories = json.dumps(fav_cats)
+        asset_browser.set_favourite_categories(fav_cats)
+        
+        bpy.ops.wm.save_userpref()
+        
+        return {'FINISHED'}
+    
+
+class AssetBrowserObjectFavourite(bpy.types.Operator):
+    bl_idname = "object.nms_asset_browser_object_favourite"
+    bl_label = "Mark Favourite"
+    bl_description = "Mark this Object favourite"
+
+    object_id: bpy.props.StringProperty()
+    
+    def execute(self, context):
+        scene = context.scene
+        asset_browser = scene.nms_asset_browser
+        prefs = context.preferences.addons[ADDON_ID].preferences
+        
+        fav_obj_str = prefs.favourite_objects
+        try:
+            fav_objs = json.loads(fav_obj_str) if fav_obj_str else []
+        except json.JSONDecodeError:
+            fav_objs = []
+            
+        if self.object_id in fav_objs:
+            fav_objs.remove(self.object_id)
+        else:
+            fav_objs.append(self.object_id)
+            
+        prefs.favourite_objects = json.dumps(fav_objs)
+        asset_browser.set_favourite_objects(fav_objs)
+        
+        print(prefs.favourite_objects)
+        
+        bpy.ops.wm.save_userpref()
+        
         return {'FINISHED'}
     
 class AssetBrowserCategorySubSelected(bpy.types.Operator):
     bl_idname = "object.nms_asset_browser_sub_category_selected"
-    bl_label = "Object_selected"
-    bl_description = "Show tips on how to use curve tool"
+    bl_label = "Sub Cagetory Selected"
+    bl_description = "Sub Category of Objects"
 
     sub_category: bpy.props.StringProperty()
     
@@ -212,14 +270,55 @@ class AssetBrowserCategorySubSelected(bpy.types.Operator):
         asset_browser.asset_browser_sub_caterogies = self.sub_category
         return {'FINISHED'}
     
+class AssetBrowserCategoryShowFavItems(bpy.types.Operator):
+    bl_idname = "object.nms_asset_browser_show_fav_items"
+    bl_label = "Favourite Items"
+    bl_description = "Show Favourite Items"
+    def execute(self, context):
+        scene = context.scene
+        asset_browser = scene.nms_asset_browser
+        asset_browser.show_favourite_obejcts()
+        
+        for area in context.window.screen.areas:
+            area.tag_redraw()
+        
+        return {'FINISHED'}
+    
+class AssetBrowserCategoryShowRecentItems(bpy.types.Operator):
+    bl_idname = "object.nms_asset_browser_show_recent_items"
+    bl_label = "Recent Items"
+    bl_description = "Show Recent Items"
+    def execute(self, context):
+        scene = context.scene
+        asset_browser = scene.nms_asset_browser
+        asset_browser.show_recent_objects()
+        
+        for area in context.window.screen.areas:
+            area.tag_redraw()
+        
+        return {'FINISHED'}
+    
+class AssetBrowserCategoryShowPresets(bpy.types.Operator):
+    bl_idname = "object.nms_asset_browser_show_presets"
+    bl_label = "Presets"
+    bl_description = "Show Presets"
+    def execute(self, context):
+        scene = context.scene
+        asset_browser = scene.nms_asset_browser
+        asset_browser.show_presets()
+        
+        for area in context.window.screen.areas:
+            area.tag_redraw()
+        
+        return {'FINISHED'}
+    
 
 
 class AssetBrowserListSettings(bpy.types.Operator):
-    """Group parts together into"""
+    """Adjust size of icons and number of columns"""
 
     bl_idname = "object.nms_asset_browser_list_settings"
-    bl_label = "List Settingsr"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_label = "List Settings"
     
     grid_type : bpy.props.StringProperty(
         default = "Other"
@@ -232,6 +331,7 @@ class AssetBrowserListSettings(bpy.types.Operator):
         )
 
     def execute(self, context):
+        bpy.ops.wm.save_userpref()
         return {"FINISHED"}
 
     def draw(self, context):
@@ -253,12 +353,17 @@ class AssetBrowserListSettings(bpy.types.Operator):
         layout.separator()
         layout.prop(prefs, number_of_columns_prop, text = "Columns")
         
+        
+        
 classes = (
     LaunchAssetBrowserWindow,
     AssetBrowserObjectSelected,
     AssetBrowserListSettings,
     AssetBrowserCategorySelected,
     AssetBrowserCategorySubSelected,
-    AssetBrowserCategoryFavourite
-    
+    AssetBrowserCategoryFavourite,
+    AssetBrowserCategoryShowFavItems,
+    AssetBrowserObjectFavourite,
+    AssetBrowserCategoryShowRecentItems,
+    AssetBrowserCategoryShowPresets
 )

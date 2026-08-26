@@ -24,12 +24,16 @@ class Part(object):
     
     """parts property names."""
     PROP_OBJECT_ID = "ObjectID"
+    PROP_SNAP_ID = "SnapID"
     PROP_USER_DATA = "UserData"
     PROP_TIMESTAMP = "Timestamp"
     PROP_MESSAGE = "Message"
+    
     PROP_POSITION = "Position"
     PROP_UP = "Up"
     PROP_AT = "At"
+    
+    PROP_BELONGS_TO_PRESET = "belongs_to_preset"
 
     SNAP_CACHE = {}
 

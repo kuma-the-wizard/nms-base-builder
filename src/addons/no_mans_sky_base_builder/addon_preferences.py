@@ -117,3 +117,21 @@ class NMSAddonPreferences(bpy.types.AddonPreferences):
         ],
         default = "Grid"
     )
+    
+    favourite_categories: bpy.props.StringProperty(
+        name = "Favourite Categories",
+        description = "List of Categories that are marked as Favourite",
+        default = ""
+    )
+    
+    favourite_objects: bpy.props.StringProperty(
+        name = "Favourite Objects",
+        description = "List of Objects that are marked as Favourite",
+        default = ""
+    )
+    
+    recent_objects: bpy.props.StringProperty(
+        name = "Recent Objects",
+        description = "List of Objects that have been recently added",
+        default = ""
+    )

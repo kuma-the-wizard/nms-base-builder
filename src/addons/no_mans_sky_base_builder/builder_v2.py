@@ -3,6 +3,7 @@ import time
 import mathutils
 import math
 from . import builder, preset
+from .part import Part
 from .utils import material, collection_utils
 from .part_overrides import parts_override
 
@@ -49,9 +50,7 @@ def deserialise_from_data(data):
         # use override clases only when needed
         if object_id in classes_dict:
             use_class = classes_dict[object_id]
-            bpy_object = use_class.deserialise_from_data(
-                part_data, BUILDER, compensate_normal=True
-            )
+            bpy_object = use_class.deserialise_from_data( part_data, BUILDER, compensate_normal=True )
             
         # import object_id from disk when visiting it first time
         else:
@@ -70,12 +69,9 @@ def deserialise_from_data(data):
             # if object is already visited, check if a same object with same userdata exists
             # this is to avoid creating data block for each object with same object_ids 
             else:
-                
                 unique_obj = unique_objects.get(object_id)
-                bpy_object = bpy.data.objects.new(unique_obj.name, unique_obj.data)
+                bpy_object = unique_obj.copy()
                 import_collection.objects.link(bpy_object)
-                for key, value in unique_obj.items():
-                    bpy_object[key] = value
                 
                 # choose to either create new material or use existing one if it exists
                 if material_key in unique_materials:
@@ -131,18 +127,24 @@ def improt_fbx_from_disk(object_id):
 
 # copy params from part json to bpy_object
 def restore_params(part, part_data, object_id):
-    # Apply metadata
-    part["ObjectID"] = object_id
-    part["SnapID"] = object_id
-    try:
-        part["UserData"] = part_data.get("UserData", 0)
-    except Exception:
-        part["UserData"] = 0
-    part["Timestamp"] = str(part_data.get("Timestamp", int(time.time())))
-    part["belongs_to_preset"] = False
     
-    if "Message" in part_data:
-        part["Message"] = part_data.get("Message", "")
+    try:
+        user_data = part_data.get(Part.PROP_USER_DATA, 0)
+    except Exception:
+        user_data = 0
+    
+    time_stamp = str(part_data.get(Part.PROP_TIMESTAMP, int(time.time())))
+    message = part_data.get(Part.PROP_MESSAGE, None)
+        
+    # Apply metadata
+    part[Part.PROP_OBJECT_ID] = object_id
+    part[Part.PROP_SNAP_ID] = object_id
+    part[Part.PROP_USER_DATA] = user_data
+    part[Part.PROP_TIMESTAMP] = time_stamp
+    part[Part.PROP_BELONGS_TO_PRESET] = False
+    
+    if message:
+        part[Part.PROP_MESSAGE] = message
         
     return part
 
