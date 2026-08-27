@@ -75,6 +75,15 @@ class BatchReplaceTarget(bpy.types.Operator):
         batch_tool = scene.nms_batch_tool
         replaced_count = batch_tool.batch_replace_with_target_object()
         self.report({'INFO'}, f"replaced {replaced_count} objects")
+        
+        
+        def clear_picker():
+            batch_tool.target_object = None
+            return None
+        
+        # clear value after operator execution finishes so that blender doesnt fire a warning popup
+        bpy.app.timers.register(clear_picker, first_interval=0.0)
+        
         return {"FINISHED"}
     
     def draw(self, context):

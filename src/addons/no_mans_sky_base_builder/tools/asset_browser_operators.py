@@ -75,7 +75,7 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
                     
                 for collection in list(dummy_obj.users_collection):
                     collection.objects.unlink(dummy_obj)
-                #dummy_obj.use_fake_user = True
+                dummy_obj.use_fake_user = True
                     
                 return None
             except (ReferenceError, RuntimeError, TypeError, AttributeError):
@@ -136,6 +136,7 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
     bl_idname = "object.nms_asset_browser_object_selected"
     bl_label = "Add Object"
     bl_description = "Click to add this obejct to scene"
+    bl_options = {'REGISTER', 'UNDO'}
 
     object_id: bpy.props.StringProperty()
     has_variants : bpy.props.BoolProperty( default = False )
@@ -179,6 +180,43 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
                 self.report({'INFO'}, f"Added {self.object_id} to scene")
             else:
                 self.report({'ERROR'}, f"Could not add {self.object_id} to scene")
+        return {'FINISHED'}
+    
+class AssetBrowserObjectMoreOptions(bpy.types.Operator):
+    bl_idname = "object.nms_asset_browser_more_options"
+    bl_label = "Add Object"
+    bl_description = "Click to add this obejct to scene"
+
+    object_id: bpy.props.StringProperty()
+    is_fav : bpy.props.BoolProperty(default = False)
+    
+    @classmethod
+    def description(cls, context, properties):
+        return f"Show more optiosn for {properties.object_id}"
+    
+    
+    def execute(self, context):
+        scene = context.scene
+        asset_browser = scene.nms_asset_browser
+        
+        is_fav = self.is_fav
+        object_id = self.object_id
+        
+        def draw_popup(self, context):
+            layout = self.layout
+            layout.label(text=f"{object_id} Options", icon = "COLLAPSEMENU")
+            layout.separator()
+            layout.separator()
+            
+            fav_button_label = "Remove from Favourites" if is_fav else "Add to Favourite"
+            fav_button_icon = "FUND" if is_fav else "HEART"
+            fav_button = layout.operator("object.nms_asset_browser_object_favourite", text = fav_button_label, icon = fav_button_icon)
+            fav_button.object_id = object_id
+            
+            replace_button_label = f"Replace Selected Objects"
+            replace_button = layout.operator("object.nms_asset_browser_batch_replace", text = replace_button_label, icon = "GROUP_VERTEX")
+            replace_button.object_id = object_id
+        context.window_manager.popup_menu(draw_popup)
         return {'FINISHED'}
     
 class AssetBrowserCategorySelected(bpy.types.Operator):
@@ -250,10 +288,10 @@ class AssetBrowserObjectFavourite(bpy.types.Operator):
             
         prefs.favourite_objects = json.dumps(fav_objs)
         asset_browser.set_favourite_objects(fav_objs)
-        
-        print(prefs.favourite_objects)
-        
         bpy.ops.wm.save_userpref()
+        
+        for area in context.window.screen.areas:
+            area.tag_redraw()
         
         return {'FINISHED'}
     
@@ -353,6 +391,23 @@ class AssetBrowserListSettings(bpy.types.Operator):
         layout.separator()
         layout.prop(prefs, number_of_columns_prop, text = "Columns")
         
+
+class AssetBrowserBatchReplace(bpy.types.Operator):
+    bl_idname = "object.nms_asset_browser_batch_replace"
+    bl_label = "Batch Replace"
+    bl_description = "Batch replace selected objects with this item"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    object_id: bpy.props.StringProperty()
+    
+    def execute(self, context):
+        scene = context.scene
+        batch_tool = scene.nms_batch_tool
+        selected_objects = context.selected_objects
+        if selected_objects:
+            batch_tool.batch_replace_with_object_id(self.object_id, selected_objects)
+        
+        return {'FINISHED'}
         
         
 classes = (
@@ -365,5 +420,7 @@ classes = (
     AssetBrowserCategoryShowFavItems,
     AssetBrowserObjectFavourite,
     AssetBrowserCategoryShowRecentItems,
-    AssetBrowserCategoryShowPresets
+    AssetBrowserCategoryShowPresets,
+    AssetBrowserBatchReplace,
+    AssetBrowserObjectMoreOptions
 )

@@ -83,7 +83,7 @@ class BatchTool(bpy.types.PropertyGroup):
             ShowMessageBox( message= message, title=title )
             return 0
         
-
+        replaced_ojects = []
         if self.nms_batch_replace_type == "target":
             target_object = self.target_object
             if "ObjectID" not in target_object and 'GroupID' not in target_object:
@@ -91,19 +91,44 @@ class BatchTool(bpy.types.PropertyGroup):
                 message="Target Object is Invalid"
                 ShowMessageBox(message=message, title=title )
                 return 0
+            else:
+                replaced_ojects = self.batch_replace(target_object, selected_objects)
         else :
             # create a temp object if "ObjectID" is provided
-            object_id = self.object_id
-            new_obj = BUILDER.add_part(object_id)
-            target_object = new_obj.object
+            replaced_ojects = self.batch_replace_with_object_id(self.object_id, selected_objects)
+            
+        if not replaced_ojects:
+            return 0
+            
+        # Select the new objects
+        try:
+            if len(replaced_ojects) > 0:
+                blend_utils.select(replaced_ojects)
+        except ReferenceError as error:
+            print(error)
         
+        return len(replaced_ojects)
+            
+    def batch_replace_with_object_id(self, target_object_id, objects_to_replace):
+        # create a temp object if "ObjectID" is provided
+        object_id = target_object_id
+        new_obj = BUILDER.add_part(object_id)
+        target_object = new_obj.object
+        
+        replaced_objects = self.batch_replace(target_object, objects_to_replace)
+        bpy.data.objects.remove(target_object, do_unlink=True)
+        
+        return replaced_objects
+    
+    
+    def batch_replace(self, target_object, objects_to_replace):
         replaced_objects_list = []
         objects_to_delete = []
         
         # Get the current active collection to link the new objects to
         current_collection = bpy.context.collection
 
-        for source_object in selected_objects:
+        for source_object in objects_to_replace:
             if source_object == target_object:
                 continue
             
@@ -131,19 +156,8 @@ class BatchTool(bpy.types.PropertyGroup):
         # Delete old objects
         for obj in objects_to_delete:
             bpy.data.objects.remove(obj, do_unlink=True)
-        
-        # Select the new objects
-        try:
-            if len(replaced_objects_list) > 0:
-                blend_utils.select(replaced_objects_list)
-        except ReferenceError as error:
-            print(error)
             
-        # delete temp object
-        if self.nms_batch_replace_type == "object_id":
-            bpy.data.objects.remove(target_object, do_unlink=True)
-        
-        return len(replaced_objects_list)
+        return replaced_objects_list
     
     
     def select_same_colored_objects(self, with_same_object_id = False):

@@ -3,6 +3,9 @@ import json
 from .. import icons
 ADDON_ID = __package__.rsplit(".", 1)[0]
 
+OP_OBJECT_SELECTED = "object.nms_asset_browser_object_selected"
+OP_MORE_OPTIONS = "object.nms_asset_browser_more_options"
+
 def draw_sub_category(pcoll , container, label, elements_list, number_of_columns, icon_size, grid_type = "Grid" ):
             
     sub_category_column = container.column(align = True)
@@ -38,10 +41,6 @@ def draw_grid_element(
         asset_icon_value = None, 
     ):
     
-    operator = "object.nms_asset_browser_object_selected"
-    fav_opeartor = "object.nms_asset_browser_object_favourite"
-    
-    
     asset_name = part_data["name"]
     variants = part_data.get("variants",None)
     
@@ -63,23 +62,14 @@ def draw_grid_element(
         asset_icon_col.template_icon( icon_value = enum_items,scale= grid_icon_size)
         
     action_butons_column = asset_icon_row.column(align = False)
-    add_button = action_butons_column.operator(
-        operator, 
-        text = "", 
-        emboss = True, 
-        icon ="ADD" 
-    )
+    add_button = action_butons_column.operator( OP_OBJECT_SELECTED,  text = "",  emboss = True,  icon ="ADD" )
     add_button.object_id = object_id
     add_button.is_preset = is_preset
     
     if not is_preset:
-        fav_button = action_butons_column.operator(
-            fav_opeartor, 
-            text = "", 
-            emboss = False, 
-            icon = "FUND" if is_fav else "HEART"
-        )
-        fav_button.object_id = object_id
+        more_options_button = action_butons_column.operator( OP_MORE_OPTIONS, text = "",  emboss = False,  icon = "COLLAPSEMENU" )
+        more_options_button.object_id = object_id
+        more_options_button.is_fav = is_fav
         
     if has_variants:
         variants_copy = variants.copy()
@@ -88,15 +78,13 @@ def draw_grid_element(
         variants_copy = None
     
     asset_column_text_row = asset_column.row(align = False)
-    button = asset_column_text_row.operator(operator, text = asset_name, emboss = False)
+    button = asset_column_text_row.operator(OP_OBJECT_SELECTED, text = asset_name, emboss = False)
     button.object_id = object_id
     button.has_variants = has_variants
     add_button.is_preset = is_preset
     if has_variants:
         variants_json = json.dumps(variants_copy)
         button.variants = variants_json
-    
-        
     
     
 def draw_list_element( 
@@ -107,8 +95,6 @@ def draw_list_element(
         asset_icon_value = None, 
     ):
     
-    operator = "object.nms_asset_browser_object_selected"
-    fav_opeartor = "object.nms_asset_browser_object_favourite"
     
     asset_name = part_data["name"]
     variants = part_data.get("variants",None)
@@ -130,7 +116,7 @@ def draw_list_element(
         element_row_right = element_row.row(align = True)
         element_row_right.label(text = asset_name)
         add_button_row = element_row_right.row(align = True)
-        add_button_2 = add_button_row.operator(operator, text = "", emboss = True, icon = "COLOR" if has_variants else "ADD")
+        add_button_2 = add_button_row.operator(OP_OBJECT_SELECTED, text = "", emboss = True, icon = "COLOR" if has_variants else "ADD")
         
     else:
         element_row_right = element_row.column(align = True)
@@ -139,7 +125,7 @@ def draw_list_element(
             element_row_right.label(text = "")
         add_button_row = element_row_right.row(align = True)
         add_button_row.label(text = "")
-        add_button_2 = add_button_row.operator(operator, text = "", emboss = True, icon = "ADD")
+        add_button_2 = add_button_row.operator(OP_OBJECT_SELECTED, text = "", emboss = True, icon = "ADD")
         
     add_button_2.object_id = object_id
     add_button_2.has_variants = has_variants
@@ -287,7 +273,6 @@ def draw_asset_browser_left_options(context, asset_browser_box, scene):
     
     ab_category = asset_browser.asset_browser_caterogies
     ab_sub_category = asset_browser.asset_browser_sub_caterogies
-    
     fav_cats = asset_browser.get_favourite_categories()
     
     
@@ -302,9 +287,6 @@ def draw_asset_browser_left_options(context, asset_browser_box, scene):
     size_column.prop(prefs, "asset_browser_number_of_columns_other", text = "Columns")
     asset_browser_box.separator()
     
-    
-    cats_col = asset_browser_box.column(align = True)
-    
     def draw_button(parent,operator ,label, what_type ,icon = "LEFT"):
         cat_element_row = parent.box().row(align = True)
         cat_element_row.scale_y = 0.7
@@ -315,9 +297,10 @@ def draw_asset_browser_left_options(context, asset_browser_box, scene):
             operator,
             text = label,
             emboss = False,
-            icon = "TRIA_RIGHT" if what_type == display_what else "RIGHTARROW_THIN"
+            icon = "TRIA_RIGHT" if what_type == display_what else "BLANK1"#"RIGHTARROW_THIN"
         )
     
+    cats_col = asset_browser_box.column(align = True)
     cats_col.label(text="Categories" )
     draw_button(cats_col,"object.nms_asset_browser_show_fav_items", "Favourite Items", icon = "FUND", what_type= "fav")
     draw_button(cats_col,"object.nms_asset_browser_show_recent_items", "Recent Items", icon = "RECOVER_LAST", what_type= "recent")
@@ -348,7 +331,7 @@ def draw_asset_browser_left_options(context, asset_browser_box, scene):
             text = category,
             depress = is_active,
             emboss = False,
-            icon = "TRIA_DOWN" if is_active and display_what == "asset" else "RIGHTARROW_THIN"
+            icon = "TRIA_DOWN" if is_active and display_what == "asset" else "BLANK1" #"RIGHTARROW_THIN"
         )
         cat_button.category = category
         
@@ -475,9 +458,6 @@ class NMS_PT_asset_browser_new_window_panel_left(bpy.types.Panel):
         layout = self.layout     
         scene = context.scene
         draw_asset_browser_left_options(context, layout, scene)
-        
-
-        
         
 classes = (
     NMS_PT_asset_browser_properties_panel,

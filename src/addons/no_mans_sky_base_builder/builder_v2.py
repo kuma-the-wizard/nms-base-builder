@@ -6,6 +6,7 @@ from . import builder, preset
 from .part import Part
 from .utils import material, collection_utils
 from .part_overrides import parts_override
+from .utils import python as python_utils
 
 BUILDER = builder.Builder()
 
@@ -128,18 +129,14 @@ def improt_fbx_from_disk(object_id):
 # copy params from part json to bpy_object
 def restore_params(part, part_data, object_id):
     
-    try:
-        user_data = part_data.get(Part.PROP_USER_DATA, 0)
-    except Exception:
-        user_data = 0
-    
+    user_data = part_data.get(Part.PROP_USER_DATA, "")
     time_stamp = str(part_data.get(Part.PROP_TIMESTAMP, int(time.time())))
     message = part_data.get(Part.PROP_MESSAGE, None)
         
     # Apply metadata
     part[Part.PROP_OBJECT_ID] = object_id
     part[Part.PROP_SNAP_ID] = object_id
-    part[Part.PROP_USER_DATA] = user_data
+    part[Part.PROP_USER_DATA] = str(user_data)
     part[Part.PROP_TIMESTAMP] = time_stamp
     part[Part.PROP_BELONGS_TO_PRESET] = False
     

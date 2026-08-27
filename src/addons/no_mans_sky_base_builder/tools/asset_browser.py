@@ -33,7 +33,7 @@ class AssetBrowser(bpy.types.PropertyGroup):
     asset_browser_caterogies: bpy.props.EnumProperty(
         name="Categories",
         description="Catagories",
-        items = lambda self, context: self.get_categories(context),
+        items = lambda self, context: self.get_categories(),
         update = lambda self, context: self.on_category_selected(),
         default = 0
     )
@@ -76,6 +76,20 @@ class AssetBrowser(bpy.types.PropertyGroup):
     categories_data = {}
     search_results = {}
     
+    def initialise_asset_browser(self):
+        categories_data = self.get_category_vise_objects()
+        for category in categories_data:
+            AssetBrowser.enum_categories.append((category,category,category))
+        
+        AssetBrowser.presets_data = self.get_presets_data()
+        AssetBrowser.enum_sub_categories = self.extract_enum_sub_categories()
+        AssetBrowser.favourite_categories = self.get_favourite_categories()
+        
+        if self.enum_asset_browser_what_to_display == "search":
+            search_text = self.asset_broser_search_query
+            search_results = self.filter_objects_with_string(search_text)
+            AssetBrowser.search_results = search_results
+    
     
     def get_grid_size_prop_string(self):
         grid_type = self.enum_asset_browser_mode
@@ -99,16 +113,9 @@ class AssetBrowser(bpy.types.PropertyGroup):
         return icon_size, number_of_columns
     
     
-    def get_categories(self, context):
+    def get_categories(self):
         if not AssetBrowser.enum_categories:
-            categories_data = self.get_category_vise_objects()
-            for category in categories_data:
-                AssetBrowser.enum_categories.append((category,category,category))
-            
-            AssetBrowser.presets_data = self.get_presets_data()
-            AssetBrowser.enum_sub_categories = self.extract_enum_sub_categories()
-            AssetBrowser.favourite_categories = self.get_favourite_categories(context)
-            
+            self.initialise_asset_browser()
         return AssetBrowser.enum_categories
 
     def on_category_selected(self):
@@ -172,26 +179,29 @@ class AssetBrowser(bpy.types.PropertyGroup):
         if search_filter and len(search_filter) > 2:
             self.check_display_search_results = True
             self.enum_asset_browser_what_to_display = "search"
-            categories_data = self.get_categories_data()
-            search_results = {}
-            for category, sub_categories in categories_data.items():
-                for sub_categories, objects_list in sub_categories.items():
-                    for obj_id, obj_data in objects_list.items():
-                        
-                        obj_id_lower = obj_id.lower()
-                        name_lower = obj_data["name"].lower()
-
-                        if search_filter in obj_id_lower or search_filter in name_lower:
-                            if category not in search_results:
-                                search_results[category] = {}
-                                
-                            search_results[category][obj_id] = obj_data
-                        
+            search_results = self.filter_objects_with_string(search_filter)
             AssetBrowser.search_results = search_results
         else:
             self.check_display_search_results = False
             self.enum_asset_browser_what_to_display = "asset"
             AssetBrowser.search_results = {}
+            
+    def filter_objects_with_string(self,search_filter):
+        categories_data = self.get_categories_data()
+        search_results = {}
+        for category, sub_categories in categories_data.items():
+            for sub_categories, objects_list in sub_categories.items():
+                for obj_id, obj_data in objects_list.items():
+                    
+                    obj_id_lower = obj_id.lower()
+                    name_lower = obj_data["name"].lower()
+
+                    if search_filter in obj_id_lower or search_filter in name_lower:
+                        if category not in search_results:
+                            search_results[category] = {}
+                            
+                        search_results[category][obj_id] = obj_data
+        return search_results
             
     def get_search_results(self):
         return AssetBrowser.search_results
