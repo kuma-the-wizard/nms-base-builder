@@ -1873,12 +1873,7 @@ def udpates_handler(scene, depsgraph):
                 bpy.data.objects.remove(obj, do_unlink=True)
         
     # Sync back down to the global tracking set 
-    known_curve_names |= updated_curve_names
-    
-    
-
-    
-                
+    known_curve_names |= updated_curve_names  
                 
 
 preview_collections = {}
@@ -1936,7 +1931,6 @@ classes = (
     NMS_PT_hero_panel,
     NMS_PT_file_buttons_panel,
     NMS_PT_save_editor_panel,
-    #NMS_PT_base_prop_panel,
     NMS_PT_transformation_panel,
     NMS_PT_colour_panel,
     NMS_PT_logic_panel,
@@ -1981,11 +1975,8 @@ def register():
         )
         
     preview_collections["main"] = pcoll
-    
     icons.register_icons()
     
-    
-
     # Register Plugin
     for _class in classes:
         bpy.utils.register_class(_class)
@@ -2006,10 +1997,6 @@ def register():
         bpy.app.handlers.depsgraph_update_post.append(udpates_handler)
     
     bpy.app.timers.register(viewport_overlay.register_draw, first_interval=0.01)
-    
-        
-        
-    
 
 def unregister():
     for pcoll in preview_collections.values():

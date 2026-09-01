@@ -34,6 +34,7 @@ class Part(object):
     PROP_AT = "At"
     
     PROP_BELONGS_TO_PRESET = "belongs_to_preset"
+    PROP_ORDER= "order"
 
     SNAP_CACHE = {}
 

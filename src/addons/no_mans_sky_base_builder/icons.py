@@ -8,6 +8,7 @@ import tempfile
 import importlib
 
 preview_collections = {}
+_ICONS_REGISTERED = False
 
 def extract_pcoll():
     """Reads the JSON file and loads icons into the Blender preview collection."""
@@ -130,7 +131,13 @@ def get_asset_icons_pcoll():
 def get_icons_pscroll():
     return preview_collections["ui_icons"]
 
+def check_register_icons():
+    if not _ICONS_REGISTERED:
+        register_icons()
+
 def register_icons():
+    _ICONS_REGISTERED = True
+    
     pcoll = extract_pcoll()
     asset_pcoll = load_asset_icons()
     

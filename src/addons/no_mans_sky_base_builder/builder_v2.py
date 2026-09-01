@@ -40,8 +40,8 @@ def deserialise_from_data(data):
     
     objects_data = data.get("Objects", [])
     for part_data in objects_data:
-        object_id = part_data.get("ObjectID", None).replace("^", "")
-        user_data = part_data.get("UserData", 0)
+        object_id = part_data.get(Part.PROP_OBJECT_ID, None).replace("^", "")
+        user_data = part_data.get(Part.PROP_USER_DATA, 0)
             
         material_key = ( object_id, user_data )
         
@@ -88,7 +88,7 @@ def deserialise_from_data(data):
             bpy_object.matrix_world = matrix_world
             
             # provide order
-            bpy_object["order"] = order
+            bpy_object[Part.PROP_ORDER] = order
             order += 1
     
     
