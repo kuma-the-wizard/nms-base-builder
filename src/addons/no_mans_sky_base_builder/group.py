@@ -8,15 +8,26 @@ import time
 from mathutils import Matrix, Vector
 import uuid
 
-from .utils import blend_utils, mirror_utils, dictionary
+from .utils import blend_utils, materials_v2, mirror_utils, dictionary
 from .part import Part
 
 nice_name_dictionary = dictionary.get_nice_names_diictionary()
+
 
 """
     Manages grouping and ungrouping of NMS objects with safe caching.
     Handles relative matrix calculations, serialization, and restoration.
 """
+
+
+def _builder_v2():
+    """The high res importer, imported on use rather than at module level.
+
+    builder_v2 imports builder, which imports this module, so importing it up
+    top would be a cycle.
+    """
+    from . import builder_v2
+    return builder_v2
 
 class Group:
     
@@ -176,11 +187,56 @@ class Group:
         merged_object[Group.PROP_PART_COUNT] = number_of_objects_grouped
         merged_object[Group.PROP_IS_MIRROR] = False
 
+        # Carry a colour onto the group.
+        # merge_objects strips every custom property off the merged object, and
+        # an absent palette slot reads as black in the colourise node group, so
+        # a group of high res parts would otherwise come out with all of its
+        # paintable regions blacked out.
+        group_user_data = Group.get_representative_user_data(objects_list)
+        if group_user_data is not None:
+            # Only the palette properties, never UserData - ungroup treats a
+            # UserData on the group as a master colour to force onto every
+            # child, and that should only happen when the user has actually
+            # recoloured the group, not just because they grouped it.
+            materials_v2.apply(merged_object, group_user_data)
+
         # Delete original objects
         for obj in objects_to_group:
             bpy.data.objects.remove(obj, do_unlink=True)
 
         return merged_object
+
+    @staticmethod
+    def get_representative_user_data(objects_list):
+        """Pick the one colour a merged group should show.
+
+        A group is a single object, and colour lives on the object, so it can
+        only carry one. The most common colour among the parts is the closest
+        match to what was just grouped - a wall of ten white panels with one red
+        door should read as white. Ties go to whichever was seen first.
+
+        Only high res parts get a vote. The old proxies keep their colour in
+        their material, which survives the merge on its own.
+
+        Args:
+            objects_list (list): The objects being grouped.
+
+        Returns:
+            The UserData value to show, or None if nothing needs one.
+        """
+        counts = {}
+        for obj in objects_list:
+            if not materials_v2.is_high_res(obj):
+                continue
+            user_data = obj.get(Part.PROP_USER_DATA)
+            if user_data is None:
+                continue
+            user_data = str(user_data)
+            counts[user_data] = counts.get(user_data, 0) + 1
+
+        if not counts:
+            return None
+        return max(counts, key=counts.get)
 
     @staticmethod
     def ungroup_objects( builder, parent_obj):
@@ -211,8 +267,11 @@ class Group:
                 user_data = cache_data.get(Group.PROP_USER_DATA, 0) 
             time_stamp = cache_data.get(Group.PROP_TIMESTAMP, int(time.time()))
 
-            # Add part via builder
-            new_part = builder.add_part(object_id, user_data)
+            # Add part via builder - the caller's builder is passed through so
+            # its part cache stays the one that gets filled
+            new_part = _builder_v2().add_part(
+                object_id, user_data, builder_object=builder
+            )
             if new_part is None or not hasattr(new_part, "object"):
                 continue
 
@@ -314,8 +373,11 @@ class Group:
             user_data = cache_data.get(Group.PROP_USER_DATA, 0)
             time_stamp = cache_data.get(Group.PROP_TIMESTAMP, int(time.time()))
 
-            # Add part via builder
-            new_part = builder.add_part(object_id, user_data)
+            # Add part via builder - the caller's builder is passed through so
+            # its part cache stays the one that gets filled
+            new_part = _builder_v2().add_part(
+                object_id, user_data, builder_object=builder
+            )
             if new_part is None or not hasattr(new_part, "object"):
                 continue
 
@@ -365,8 +427,11 @@ class Group:
             user_data = cache_data.get(Group.PROP_USER_DATA, 0)
             time_stamp = cache_data.get(Group.PROP_TIMESTAMP, int(time.time()))
 
-            # Add part via builder
-            new_part = builder.add_part(object_id, user_data)
+            # Add part via builder - the caller's builder is passed through so
+            # its part cache stays the one that gets filled
+            new_part = _builder_v2().add_part(
+                object_id, user_data, builder_object=builder
+            )
             if new_part is None or not hasattr(new_part, "object"):
                 continue
 

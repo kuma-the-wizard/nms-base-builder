@@ -35,6 +35,7 @@ from .tools import asset_browser_presentation
 
 from .utils import blend_utils, curve, dictionary
 from .utils import material as _material
+from .utils import materials_v2 as _materials_v2
 from .utils import python as python_utils
 from .utils import workspace
 
@@ -347,16 +348,27 @@ class NMSMain(PropertyGroup):
 
         # Apply Colour Material.
         maeterial_index = int(material.split("_")[0])
-        
+
+        # A high res part is repainted in place, all of them in one pass - its
+        # colour is four object properties, so it never needs a mesh of its own
+        # and goes on sharing the one datablock for its ObjectID no matter how
+        # many colours are on screen. Only the flat material fbx proxies still
+        # need a copy per colour, which is what the ObjectID cache below is for.
+        _materials_v2.recolour(
+            [obj for obj in selected_objects if _materials_v2.is_high_res(obj)],
+            colour_index=int(colour_index),
+            material_index=int(maeterial_index),
+        )
+
         unique_objects = {}
         for obj in selected_objects:
-            if "ObjectID" in obj:
+            if "ObjectID" in obj and not _materials_v2.is_high_res(obj):
                 obj_id = obj["ObjectID"]
                 if obj_id not in unique_objects:
                     obj.data = obj.data.copy()
                     _material.assign_material(obj, int(colour_index), int(maeterial_index))
                     unique_objects[obj_id] = obj
-                    
+
         for obj in selected_objects:
             # detect if object is nms curve
             if "has_linked_objects" in obj and curve.is_bezier_or_nurbs_path(obj):
@@ -421,21 +433,32 @@ class NMSMain(PropertyGroup):
             
         unique_keys = {}
         selected_objects = bpy.context.selected_objects
-        
+
+        # High res parts take the picked UserData straight onto the object and
+        # keep the mesh they already share. Everything else is a flat material
+        # proxy, so one object per ObjectID gets its own copy and the rest of
+        # that id point at it - they all end up on the same UserData here, so
+        # ObjectID alone is enough to key the cache.
+        _materials_v2.recolour_from_user_data(
+            [obj for obj in selected_objects if _materials_v2.is_high_res(obj)],
+            target_userdata,
+        )
+
         for obj in selected_objects:
-            if "ObjectID" not in obj:
+            if "ObjectID" not in obj or _materials_v2.is_high_res(obj):
                 continue
             obj_id = obj["ObjectID"]
             if obj_id not in unique_keys:
                 obj.data = obj.data.copy()
                 _material.restore_material(obj, target_userdata)
-        
+                unique_keys[obj_id] = obj
+
         if target_userdata is not None:
-            
+
             for obj in selected_objects:
                 if "has_linked_objects" in obj and curve.is_bezier_or_nurbs_path(obj):
                     curve.apply_color(obj, target_userdata)
-                elif "ObjectID" in obj :
+                elif "ObjectID" in obj and not _materials_v2.is_high_res(obj):
                     obj_id = obj["ObjectID"]
                     key = unique_keys.get(obj_id, None)
                     if key is not None:
@@ -1167,7 +1190,7 @@ class ListBuildOperator(bpy.types.Operator):
         if self.part_id in preset.Preset.get_presets():
             new_item = BUILDER.add_preset(self.part_id)
         else:
-            new_item = BUILDER.add_part(self.part_id)
+            new_item = builder_v2.add_part(self.part_id, builder_object=BUILDER)
             if hasattr(new_item, "build_rig"):
                 new_item.build_rig()
 
@@ -1488,7 +1511,7 @@ class LogicButton(bpy.types.Operator):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
         # Build button.
-        button = BUILDER.add_part("U_SWITCHBUTTON")
+        button = builder_v2.add_part("U_SWITCHBUTTON", builder_object=BUILDER)
         # Snap to selection.
         if selection:
             selection = BUILDER.get_builder_object_from_bpy_object(selection)
@@ -1509,7 +1532,7 @@ class LogicWallSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_SWITCHWALL")
+        button = builder_v2.add_part("U_SWITCHWALL", builder_object=BUILDER)
         # Snap to selection.
         if selection:
             selection = BUILDER.get_builder_object_from_bpy_object(selection)
@@ -1529,7 +1552,7 @@ class LogicProxSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_SWITCHPROX")
+        button = builder_v2.add_part("U_SWITCHPROX", builder_object=BUILDER)
         # Snap to selection.
         if selection:
             selection = BUILDER.get_builder_object_from_bpy_object(selection)
@@ -1549,7 +1572,7 @@ class LogicInvSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_TRANSISTOR1")
+        button = builder_v2.add_part("U_TRANSISTOR1", builder_object=BUILDER)
         # Snap to selection.
         if selection:
             selection = BUILDER.get_builder_object_from_bpy_object(selection)
@@ -1569,7 +1592,7 @@ class LogicAutoSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_TRANSISTOR2")
+        button = builder_v2.add_part("U_TRANSISTOR2", builder_object=BUILDER)
         # Snap to selection.
         if selection:
             selection = BUILDER.get_builder_object_from_bpy_object(selection)
@@ -1589,7 +1612,7 @@ class LogicFloorSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_SWITCHPRESS")
+        button = builder_v2.add_part("U_SWITCHPRESS", builder_object=BUILDER)
         # Snap to selection.
         if selection:
             selection = BUILDER.get_builder_object_from_bpy_object(selection)
@@ -1609,7 +1632,7 @@ class LogicBeatSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("BYTEBEATSWITCH")
+        button = builder_v2.add_part("BYTEBEATSWITCH", builder_object=BUILDER)
         # Snap to selection.
         if selection:
             selection = BUILDER.get_builder_object_from_bpy_object(selection)
@@ -1800,6 +1823,7 @@ def udpates_handler(scene, depsgraph):
     
     global known_curve_names
     global last_active
+    
     
     active_object = bpy.context.view_layer.objects.active
     if hasattr(bpy.context, "selected_objects"):

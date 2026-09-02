@@ -6,7 +6,7 @@ from copy import copy
 import bpy
 import mathutils
 
-from .utils import blend_utils, material
+from .utils import blend_utils, material, materials_v2
 from .utils import python as python_utils
 
 z_compensate = mathutils.Matrix.Rotation(math.radians(-90.0), 4, "X")
@@ -284,6 +284,16 @@ class Part(object):
         """
         # Duplicate existing.
         existing_object = self.builder.find_object_by_id(object_id)
+
+        # ...but never a high res one. duplicate() copies the mesh and the
+        # materials, which is exactly the sharing the high res library exists to
+        # avoid - one duplicate of a big part costs a whole extra mesh and its
+        # material set. Reaching here means an old proxy was asked for anyway,
+        # so drop the cache hit and import one. See utils/materials_v2.py.
+        cached_bpy_object = getattr(existing_object, "object", None)
+        if cached_bpy_object is not None and materials_v2.is_high_res(cached_bpy_object):
+            existing_object = None
+
         if existing_object:
             duped = existing_object.duplicate()
             duped = duped.object

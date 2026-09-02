@@ -5,7 +5,7 @@ import random
 
 import bpy
 
-from .. import builder, part
+from .. import builder, builder_v2, part
 from . import (blend_utils, collection_utils, curve_utils, material,
                mirror_utils)
 from . import dictionary
@@ -219,7 +219,9 @@ def add_objects_to_curve(number_to_add, curve, existing_objs, bpy_object = None)
                 else:
                     object_id = curve[Curve.PROP_DUP_OBJECT_ID]
                     user_data = curve[Curve.PROP_DUP_USER_DATA]
-                    new_item = BUILDER.add_part(object_id, user_data=user_data)
+                    new_item = builder_v2.add_part(
+                        object_id, user_data=user_data, builder_object=BUILDER
+                    )
                     new_obj = new_item.object
                     
             if Curve.PROP_DUP_USER_DATA in curve:    

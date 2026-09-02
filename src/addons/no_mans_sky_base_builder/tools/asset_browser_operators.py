@@ -2,6 +2,7 @@ import bpy
 import json
 from ..utils import blend_utils,dictionary
 from ..builder import Builder
+from .. import builder_v2
 import ctypes
 from ctypes import wintypes
 
@@ -173,7 +174,7 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
             context.window_manager.popup_menu(draw_popup)
         else:
             if self.object_id in dictionary.get_nice_names_diictionary():
-                item = BUILDER.add_part(self.object_id)
+                item = builder_v2.add_part(self.object_id, builder_object=BUILDER)
                 bpy_obj = item.object
                 blend_utils.select(bpy_obj)
                 asset_browser.add_to_recents_list(self.object_id)

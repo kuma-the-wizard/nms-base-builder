@@ -4,7 +4,7 @@ import os
 import uuid
 import json
 from ..utils import blend_utils, curve, dictionary, material
-from .. import builder, part, group
+from .. import builder, builder_v2, part, group
 from ..utils.mirror_utils import ShowMessageBox
 
 from ..group import Group
@@ -390,7 +390,9 @@ class BuildTool(bpy.types.PropertyGroup):
                     object_id = target["ObjectID"]
                     user_data = target["UserData"]
                     # Build Item.
-                    new_item = BUILDER.add_part(object_id, user_data=user_data)
+                    new_item = builder_v2.add_part(
+                        object_id, user_data=user_data, builder_object=BUILDER
+                    )
                     duplicates.append(new_item)
                 elif "PresetID" in target:
                     preset_id = target["PresetID"]

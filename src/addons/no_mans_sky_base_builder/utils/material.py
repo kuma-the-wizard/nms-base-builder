@@ -18,6 +18,19 @@ ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
 GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
 
 
+def _materials_v2():
+    """The new colour system, imported on use rather than at module level.
+
+    materials_v2 reads BAKED_COLOURS from this module for its readable labels,
+    so importing it up top would be a cycle. Every entry point below asks it
+    first whether an object belongs to the high res library, so that a single
+    check here routes every caller - the colour operators, the curve tools, the
+    batch tool, presets - instead of each of them having to know.
+    """
+    from ..utils import materials_v2
+    return materials_v2
+
+
 def get_palette_from_row(row):
     return row[2]
 
@@ -135,6 +148,14 @@ def set_material(item, material):
     else:
         # If a material already exists, swap it.
         item.data.materials[0] = material
+
+    # Mirror it onto the object colour as well, so a proxy still reads the same
+    # under Solid shading set to Object colour. High res parts have to be drawn
+    # that way - their materials are shared, so only the object can carry a per
+    # part viewport colour - and the two libraries have to agree or half the
+    # scene would go white. See materials_v2.use_object_colour_in_viewport.
+    item.color = material.diffuse_color
+
     return material
 
 
@@ -204,6 +225,12 @@ def assign_default_material(item, index=0):
     Returns:
         bpy_types.Material: The material that is applied.
     """
+    # High res parts keep their real textures - painting the default grey over
+    # them would throw the model away. Their equivalent is palette `index`.
+    if _materials_v2().is_high_res(item):
+        _materials_v2().recolour_from_user_data([item], index)
+        return None
+
     # Apply Custom Variable.
     item["UserData"] = str(index)
     # Get colour values.
@@ -234,6 +261,13 @@ def restore_material(item, user_data_value):
         user_data_value = int(user_data_value)
     except ValueError:
         return
+
+    # High res parts colour by object property, so the value goes on wholesale
+    # and their mesh keeps being shared. See utils/materials_v2.py.
+    if _materials_v2().is_high_res(item):
+        _materials_v2().recolour_from_user_data([item], user_data_value)
+        return
+
     col = userdata.get_colour(user_data_value)
     mat = userdata.get_material(user_data_value)
     assign_material(item, col, mat)
@@ -250,6 +284,14 @@ def assign_material(item, colour_index=0, material_index=0):
     Returns:
         bpy_types.Material: The material that is applied.
     """
+    # A high res part is repainted in place instead - no flat material is put
+    # over its textures, and nothing is copied.
+    if _materials_v2().is_high_res(item):
+        _materials_v2().recolour(
+            [item], colour_index=colour_index, material_index=material_index
+        )
+        return None
+
     # Some Defaults
     alpha_value = 1.0
 
@@ -290,17 +332,28 @@ def assign_material(item, colour_index=0, material_index=0):
 def optimise_materials():
     from ..part_overrides import parts_override
     classes_dict = parts_override.get_override_classes()
-    
+    materials_v2 = _materials_v2()
+
     unique_materials = {}
     # loop through all objects
     for obj in bpy.context.scene.objects:
         if "ObjectID" in obj and obj.get("curve_parent") is None:
-            
+
             obj_id = obj.get("ObjectID")
             # skip objects that are more complex
             if obj_id in classes_dict:
                 continue
-            
+
+            # high res parts already share one mesh per ObjectID across every
+            # UserData, so there is nothing to gain here and plenty to lose.
+            # Copying them is nearly free in memory while the file is open
+            # (blender shares mesh arrays until they are edited) but the copies
+            # are written out separately: on a 6000 part base this handler
+            # turned an 89 MB save into 945 MB, and 1225 MB of RAM into 2157 MB
+            # on the next open, worsening with every save/open cycle.
+            if materials_v2.is_high_res(obj):
+                continue
+
             user_data = obj.get("UserData")
             key = (obj_id, user_data)
             

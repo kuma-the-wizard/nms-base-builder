@@ -3,7 +3,7 @@ import bpy
 import os
 import uuid
 from ..utils import blend_utils, curve, material, dictionary
-from .. import builder, part
+from .. import builder, builder_v2, part
 from ..utils.mirror_utils import ShowMessageBox
 
 
@@ -112,7 +112,7 @@ class BatchTool(bpy.types.PropertyGroup):
     def batch_replace_with_object_id(self, target_object_id, objects_to_replace):
         # create a temp object if "ObjectID" is provided
         object_id = target_object_id
-        new_obj = BUILDER.add_part(object_id)
+        new_obj = builder_v2.add_part(object_id, builder_object=BUILDER)
         target_object = new_obj.object
         
         replaced_objects = self.batch_replace(target_object, objects_to_replace)
