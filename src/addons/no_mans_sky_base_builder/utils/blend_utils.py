@@ -3,6 +3,7 @@
 import math
 
 import addon_utils
+import bmesh
 import bpy
 
 
@@ -93,6 +94,12 @@ def set_active_item(item):
     bpy.context.view_layer.objects.active = item
 
 
+def deselect_all():
+    """Clear the selection without going through bpy.ops."""
+    for item in list(bpy.context.selected_objects):
+        item.select_set(False)
+
+
 def select(selection, add=False):
     """Select an item.
 
@@ -106,7 +113,11 @@ def select(selection, add=False):
     """
     # Deselect all.
     if not add:
-        bpy.ops.object.select_all(action="DESELECT")
+        # By hand rather than bpy.ops.object.select_all(action="DESELECT"):
+        # the operator walks the whole scene and pushes an undo step, which
+        # costs about 150 ms on a big base against 0.01 ms for this, and it
+        # needs Object mode to poll where select_set() does not.
+        deselect_all()
         set_active_item(None)
 
     # Ensure List.
@@ -123,6 +134,12 @@ def select(selection, add=False):
         if selection[-1].name in bpy.context.view_layer.objects:
             selection[-1].select_set(True)
             set_active_item(selection[-1])
+
+    # The select_all operator this used to call flushed the depsgraph on its way
+    # through, and callers came to rely on that - move an object, select it, and
+    # its matrix_world was current by the time anything read it. select_set()
+    # does not flush, so do it here. It costs nothing when nothing is dirty.
+    scene_refresh()
 
 
 def get_current_selection():
@@ -302,6 +319,179 @@ def change_object_visibility(objects, is_visibe = False):
         obj.hide_set(not is_visibe)      # Hide in viewport
         obj.hide_render = not is_visibe  # Hide in renders
         
+def _needs_operator_join(objects):
+    """True when an object carries something a bmesh merge would quietly drop.
+
+    Vertex groups and shape keys live on the object rather than in the mesh's
+    vertex data, and an object-linked material slot is not on the mesh at all.
+    This is not hypothetical - a handful of the rigged parts (SHIPARMS,
+    GARAGE_L) really do have vertex groups - so those go the long way round,
+    which is slower but is exactly what the plugin always did.
+
+    Args:
+        objects (list[bpy.types.Object]): The objects about to be merged.
+
+    Returns:
+        bool: True to use the operator path.
+    """
+    for obj in objects:
+        if obj.vertex_groups or obj.data.shape_keys:
+            return True
+        for slot in obj.material_slots:
+            if slot.link != 'DATA':
+                return True
+    return False
+
+
+def _select_only(item):
+    """Leave `item` as the sole selection, the way bpy.ops.object.join() did."""
+    deselect_all()
+    view_layer = bpy.context.view_layer
+    if item.name in view_layer.objects:
+        item.select_set(True)
+        view_layer.objects.active = item
+
+
+# Above roughly this much geometry the operator wins again - it carries a fixed
+# cost of about 360 ms on a 5000 object scene but then scales better than
+# bmesh's mesh-to-mesh round trip. Measured on a 5000 part base:
+#
+#     verts      operator     bmesh
+#      2 336      368 ms       9 ms
+#     20 407      361 ms      39 ms
+#     71 235      418 ms     147 ms
+#    105 294      496 ms     428 ms      <- they meet about here
+#    137 072      579 ms     809 ms
+#    290 054      800 ms   1 738 ms
+BMESH_MERGE_VERT_LIMIT = 110000
+
+
+def _merge_objects_with_bmesh(objects, object_name):
+    """Join the meshes directly, without going through bpy.ops.
+
+    The operator route costs about 360 ms on a 5000 part base almost regardless
+    of how much geometry is involved - the cost is scene-sized, not mesh-sized,
+    because select_all, duplicate and join each walk the whole scene. Building
+    the mesh here does the same work in 9 ms for two parts.
+
+    The result is the same object: same vertex order, same materials in the same
+    slot order, same UVs, sharp edges, seams and custom split normals, and the
+    same world matrix - the first object's, which is where bpy.ops.object.join()
+    leaves the origin.
+
+    Each mesh is copied and moved with Mesh.transform rather than by walking its
+    vertices here. That is not just faster, it is the only version that is
+    correct: custom split normals have to be rotated along with the geometry,
+    and a python loop over vertex coordinates leaves them pointing the old way.
+
+    Args:
+        objects (list[bpy.types.Object]): Mesh objects to merge, first one wins
+            the origin.
+        object_name (str): Name for the merged object.
+
+    Returns:
+        bpy.types.Object
+    """
+    base = objects[0]
+    base_inverse = base.matrix_world.inverted()
+
+    # slots are pooled by material across every object, in first seen order
+    materials = []
+    material_indices = {}
+
+    bm = bmesh.new()
+    for obj in objects:
+        slot_map = []
+        for slot in obj.material_slots:
+            material = slot.material
+            if material is None:
+                slot_map.append(0)
+                continue
+            index = material_indices.get(material.name)
+            if index is None:
+                index = len(materials)
+                material_indices[material.name] = index
+                materials.append(material)
+            slot_map.append(index)
+
+        needs_remap = slot_map != list(range(len(slot_map)))
+
+        if obj is base and not needs_remap:
+            # the first object is already in the space we are building in, and
+            # its slots are the ones everything else is being mapped onto, so
+            # there is nothing to change and no copy to make
+            bm.from_mesh(obj.data)
+            continue
+
+        # bring this object's geometry into the first object's local space,
+        # which is the space join() leaves everything in
+        mesh_copy = obj.data.copy()
+        if obj is not base:
+            mesh_copy.transform(base_inverse @ obj.matrix_world)
+
+        # the faces still point at this object's own slots
+        if needs_remap:
+            last_slot = len(slot_map) - 1
+            indices = [0] * len(mesh_copy.polygons)
+            mesh_copy.polygons.foreach_get("material_index", indices)
+            mesh_copy.polygons.foreach_set(
+                "material_index",
+                [slot_map[i if i <= last_slot else last_slot] for i in indices],
+            )
+
+        bm.from_mesh(mesh_copy)
+        bpy.data.meshes.remove(mesh_copy)
+
+    mesh = bpy.data.meshes.new(object_name)
+    bm.to_mesh(mesh)
+    bm.free()
+
+    # join() keeps the active object's mesh datablock, custom properties and
+    # all, and materials_v2 reads the nms_high_res_id marker off the mesh to
+    # decide whether a group can still be recoloured - so carry them across
+    for key, value in base.data.items():
+        mesh[key] = value
+
+    for material in materials:
+        mesh.materials.append(material)
+
+    merged = bpy.data.objects.new(object_name, mesh)
+    for collection in base.users_collection:
+        collection.objects.link(merged)
+    merged.matrix_world = base.matrix_world.copy()
+    return merged
+
+
+def _merge_objects_with_operator(objects, object_name):
+    """The original bpy.ops route, kept for whatever the fast path cannot do."""
+    context = bpy.context
+    view_layer = context.view_layer
+
+    bpy.ops.object.select_all(action='DESELECT')
+
+    for obj in objects:
+        obj.select_set(True)
+
+    view_layer.objects.active = objects[0]
+
+    # Duplicate and join. duplicate() leaves the copy of the active object
+    # active, which is what we want to join into - this used to re-point active
+    # at selected_objects[0] instead, and that list comes back in view layer
+    # order rather than selection order, so the merged object's origin landed on
+    # whichever part happened to sort first.
+    bpy.ops.object.duplicate(linked=False)
+    bpy.ops.object.join()
+
+    merged = view_layer.objects.active
+    merged.name = object_name
+
+    # delete unnecessary custom properties
+    for key in list(merged.keys()):
+        del merged[key]
+
+    return merged
+
+
 def merge_objects(objects, object_name):
     """
     Using Blender's APIs merge the given mesh objects into a new object while leaving the originals
@@ -315,9 +505,6 @@ def merge_objects(objects, object_name):
         bpy.types.Object | None
     """
 
-    context = bpy.context
-    view_layer = context.view_layer
-
     # Filter mesh objects
     objects = [obj for obj in objects if obj and obj.type == 'MESH']
 
@@ -326,30 +513,15 @@ def merge_objects(objects, object_name):
         return None
 
     try:
-        
-        bpy.ops.object.select_all(action='DESELECT')
-        
-        for obj in objects:
-            obj.select_set(True)
-
-        view_layer.objects.active = objects[0]
-
-        # Duplicate and join
-        bpy.ops.object.duplicate(linked=False)
-        duplicates = context.selected_objects[:]
-
-        view_layer.objects.active = duplicates[0]
-        bpy.ops.object.join()
-
-        merged = view_layer.objects.active
-        merged.name = object_name
-        
-        # delete unnecessary custom properties 
-        for key in list(merged.keys()):
-            del merged[key]
+        total_verts = sum(len(obj.data.vertices) for obj in objects)
+        if _needs_operator_join(objects) or total_verts > BMESH_MERGE_VERT_LIMIT:
+            merged = _merge_objects_with_operator(objects, object_name)
+        else:
+            merged = _merge_objects_with_bmesh(objects, object_name)
 
         # Force Blender to update the viewport and geometry cache
         merged.data.update()
+        _select_only(merged)
         print("Group created : ", merged.name)
         return merged
 

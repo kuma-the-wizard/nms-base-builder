@@ -116,8 +116,11 @@ class BuildTool(bpy.types.PropertyGroup):
                 # If mirror part exist for an object, like for a corvette part,
                 mirror_part_exist =  mirror_id in nice_name_dictionary.keys()
                 if mirror_part_exist:
+                    # mirror_part owns the mesh policy now - it either points the
+                    # object at the twin's own library mesh, which is meant to be
+                    # shared, or flips a private copy. Copying again here would
+                    # give every mirrored part its own duplicate of the library.
                     new_item = BUILDER.mirror_part(target)
-                    new_item.data = new_item.data.copy()
                      
                 if not change_orientation:
                     mirrored_matrix_world = mirror_utils.mirror_matrix_world_universal(

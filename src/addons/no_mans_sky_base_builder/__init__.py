@@ -1808,7 +1808,8 @@ def reset_plugin_state(dummy):
     global known_curve_names
     known_curves = set( obj for obj in bpy.context.scene.objects  if obj.type == 'CURVE' and obj.get("has_linked_objects", False) )
     known_curve_names = set( obj.name for obj in known_curves )
-    curve.update_curves(known_curves)
+    # one scene pass shared by every curve, rather than one per curve
+    curve.update_curves(known_curves, children_by_curve=curve.get_curve_children_map())
     
     
     # reset save editor's state to closed
@@ -1826,10 +1827,6 @@ def udpates_handler(scene, depsgraph):
     
     
     active_object = bpy.context.view_layer.objects.active
-    if hasattr(bpy.context, "selected_objects"):
-        curves_to_update = bpy.context.selected_objects or []
-    else:
-        curves_to_update = []
 
     # keep track of active object to display or hide additional options related to that object
     # only continue when active object actually changes
@@ -1837,13 +1834,16 @@ def udpates_handler(scene, depsgraph):
         properties = scene.nms_properties
         properties.set_active_obect(active_object)
         last_active = active_object
-    
+
     # Collect curves that have recieved updates by user
     updated_curve_names = set()
     for update in depsgraph.updates:
         if isinstance(update.id, bpy.types.Object):
             # validate each object
             orig_obj = bpy.data.objects.get(update.id.name)
+            # the object can already be gone by the time we look it up
+            if orig_obj is None:
+                continue
             if orig_obj.type == 'CURVE' and curve.Curve.PROP_CURVE_ID in orig_obj:
                 updated_curve_names.add(orig_obj.name)
             elif curve.Curve.PROP_CURVE_PARENT in orig_obj:
@@ -1877,12 +1877,50 @@ def udpates_handler(scene, depsgraph):
                 print("Reference error :", error)
                 continue
     
-    if active_object is not None and curve.Curve.PROP_CURVE_ID in active_object and last_active is not None:
-        # Update all children of active curve
-        if active_object not in curves_to_update:
+    # Work out whether there is anything to rebuild at all.
+    #
+    # This used to rebuild the active curve on EVERY depsgraph update - moving
+    # the camera, changing a selection, editing an unrelated part - and each
+    # rebuild scans the whole scene looking for that curve's children. On a
+    # 5000 part base that is 3.3 ms of work per update against a 16 ms frame,
+    # which is what made big bases feel sticky. Now it only runs when the curve
+    # itself changed, or when the count/radius sliders moved.
+    properties = scene.nms_properties
+    sliders_moved = (
+        properties.active_curve_number_of_objects != properties.prev_curve_number_of_objects
+        or properties.active_curve_radius_multiplier != properties.prev_curve_radius_multiplier
+    )
+
+    curves_to_update = []
+    if last_active is not None:
+        if sliders_moved:
+            # the sliders apply to everything selected, so all of them rebuild
+            selected = getattr(bpy.context, "selected_objects", None) or []
+            curves_to_update = [
+                obj for obj in selected if curve.Curve.PROP_CURVE_ID in obj
+            ]
+        elif updated_curve_names:
+            # otherwise only the curves the depsgraph says actually moved
+            scene_objects = scene.objects
+            curves_to_update = [
+                obj for obj in (scene_objects.get(name) for name in updated_curve_names)
+                if obj is not None
+            ]
+
+        if (active_object is not None
+                and curve.Curve.PROP_CURVE_ID in active_object
+                and (sliders_moved or active_object.name in updated_curve_names)
+                and active_object not in curves_to_update):
             curves_to_update.append(active_object)
-        curve.update_curves(curves_to_update)
-    
+
+    if curves_to_update:
+        # one pass over the scene grouping every follower by the curve it is on,
+        # instead of one full scan per curve inside update_curve_children
+        curve.update_curves(
+            curves_to_update, children_by_curve=curve.get_curve_children_map()
+        )
+
+
     
     dead_curve_names = set()
     # check for deleted curve in know curves
@@ -1892,9 +1930,14 @@ def udpates_handler(scene, depsgraph):
     # delete dead curves
     if dead_curve_names:
         known_curve_names.difference_update(dead_curve_names)
-        for obj in bpy.context.scene.objects:
-            if curve.Curve.PROP_CURVE_PARENT in obj and obj.get(curve.Curve.PROP_CURVE_PARENT) in dead_curve_names:
-                bpy.data.objects.remove(obj, do_unlink=True)
+        # one batch rather than a remove() per orphan - each of those re-syncs the
+        # whole scene, which is ~4 ms a piece once a base gets big
+        orphans = [
+            obj for obj in curve.get_follower_objects()
+            if obj.get(curve.Curve.PROP_CURVE_PARENT) in dead_curve_names
+        ]
+        if orphans:
+            bpy.data.batch_remove(orphans)
         
     # Sync back down to the global tracking set 
     known_curve_names |= updated_curve_names  

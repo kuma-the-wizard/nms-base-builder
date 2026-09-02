@@ -2,8 +2,9 @@ from ..utils import mirror_utils
 import bpy
 import os
 import uuid
-from ..utils import blend_utils, curve, material, dictionary
+from ..utils import blend_utils, curve, material, materials_v2, dictionary
 from .. import builder, builder_v2, part
+from ..group import Group
 from ..utils.mirror_utils import ShowMessageBox
 
 
@@ -64,7 +65,7 @@ class BatchTool(bpy.types.PropertyGroup):
         """Replace all selected objects with duplicates of the target object."""
 
         selected_objects = list(bpy.context.selected_objects)
-        bpy.ops.object.select_all(action='DESELECT')
+        blend_utils.deselect_all()
 
         if not selected_objects:
             title="Batch Replace Objects"
@@ -124,39 +125,53 @@ class BatchTool(bpy.types.PropertyGroup):
     def batch_replace(self, target_object, objects_to_replace):
         replaced_objects_list = []
         objects_to_delete = []
-        
+
         # Get the current active collection to link the new objects to
         current_collection = bpy.context.collection
+
+        # Worked out once: it is a property of the target, not of each source.
+        # is_high_res covers a merged group of high res parts too, because the
+        # merge carries the marker across from the parts' mesh.
+        needs_own_mesh = not materials_v2.is_high_res(target_object)
 
         for source_object in objects_to_replace:
             if source_object == target_object:
                 continue
-            
+
             if source_object is None:
                 continue
-            
-            if "ObjectID" in source_object:
+
+            # A group carries no ObjectID - its part list and colour live in its
+            # own properties - so it used to miss every branch here and be
+            # silently skipped, leaving the group sitting where it was while
+            # everything else in the selection got replaced.
+            if "ObjectID" in source_object or Group.PROP_GROUP_ID in source_object:
                 # This create a linked duplicate
                 replaced_object = target_object.copy()
-                if replaced_object.data:
+                if needs_own_mesh and replaced_object.data:
+                    # an fbx proxy keeps its colour on the mesh's material, so
+                    # each replacement needs its own. A high res part or a group
+                    # of them keeps colour on the object, and copying there would
+                    # give every replacement its own copy of the library mesh.
                     replaced_object.data = replaced_object.data.copy()
 
                 # Copy transforms
                 replaced_object.matrix_world = source_object.matrix_world.copy()
                 # Link the new object to the scene
                 current_collection.objects.link(replaced_object)
-                
+
                 replaced_objects_list.append(replaced_object)
                 objects_to_delete.append(source_object)
             elif "has_linked_objects" in source_object and source_object.get("has_linked_objects", False):
                 new_curve, old_curve = curve.replace_curve_object(source_object, target_object)
                 replaced_objects_list.append(new_curve)
                 objects_to_delete.append(old_curve)
-            
-        # Delete old objects
-        for obj in objects_to_delete:
-            bpy.data.objects.remove(obj, do_unlink=True)
-            
+
+        # Delete old objects - in one batch, a remove() per object re-syncs the
+        # whole scene each time
+        if objects_to_delete:
+            bpy.data.batch_remove(objects_to_delete)
+
         return replaced_objects_list
     
     

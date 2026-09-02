@@ -150,21 +150,26 @@ class Group:
 
         # Merge objects
         merged_object = blend_utils.merge_objects(objects_list, "Grouped_Objects")
-        target_matrix_cache = json.dumps([list(row) for row in target_matrix]) if target_matrix is not None else None
-        merged_object[Group.PROP_ORIGIN_MATRIX] = target_matrix_cache
-        
 
+        # this check used to sit after the write below, so a failed merge threw
+        # a TypeError on None instead of returning None the way it says it does
         if merged_object is None:
             return None
 
+        target_matrix_cache = json.dumps([list(row) for row in target_matrix]) if target_matrix is not None else None
+        merged_object[Group.PROP_ORIGIN_MATRIX] = target_matrix_cache
+
         prev_position = merged_object.matrix_world.translation.copy()
 
-        # Transform vertices so they do not visually move when we apply the new matrix
+        # Transform vertices so they do not visually move when we apply the new matrix.
+        # Mesh.transform rather than a python loop over the vertices: it is the
+        # difference between 30 ms and 1 ms on a small group, and it also carries
+        # the custom split normals round with the geometry, which the loop left
+        # pointing the old way.
         current_matrix = merged_object.matrix_world.copy()
         transform_matrix = clean_matrix.inverted() @ current_matrix
 
-        for vertex in merged_object.data.vertices:
-            vertex.co = transform_matrix @ vertex.co
+        merged_object.data.transform(transform_matrix)
 
         # Apply the clean matrix (this sets the new location and local axes)
         merged_object.matrix_world = clean_matrix
@@ -200,9 +205,10 @@ class Group:
             # recoloured the group, not just because they grouped it.
             materials_v2.apply(merged_object, group_user_data)
 
-        # Delete original objects
-        for obj in objects_to_group:
-            bpy.data.objects.remove(obj, do_unlink=True)
+        # Delete original objects - in one batch, because a remove() per object
+        # re-syncs the whole scene each time and costs about 4 ms a piece on a
+        # big base
+        bpy.data.batch_remove([obj for obj in objects_to_group if obj is not None])
 
         return merged_object
 
@@ -556,56 +562,105 @@ class Group:
         return mathutils.Matrix.Identity(4)
     
     @staticmethod
+    def mirror_cache_data(child_cache, origin_matrix, axis, center):
+        """Mirror a group's cached children without building any of them.
+
+        curve.mirror_curve used to deserialise the whole group into real
+        objects, mirror those with the build tool, merge them back into a mesh
+        and then delete the mesh - all to end up with two strings. Every step of
+        that is matrix arithmetic on the cache, so this does the arithmetic.
+
+        The maths is deliberately step for step what the long way round did:
+        each child's world matrix is rebuilt from the origin, mirrored exactly
+        as build_tool.mirror would mirror the object (same axis mapping, same
+        per part corrections, keyed on the id before the swap), then expressed
+        relative to the mirrored origin - which is what cache_relative_matrices
+        would have recorded off the regrouped object.
+
+        Args:
+            child_cache (str): The group's serialised child cache.
+            origin_matrix (mathutils.Matrix): The group's origin, or None.
+            axis (str): Mirror axis, "X", "Y" or "Z".
+            center: Centre of reflection.
+
+        Returns:
+            tuple: (new child cache json, new origin matrix) or (None, None).
+        """
+        try:
+            cached_child_data = json.loads(child_cache)
+        except (json.JSONDecodeError, Exception) as error:
+            print("Error mirroring group cache: ", error)
+            return None, None
+
+        if origin_matrix is None:
+            origin_matrix = Group.get_default_origin_matrix()
+
+        new_origin = mirror_utils.mirror_matrix_world_universal(
+            None, origin_matrix, axis, center
+        )
+        new_origin_inverted = new_origin.inverted()
+
+        # build_tool.mirror is only ever handed X or Z for the parts themselves
+        tool_axis = "Z" if axis == "Z" else "X"
+
+        new_child_cache = {}
+        for child_name, cache_data in cached_child_data.items():
+            matrix_local_data = cache_data.get(Group.PROP_MATRIX_LOCAL)
+            if not matrix_local_data:
+                continue
+
+            new_cache_data = dict(cache_data)
+            object_id = cache_data[Group.PROP_OBJECT_ID]
+
+            # a part whose mirrored twin is its own model gets swapped for it,
+            # and that changes how the transform has to be corrected
+            mirror_part_id = Part.get_mirror_part_id(object_id)
+            mirror_part_exist = mirror_part_id in nice_name_dictionary
+
+            matrix_world = origin_matrix @ mathutils.Matrix(matrix_local_data)
+            # the correction is keyed on the id the part had going in, which is
+            # what build_tool.mirror passes too
+            matrix_world = mirror_utils.mirror_matrix_world_universal(
+                object_id, matrix_world, tool_axis, center,
+                mirror_part_exist=mirror_part_exist
+            )
+            matrix_local = new_origin_inverted @ matrix_world
+
+            if mirror_part_exist:
+                new_cache_data[Group.PROP_OBJECT_ID] = mirror_part_id
+            new_cache_data[Group.PROP_MATRIX_LOCAL] = [
+                list(row) for row in matrix_local
+            ]
+            new_child_cache[child_name] = new_cache_data
+
+        return json.dumps(new_child_cache), new_origin
+
+    @staticmethod
     def mirror_group_cache(group_obj, axis, center):
         """
         Directly mirrors the cached child data and origin matrix of a group object
         without needing to unpack and repack the geometry in the scene.
         """
         cached_child_data, origin_matrix = Group.extract_cached_data(group_obj)
-        
+
         if cached_child_data is None:
             print("Error mirroring group cache: child cache is None")
             return None, None
-        
-        # Mirror the group's origin matrix (World Space)
-        if origin_matrix is not None:
-            origin_matrix = mirror_utils.mirror_matrix_world_universal(None, origin_matrix, axis, center)
-        
-        new_child_cache = {}
-        
-        for child_name, cache_data in cached_child_data.items():
-            # Create a clean copy to avoid mutating the iteration source
-            new_cache_data = cache_data.copy()
-            
-            # Handle Part ID swapping (e.g., Left Wing to Right Wing)
-            object_id = new_cache_data[Group.PROP_OBJECT_ID]
-            mirror_part_id = Part.get_mirror_part_id(object_id)
-            if mirror_part_id in nice_name_dictionary:
-                object_id = mirror_part_id
-            
-            # Extract local matrix (Stored as a 2D Python list, not a JSON string)
-            matrix_local_list = new_cache_data[Group.PROP_MATRIX_LOCAL]
-            matrix_local = mathutils.Matrix(matrix_local_list)
-            
-            # Mirror the local matrix. 
-            # Note: center is explicitly None because local matrices must reflect 
-            # across the group's internal origin (0,0,0), not the world cursor.
-            matrix_local = mirror_utils.mirror_matrix_world_universal(object_id, matrix_local, axis, center=None)
-            
-            # Update the cache data for this child
-            new_cache_data[Group.PROP_OBJECT_ID] = object_id
-            new_cache_data[Group.PROP_MATRIX_LOCAL] = [list(row) for row in matrix_local]
-            
-            new_child_cache[child_name] = new_cache_data
-            
-        # Serialize and assign back to Blender custom properties
-        if origin_matrix is not None:
-            group_obj[Group.PROP_ORIGIN_MATRIX] = json.dumps([list(row) for row in origin_matrix])
-            
-        group_obj[Group.PROP_CHILD_CACHE] = json.dumps(new_child_cache)
-            
-        return new_child_cache, origin_matrix
-            
-            
-        
-    
+
+        # This used to carry its own copy of the mirror maths, which was never
+        # called and did not match what mirroring a group actually does. It now
+        # goes through the one implementation that is checked against the long
+        # build/mirror/regroup route.
+        new_child_cache, new_origin_matrix = Group.mirror_cache_data(
+            group_obj[Group.PROP_CHILD_CACHE], origin_matrix, axis, center
+        )
+        if new_child_cache is None:
+            return None, None
+
+        if new_origin_matrix is not None:
+            group_obj[Group.PROP_ORIGIN_MATRIX] = json.dumps(
+                [list(row) for row in new_origin_matrix]
+            )
+        group_obj[Group.PROP_CHILD_CACHE] = new_child_cache
+
+        return json.loads(new_child_cache), new_origin_matrix

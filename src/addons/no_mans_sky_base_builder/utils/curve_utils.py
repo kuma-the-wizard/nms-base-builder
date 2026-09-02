@@ -7,12 +7,18 @@ from mathutils.geometry import interpolate_bezier
 from . import mirror_utils
 
 
-# Cache bezier segment calculations to avoid recomputing identical segments
-_bezier_cache = {}
+# The density integral below gets walked twice on every curve update - once to
+# work out how many objects fit, once to work out where each one sits. It only
+# depends on the control point weights, so it is cached against them and the
+# second walk is free. Change a weight and the key changes with it, so the
+# cache cannot hand back stale spacing.
+_density_cache = {}
+_DENSITY_CACHE_LIMIT = 32
 
-def _clear_bezier_cache():
-    """Clear the bezier interpolation cache. Call when curve data changes."""
-    _bezier_cache.clear()
+
+def _clear_density_cache():
+    """Drop the cached density integrals. Nothing needs this in normal use."""
+    _density_cache.clear()
 
 
 def build_curve_eval_data(curve_obj, resolution=16):
@@ -44,16 +50,13 @@ def build_curve_eval_data(curve_obj, resolution=16):
             p0 = points[i]
             p1 = points[(i + 1) % count]
             
-            # Check cache first
-            cache_key = (id(p0), id(p1), resolution)
-            if cache_key in _bezier_cache:
-                segment_pts = _bezier_cache[cache_key]
-            else:
-                # Get high-res 3D points only once
-                segment_pts = interpolate_bezier(
-                    p0.co, p0.handle_right, p1.handle_left, p1.co, resolution + 1
-                )
-                _bezier_cache[cache_key] = segment_pts
+            # This used to be cached against id(p0)/id(p1). Those are throwaway
+            # python wrappers, so the ids get recycled and the cache could hand
+            # back another segment's points - and it never noticed a moved
+            # point. The whole call is 0.02 ms, so there was nothing to save.
+            segment_pts = interpolate_bezier(
+                p0.co, p0.handle_right, p1.handle_left, p1.co, resolution + 1
+            )
             
             # Vectorized radius and tilt: pre-compute interpolation factors
             rad0, rad1 = p0.radius, p1.radius
@@ -163,7 +166,29 @@ def get_exact_radius_tilt(eval_data, total_length, factor):
     return radius, tilt
 
 
-def update_obj_transformations(obj, curve_obj, eval_data, total_length):
+# Blender stores transforms as 32 bit floats, so a value written and read back
+# never quite matches the double it came from. Anything below this is far under
+# what the viewport can show, so it counts as "unchanged".
+WRITE_EPSILON = 1e-6
+
+
+def build_curve_context(curve_obj):
+    """The curve's own values, read once instead of once per child.
+
+    Every one of these is a property lookup on the curve object, and a curve
+    carrying a hundred objects used to do a hundred of each.
+
+    Returns:
+        tuple: (parent_selected, curve scale multiplier, radius multiplier)
+    """
+    return (
+        curve_obj.get("parent_selected", True),
+        curve_obj.scale.x / curve_obj.get("initial_curve_scale", 1.0),
+        curve_obj.get("radius_multiplier", 1.0),
+    )
+
+
+def update_obj_transformations(obj, curve_obj, eval_data, total_length, curve_context=None):
     """
     Optimized transformation update with early returns and inline calculations.
     """
@@ -173,16 +198,18 @@ def update_obj_transformations(obj, curve_obj, eval_data, total_length):
     if factor is None:
         return
     
-    if not curve_obj.get("parent_selected", True):
-        return
-    
     # Pre-fetch all required values once
-    curve_scale_multiplier = curve_obj.scale.x / curve_obj.get("initial_curve_scale", 1.0)
-    radius_multiplier = curve_obj.get("radius_multiplier", 1.0)
+    if curve_context is None:
+        curve_context = build_curve_context(curve_obj)
+    parent_selected, curve_scale_multiplier, radius_multiplier = curve_context
+    
+    if not parent_selected:
+        return
     
     #if "radius" not in obj or bpy.context.mode in {'EDIT_CURVE'} or not objects_count_changed:
     radius, tilt = get_exact_radius_tilt(eval_data, total_length, factor)
-    obj["radius"] = radius
+    if obj.get("radius") != radius:
+        obj["radius"] = radius
     #else:
         #radius = obj["radius"]
     
@@ -194,14 +221,30 @@ def update_obj_transformations(obj, curve_obj, eval_data, total_length):
     if scale < 0.00001:
         scale = 0.00001
     
-    # Single assignment with tuple (more efficient than 3 separate assignments)
-    obj.scale = (scale, scale, scale)
+    # Writing a transform tags the object for re-evaluation whether or not the
+    # number actually moved, so only write when it did. Sliding the curve around
+    # or nudging the radius leaves most of these exactly where they were.
+    tolerance = WRITE_EPSILON * max(1.0, abs(scale))
+    current_scale = obj.scale
+    if (abs(current_scale.x - scale) > tolerance
+            or abs(current_scale.y - scale) > tolerance
+            or abs(current_scale.z - scale) > tolerance):
+        # Single assignment with tuple (more efficient than 3 separate assignments)
+        obj.scale = (scale, scale, scale)
     
-def update_object_factor(obj , curve_obj, factor):
-    constraint = next(( c for c in obj.constraints if c.type == 'FOLLOW_PATH' and c.target == curve_obj), None)
-    if constraint:
+def update_object_factor(obj , curve_obj, factor, constraint = None):
+    if factor is None:
+        return
+    if constraint is None:
+        constraint = next(( c for c in obj.constraints if c.type == 'FOLLOW_PATH' and c.target == curve_obj), None)
+    # Setting offset_factor tags the constraint for re-evaluation even when the
+    # value is identical. At 60 objects that alone was 3.2 ms of every update,
+    # and most updates - moving the curve, dragging the radius - do not slide a
+    # single object along the path.
+    if constraint and abs(constraint.offset_factor - factor) > WRITE_EPSILON:
         constraint.offset_factor = factor
-    obj["curve_factor"] = factor
+    if obj.get("curve_factor") != factor:
+        obj["curve_factor"] = factor
 
 def mirror_curve(curve_obj, axis='X', center = Vector((0,0,0))):
     """
@@ -464,30 +507,60 @@ def factor_from_density(cumulative_density, sample_factors , target):
     t = (target - d0) / (d1 - d0)
     return f0 + (f1 - f0) * t
 
+def build_density_samples(curve, sample_count):
+    """Sample the weight curve and integrate it.
+
+    Both questions a curve update asks - how many objects fit, and where each
+    one sits - come out of this one integral, and it used to be walked twice.
+    It only depends on the control point weights and how finely we sample, so
+    those are the whole cache key: change a weight and the old entry simply
+    stops being looked up.
+
+    The returned lists are shared, so treat them as read only.
+
+    Returns:
+        tuple: (sample factors, cumulative density, total density)
+    """
+    density_map = tuple(get_density_map(curve))
+    cache_key = (sample_count, density_map)
+    cached = _density_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    sample_factors = [i / (sample_count - 1) for i in range(sample_count)]
+
+    # Integrate density along the curve. The old version asked for the density
+    # of every sample twice - once as the right end of a segment, once as the
+    # left end of the next - so the previous value is carried forward instead.
+    # The arithmetic is left exactly as it was so the spacing cannot drift.
+    cumulative_density = [0.0]
+    total_density = 0.0
+    previous_density = get_density(density_map, sample_factors[0])
+    for i in range(1, sample_count):
+        current_density = get_density(density_map, sample_factors[i])
+        dx = sample_factors[i] - sample_factors[i - 1]
+        total_density += (previous_density + current_density) * 0.5 * dx
+        cumulative_density.append(total_density)
+        previous_density = current_density
+
+    if len(_density_cache) >= _DENSITY_CACHE_LIMIT:
+        _density_cache.clear()
+    samples = (sample_factors, cumulative_density, total_density)
+    _density_cache[cache_key] = samples
+    return samples
+
+
 def calculate_curve_factors(curve, existing_objs):
     
-    density_map = get_density_map(curve)
-    
-    # Sample the density curve
-    sample_count = max(128, len(existing_objs) * 16)
-    sample_factors = []
-    sample_density = []
+    object_count = len(existing_objs)
+    if object_count == 0:
+        return
 
-    for i in range(sample_count):
-        factor = i / (sample_count - 1)
-        sample_factors.append(factor)
-        sample_density.append(get_density(density_map,factor))
-    # Integrate density along the curve
-    cumulative_density = [0.0]
-    for i in range(1, sample_count):
-        dx = sample_factors[i] - sample_factors[i - 1]
-        density = ( sample_density[i - 1] + sample_density[i]) * 0.5
-        cumulative_density.append( cumulative_density[-1] + density * dx)
-
-    total_density = cumulative_density[-1]
+    sample_factors, cumulative_density, total_density = build_density_samples(
+        curve, max(128, object_count * 16)
+    )
 
     # Calculate object positions
-    object_count = len(existing_objs)
     if object_count == 1:
         existing_objs[0]["curve_factor"] = 0.0
     else:
@@ -495,23 +568,12 @@ def calculate_curve_factors(curve, existing_objs):
             position = index / (object_count - 1)
             target_density = position * total_density
             factor = factor_from_density(cumulative_density,sample_factors,target_density)
-            obj["curve_factor"] = factor
+            if obj.get("curve_factor") != factor:
+                obj["curve_factor"] = factor
 
 
 def get_total_curve_density(curve, object_count=10):
-    density_map = get_density_map(curve)
-    sample_count = max(128, object_count * 16)
-    sample_factors = [i / (sample_count - 1) for i in range(sample_count)]
-    
-    cumulative_density = 0.0
-    for i in range(1, sample_count):
-        dx = sample_factors[i] - sample_factors[i - 1]
-        density_a = get_density(density_map, sample_factors[i - 1])
-        density_b = get_density(density_map, sample_factors[i])
-        density = (density_a + density_b) * 0.5
-        cumulative_density += density * dx
-        
-    return cumulative_density            
+    return build_density_samples(curve, max(128, object_count * 16))[2]
             
             
 def exponential_scale(x: float, steepness: float = 5.0) -> float:

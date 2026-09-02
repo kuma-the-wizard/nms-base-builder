@@ -193,12 +193,39 @@ class Builder(object):
         item = preset.Preset(preset_id=preset_id, builder_object=self)
         return item
 
+    @staticmethod
+    def _swap_mesh_for_twin(part_object, twin_id, flip_axis):
+        """Point the object at its mirrored/flipped counterpart's mesh.
+
+        This used to be a single `part_object.data.transform(scale -1)`, which
+        was fine when every part carried its own fbx mesh. High res parts all
+        share one library mesh per ObjectID, so transforming it in place turned
+        every other copy of that part in the scene inside out.
+
+        The twin is usually its own model in the library, in which case we just
+        point at that mesh and nothing is flipped at all. Otherwise the flip
+        happens on a private copy.
+
+        Args:
+            part_object (bpy_types.Object): The object being mirrored.
+            twin_id (str): The mirrored/flipped ObjectID.
+            flip_axis (tuple): Axis to scale by -1 when there is no twin model.
+        """
+        from . import builder_v2
+
+        twin_mesh = builder_v2.load_high_res_mesh(twin_id)
+        if twin_mesh is not None:
+            part_object.data = twin_mesh
+            return
+
+        # no model for the twin, so flip this one - on a copy, never in place
+        part_object.data = part_object.data.copy()
+        part_object.data.transform(Matrix.Scale(-1, 4, flip_axis))
+
     def mirror_part(self, part_object):
         object_id = part_object["ObjectID"]
         new_object_id = part.Part.get_mirror_part_id(object_id)
-        # Flip mesh vertices across X
-        mirror_matrix = Matrix.Scale(-1, 4, (1, 0, 0))
-        part_object.data.transform(mirror_matrix)
+        self._swap_mesh_for_twin(part_object, new_object_id, (1, 0, 0))
         # Update ObjectID and name
         part_object["ObjectID"] = new_object_id
         part_object.name = new_object_id
@@ -211,9 +238,7 @@ class Builder(object):
     def flip_part(self, part_object):
         object_id = part_object["ObjectID"]
         new_object_id = part.Part.get_flip_part_id(object_id)
-        # Flip mesh vertices across Y
-        mirror_matrix = Matrix.Scale(-1, 4, (0, 1, 0))
-        part_object.data.transform(mirror_matrix)
+        self._swap_mesh_for_twin(part_object, new_object_id, (0, 1, 0))
         # Update ObjectID and name
         part_object["ObjectID"] = new_object_id
         part_object.name = new_object_id
