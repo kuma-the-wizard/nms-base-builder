@@ -13,11 +13,7 @@ from .base_builder_menu_presentation import draw_base_builder_menu
 
 
 class VIEW3D_PT_nms_base_builder(bpy.types.Panel):
-    """The dropdown itself.
-
-    bl_region_type = "HEADER" keeps it out of the sidebar - it exists only to
-    be opened by layout.popover(), so it is not a panel anyone can dock.
-    """
+    """ Quick options related to NMS Base and Corvette Builder"""
 
     bl_idname = "VIEW3D_PT_nms_base_builder"
     bl_space_type = "VIEW_3D"
@@ -42,7 +38,7 @@ def draw_header_menu(self, context):
     pcoll = icons.get_icons_pscroll()
     plugin_icon = pcoll["plugin_icon"]
     
-    layout.separator()
+    layout.separator(factor = 5)
     layout.popover(panel=VIEW3D_PT_nms_base_builder.bl_idname, text="Base Builder", icon_value = plugin_icon.icon_id)
 
 classes = (

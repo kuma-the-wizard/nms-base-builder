@@ -11,11 +11,7 @@ from ..save_editor import save_editor_presentation
 
 
 class VIEW3D_PT_nms_save_manager(bpy.types.Panel):
-    """The dropdown itself.
-
-    bl_region_type = "HEADER" keeps it out of the sidebar - it exists only to
-    be opened by layout.popover(), so it is not a panel anyone can dock.
-    """
+    """ Save Files Browser """
 
     bl_idname = "VIEW3D_PT_nms_save_manager"
     bl_space_type = "VIEW_3D"
@@ -46,7 +42,7 @@ def draw_header_menu(self, context):
         )
     else:
         layout.popover(
-            panel=VIEW3D_PT_nms_save_manager.bl_idname, text="Save Manager", icon = "FILE_TICK"
+            panel=VIEW3D_PT_nms_save_manager.bl_idname, text="", icon = "FILE_TICK"
         )
 
 
