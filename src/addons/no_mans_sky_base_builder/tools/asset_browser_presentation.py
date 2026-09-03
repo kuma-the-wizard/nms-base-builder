@@ -1,10 +1,14 @@
 import bpy
 import json
 from .. import icons
-ADDON_ID = __package__.rsplit(".", 1)[0]
+from ..utils import asset_browser_utils
+from ..utils.asset_browser_utils import (get_grid_settings, get_preferences,
+                                         resolve_sub_categories)
+ADDON_ID = asset_browser_utils.ADDON_ID
 
 OP_OBJECT_SELECTED = "object.nms_asset_browser_object_selected"
 OP_MORE_OPTIONS = "object.nms_asset_browser_more_options"
+
 
 def draw_sub_category(pcoll , container, label, elements_list, number_of_columns, icon_size, grid_type = "Grid" ):
             
@@ -143,13 +147,14 @@ def draw_asset_browser(context, asset_browser_box, scene):
     ab_category = asset_browser.asset_browser_caterogies
     ab_sub_category = asset_browser.asset_browser_sub_caterogies
     
-    prefs = context.preferences.addons[ADDON_ID].preferences
     if grid_type == "List":
-        icon_size = prefs.asset_browser_icon_size_list
-        number_of_columns = prefs.asset_browser_number_of_columns_list
+        icon_size, number_of_columns = get_grid_settings(
+            context, "asset_browser_icon_size_list",
+            "asset_browser_number_of_columns_list")
     else:
-        icon_size = prefs.asset_browser_icon_size
-        number_of_columns = prefs.asset_browser_number_of_columns
+        icon_size, number_of_columns = get_grid_settings(
+            context, "asset_browser_icon_size",
+            "asset_browser_number_of_columns")
     
     
     show_serch_results = asset_browser.check_display_search_results
@@ -188,11 +193,9 @@ def draw_asset_browser(context, asset_browser_box, scene):
     
     if show_serch_results:
         sub_cat_dict = asset_browser.get_search_results()
-    elif not ab_sub_category or ab_sub_category == "All":
-        sub_cat_dict = categories_data[ab_category]
     else:
-        cat_dict = categories_data[ab_category][ab_sub_category]
-        sub_cat_dict = {ab_sub_category: cat_dict}
+        sub_cat_dict = resolve_sub_categories(
+            categories_data, ab_category, ab_sub_category)
     
     if show_serch_results:
         right_box.separator()
@@ -268,7 +271,7 @@ def draw_asset_browser(context, asset_browser_box, scene):
 
 def draw_asset_browser_left_options(context, asset_browser_box, scene):
     asset_browser = scene.nms_asset_browser
-    prefs = context.preferences.addons[ADDON_ID].preferences
+    prefs = get_preferences(context)
     display_what = asset_browser.enum_asset_browser_what_to_display
     
     ab_category = asset_browser.asset_browser_caterogies
@@ -282,9 +285,10 @@ def draw_asset_browser_left_options(context, asset_browser_box, scene):
     search_column.prop(asset_browser, "asset_broser_search_query", text="", icon='VIEWZOOM')
     
     asset_browser_box.separator()
-    size_column = asset_browser_box.column(align = True)
-    size_column.prop(prefs, "asset_browser_icon_size_other",text = "Icon Size")
-    size_column.prop(prefs, "asset_browser_number_of_columns_other", text = "Columns")
+    if prefs is not None:
+        size_column = asset_browser_box.column(align = True)
+        size_column.prop(prefs, "asset_browser_icon_size_other",text = "Icon Size")
+        size_column.prop(prefs, "asset_browser_number_of_columns_other", text = "Columns")
     asset_browser_box.separator()
     
     def draw_button(parent,operator ,label, what_type ,icon = "LEFT"):
@@ -306,9 +310,11 @@ def draw_asset_browser_left_options(context, asset_browser_box, scene):
     draw_button(cats_col,"object.nms_asset_browser_show_recent_items", "Recent Items", icon = "RECOVER_LAST", what_type= "recent")
     draw_button(cats_col,"object.nms_asset_browser_show_presets", "Presets", icon = "ASSET_MANAGER", what_type = "preset")
     cats_col.separator()
-    if fav_cats:
-            fav_cats_col = cats_col.column(align = True)
-            
+    # created either way: it used to exist only when there were favourites, so
+    # anything that reached the favourite branch without them raised
+    # UnboundLocalError
+    fav_cats_col = cats_col.column(align = True)
+
     categories_col = cats_col.column(align = True)
     categories_col.enabled = not asset_browser.check_display_search_results
     for category_element in asset_browser.get_enum_categories_list():
@@ -376,10 +382,9 @@ def draw_asset_browser_right_options(context,asset_browser_box, scene, grid_type
     ab_category = asset_browser.asset_browser_caterogies
     ab_sub_category = asset_browser.asset_browser_sub_caterogies
     
-    prefs = context.preferences.addons[ADDON_ID].preferences
-    
-    icon_size = prefs.asset_browser_icon_size_other
-    number_of_columns = prefs.asset_browser_number_of_columns_other
+    icon_size, number_of_columns = get_grid_settings(
+        context, "asset_browser_icon_size_other",
+        "asset_browser_number_of_columns_other")
     show_serch_results = asset_browser.check_display_search_results
     
     display_what = asset_browser.enum_asset_browser_what_to_display
@@ -400,11 +405,8 @@ def draw_asset_browser_right_options(context,asset_browser_box, scene, grid_type
         preset_data = asset_browser.get_preset_data()
         sub_cat_dict = {"Presets": preset_data}
     else:
-        if not ab_sub_category or ab_sub_category == "All":
-            sub_cat_dict = categories_data[ab_category]
-        else:
-            cat_dict = categories_data[ab_category][ab_sub_category]
-            sub_cat_dict = {ab_sub_category: cat_dict}
+        sub_cat_dict = resolve_sub_categories(
+            categories_data, ab_category, ab_sub_category)
     
     for subcategories, object_ids in sub_cat_dict.items():
         asset_browser_box.separator()

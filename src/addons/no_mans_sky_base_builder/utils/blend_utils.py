@@ -479,11 +479,25 @@ def _merge_objects_with_operator(objects, object_name):
     # at selected_objects[0] instead, and that list comes back in view layer
     # order rather than selection order, so the merged object's origin landed on
     # whichever part happened to sort first.
+    meshes_before = set(bpy.data.meshes)
     bpy.ops.object.duplicate(linked=False)
     bpy.ops.object.join()
 
     merged = view_layer.objects.active
     merged.name = object_name
+
+    # duplicate(linked=False) copies a mesh per object and join() keeps only
+    # the active one's, so every other copy is left in the file with nothing
+    # pointing at it. They are full copies of high res parts, so a handful of
+    # groups is hundreds of megabytes of them - and until now they sat there
+    # for the rest of the session, piling up another set every time a group was
+    # rebuilt.
+    orphans = [
+        mesh for mesh in bpy.data.meshes
+        if mesh.users == 0 and mesh not in meshes_before
+    ]
+    if orphans:
+        bpy.data.batch_remove(orphans)
 
     # delete unnecessary custom properties
     for key in list(merged.keys()):

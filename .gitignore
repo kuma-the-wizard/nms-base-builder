@@ -158,3 +158,6 @@ dist/
 
 # JetBrains project configuration
 .idea/
+
+# GitHub Pages config
+_config.yml

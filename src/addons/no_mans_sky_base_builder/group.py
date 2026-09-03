@@ -636,6 +636,304 @@ class Group:
         return json.dumps(new_child_cache), new_origin
 
     @staticmethod
+    def _rebuild_group_mesh(group_obj, builder, target_high_res, proxy_cache=None):
+        """Build the merged mesh a group would have at the other quality.
+
+        The group's own object is never touched here - this only produces the
+        mesh and the colour that go with it, so the caller can decide what to
+        do with them.
+
+        Args:
+            group_obj (bpy.types.Object): The group whose cache to rebuild.
+            builder: The builder instance, kept for the caller's cache.
+            target_high_res (bool): True to rebuild with models-high-res parts,
+                False for the old fbx proxies.
+            proxy_cache (dict): Carried across a batch - see
+                builder_v2.new_proxy_object.
+
+        Returns:
+            tuple: (mesh, representative UserData), or (None, None) when the
+                group has no usable cache to rebuild from.
+        """
+        cached_child_data, origin_matrix = Group.extract_cached_data(group_obj)
+        if not cached_child_data:
+            return None, None
+        if origin_matrix is None:
+            origin_matrix = Group.get_default_origin_matrix()
+
+        builder_v2 = _builder_v2()
+        restored_objects = []
+
+        try:
+            for cache_data in cached_child_data.values():
+                matrix_local_data = cache_data.get(Group.PROP_MATRIX_LOCAL)
+                if not matrix_local_data:
+                    continue
+
+                object_id = cache_data[Group.PROP_OBJECT_ID]
+                user_data = cache_data.get(Group.PROP_USER_DATA, 0)
+
+                # Deliberately not add_part(): every one of these is merged and
+                # deleted a few lines below, so the part class, the rig, the
+                # snapping metadata and the palette properties add_part sets up
+                # are all thrown away before anything can read them. See
+                # builder_v2.new_merge_source.
+                new_obj = builder_v2.new_merge_source(
+                    object_id,
+                    user_data,
+                    high_res=target_high_res,
+                    proxy_cache=proxy_cache,
+                )
+                if new_obj is None:
+                    continue
+
+                new_obj.matrix_world = origin_matrix @ mathutils.Matrix(matrix_local_data)
+                restored_objects.append(new_obj)
+        except Exception:
+            # A half built group's children must not be left loose in the scene
+            bpy.data.batch_remove(restored_objects)
+            raise
+
+        if not restored_objects:
+            return None, None
+
+        # blend_utils.merge_objects carries mesh level custom properties -
+        # the high res marker included - across from whichever object is
+        # first in the list. An id the target library doesn't cover falls
+        # back to the other quality on its own (see new_merge_source), so
+        # without this a group that is mostly high res but starts with one
+        # fallback part would merge into a mesh that reads as low res.
+        restored_objects.sort(
+            key=lambda obj: materials_v2.is_high_res(obj) != target_high_res
+        )
+
+        # Read off the children while they still exist. This used to be asked
+        # for after the merge, and group_objects deletes every object it
+        # merges, so any group without an explicit master colour of its own
+        # raised a ReferenceError on the freed children instead of switching.
+        representative_user_data = Group.get_representative_user_data(restored_objects)
+
+        # group_objects only exists here to produce a merged mesh at the
+        # origin - the scratch object it hands back is thrown away the moment
+        # its mesh is lifted off, so group_obj's own identity never changes
+        # hands.
+        scratch_group = Group.group_objects(restored_objects, origin_matrix)
+        if scratch_group is None:
+            # It deletes what it merged and nothing else, so on any of its
+            # failure paths the rebuilt children are still sitting in the
+            # scene - a group's worth of loose parts, which is how a failed
+            # switch used to look to the user.
+            bpy.data.batch_remove(restored_objects)
+            return None, None
+
+        mesh = scratch_group.data
+        bpy.data.objects.remove(scratch_group, do_unlink=True)
+        return mesh, representative_user_data
+
+    @staticmethod
+    def _apply_switched_colour(group_obj, target_high_res, fallback_user_data):
+        """Put the colour back on a group whose mesh has just been swapped.
+
+        Colour lives on the object, not the mesh, so it survives the data swap
+        untouched - but it was voted on by the OLD children and is now stale.
+        An explicit master colour (set by recolouring the group after it was
+        made) takes precedence, same as ungroup treats it; otherwise the one
+        derived from the parts just rebuilt is used.
+
+        Args:
+            group_obj (bpy.types.Object): The group that was switched.
+            target_high_res (bool): The quality it was switched to.
+            fallback_user_data: The UserData derived from its children, or None.
+        """
+        if not target_high_res:
+            materials_v2.clear(group_obj)
+            return
+
+        user_data_value = group_obj.get(Part.PROP_USER_DATA)
+        if user_data_value is None:
+            user_data_value = fallback_user_data
+        if user_data_value is not None:
+            materials_v2.apply(group_obj, user_data_value)
+
+    @staticmethod
+    def switch_proxy_quality(
+        group_obj, builder, target_high_res,
+        mesh_cache=None, proxy_cache=None, dead_meshes=None,
+    ):
+        """Rebuild one group's mesh at the requested proxy quality, in place.
+
+        Every child in the group's cache is rebuilt at the new quality and
+        re-merged, the same way deserialise_to_group turns a cache back into
+        a group. Only group_obj's mesh data block is replaced - its name,
+        transform, parent, collections, GroupID, mirror flag, origin and
+        cache are never touched, so nothing else in the scene that refers to
+        this object is disturbed by the switch.
+
+        Args:
+            group_obj (bpy.types.Object): The group to convert.
+            builder: The builder instance passed through to the rebuild.
+            target_high_res (bool): True to rebuild with models-high-res
+                parts, False for the old fbx proxies.
+            mesh_cache (dict): Optional {child cache: (mesh, UserData)} carried
+                across a batch. A group's merged geometry is built in its
+                children's local space and only then moved onto the group's
+                origin, so it depends on the child cache alone and not on where
+                the group sits - which means two groups with the same cache
+                (Shift+D copies of one another, the usual way a prefab gets
+                repeated) can share one rebuild and take a copy of the mesh
+                each, instead of importing and merging every child twice.
+            proxy_cache (dict): Optional, carried across a batch - see
+                builder_v2.new_proxy_object.
+            dead_meshes (list): Optional. The mesh being replaced is appended
+                here instead of being removed, so a caller switching a whole
+                scene can clear them all out at the end - see
+                switch_scene_proxy_quality.
+
+        Returns:
+            bool: True if the object's mesh was switched.
+        """
+        if materials_v2.is_high_res(group_obj) == target_high_res:
+            return False
+
+        cache_key = group_obj.get(Group.PROP_CHILD_CACHE)
+        cached = mesh_cache.get(cache_key) if mesh_cache is not None else None
+
+        if cached is not None:
+            new_data, user_data_value = cached
+            # A copy rather than the datablock itself: sharing it would turn
+            # two groups that merely look alike into linked duplicates, and
+            # editing one would then change the other. Copying a mesh is cheap
+            # next to rebuilding and re-merging every part in it.
+            new_data = new_data.copy()
+        else:
+            new_data, user_data_value = Group._rebuild_group_mesh(
+                group_obj, builder, target_high_res, proxy_cache=proxy_cache
+            )
+            if new_data is None:
+                return False
+            if mesh_cache is not None and cache_key is not None:
+                mesh_cache[cache_key] = (new_data, user_data_value)
+
+        old_data = group_obj.data
+        group_obj.data = new_data
+        if old_data is not None:
+            if dead_meshes is not None:
+                dead_meshes.append(old_data)
+            elif old_data.users == 0:
+                bpy.data.meshes.remove(old_data)
+
+        Group._apply_switched_colour(group_obj, target_high_res, user_data_value)
+        return True
+
+    @staticmethod
+    def switch_scene_proxy_quality(context, builder, target_high_res,
+                                   proxy_cache=None):
+        """Switch every group in the scene to the requested proxy quality.
+
+        Linked duplicates - separate objects still sharing one mesh data
+        block, the usual result of Alt+D - are only rebuilt once; every
+        other object that shared the old block is pointed at the new one
+        instead of getting its own independent copy, so the sharing survives
+        the switch. A mirror group is unaffected by this - it already keeps
+        its own reflected cache and its own data block, so it is rebuilt from
+        that cache like any other group and comes out correctly mirrored on
+        its own, whether or not its counterpart is switched in the same pass.
+
+        Args:
+            context: The context to read the scene's objects from.
+            builder: The builder instance passed through to the rebuild.
+            target_high_res (bool): True to rebuild with models-high-res
+                parts, False for the old fbx proxies.
+            proxy_cache (dict): Optional, carried across a batch - see
+                builder_v2.apply_proxy_mesh. Worth passing the same one the
+                caller used for the loose parts: a group child and a placed
+                part of the same (ObjectID, UserData) want the same proxy mesh,
+                and sharing the cache means the fbx behind it is imported and
+                painted once for both.
+
+        Returns:
+            tuple: (groups switched, groups that could not be rebuilt).
+        """
+        rebuilt_data = {}
+        mesh_cache = {}
+        proxy_cache = {} if proxy_cache is None else proxy_cache
+        dead_meshes = []
+        switched = 0
+        failed = 0
+
+        # One library-wide dedupe and finish pass for the whole scene rather
+        # than one per part rebuilt inside it.
+        with materials_v2.defer_shared_data():
+            for group_obj in list(context.scene.objects):
+                if Group.PROP_GROUP_ID not in group_obj:
+                    continue
+                if materials_v2.is_high_res(group_obj) == target_high_res:
+                    continue
+
+                old_data = group_obj.data
+                # Keyed by name, and nothing is actually removed until the loop
+                # is over. A removed datablock left as a dict key raises the
+                # moment the next lookup has to compare against it, and a name
+                # freed mid loop can be handed straight back to one of the
+                # meshes still being built.
+                old_name = old_data.name if old_data is not None else None
+
+                shared = rebuilt_data.get(old_name)
+                if shared is not None:
+                    shared_data, shared_user_data = shared
+                    group_obj.data = shared_data
+                    dead_meshes.append(old_data)
+                    Group._apply_switched_colour(
+                        group_obj, target_high_res, shared_user_data
+                    )
+                    switched += 1
+                    continue
+
+                cache_key = group_obj.get(Group.PROP_CHILD_CACHE)
+                try:
+                    was_switched = Group.switch_proxy_quality(
+                        group_obj,
+                        builder,
+                        target_high_res,
+                        mesh_cache=mesh_cache,
+                        proxy_cache=proxy_cache,
+                        dead_meshes=dead_meshes,
+                    )
+                except Exception as error:
+                    # One unrebuildable group must not take the rest of the
+                    # scene down with it - a half switched scene with no idea
+                    # which half is worse than a named failure.
+                    print(
+                        "Could not switch group %s: %s" % (group_obj.name, error)
+                    )
+                    failed += 1
+                    continue
+
+                if not was_switched:
+                    failed += 1
+                    continue
+
+                if old_name is not None:
+                    rebuilt_data[old_name] = (
+                        group_obj.data,
+                        mesh_cache.get(cache_key, (None, None))[1],
+                    )
+                switched += 1
+
+        # Deferred to here on purpose - see the note on old_name above. Only
+        # the ones nothing points at any more, and each of them once: a linked
+        # duplicate puts the same block in the list as many times as it had
+        # users.
+        stale = {}
+        for mesh in dead_meshes:
+            if mesh is not None and mesh.users == 0:
+                stale[mesh.name] = mesh
+        if stale:
+            bpy.data.batch_remove(list(stale.values()))
+
+        return switched, failed
+
+    @staticmethod
     def mirror_group_cache(group_obj, axis, center):
         """
         Directly mirrors the cached child data and origin matrix of a group object

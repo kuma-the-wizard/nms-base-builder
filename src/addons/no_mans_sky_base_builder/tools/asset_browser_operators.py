@@ -1,13 +1,183 @@
 import bpy
 import json
+import os
 from ..utils import blend_utils,dictionary
 from ..builder import Builder
 from .. import builder_v2
+from ..utils import asset_browser_utils
+from ..utils.asset_browser_utils import get_preferences
 import ctypes
-from ctypes import wintypes
+
+try:
+    from ctypes import wintypes
+except (ImportError, ValueError):
+    # ctypes.wintypes only exists on Windows. The window titling below is a
+    # Windows only nicety, so the rest of the addon has to survive without it.
+    wintypes = None
 
 BUILDER = Builder()
-ADDON_ID = __package__.rsplit(".", 1)[0]
+ADDON_ID = asset_browser_utils.ADDON_ID
+
+
+def _get_user32():
+    """The user32 handle, or None when we are not on Windows."""
+    if wintypes is None or not hasattr(ctypes, "windll"):
+        return None
+
+    try:
+        user32 = ctypes.windll.user32
+    except (AttributeError, OSError):
+        return None
+
+    # Declared rather than left to ctypes' int defaults, which truncate a 64
+    # bit HWND and silently hand Windows a handle that points at nothing.
+    user32.EnumWindows.argtypes = [ctypes.c_void_p, wintypes.LPARAM]
+    user32.EnumWindows.restype = wintypes.BOOL
+    user32.IsWindowVisible.argtypes = [wintypes.HWND]
+    user32.IsWindowVisible.restype = wintypes.BOOL
+    user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+    user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+    user32.SetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPCWSTR]
+    user32.SetWindowTextW.restype = wintypes.BOOL
+    user32.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+    user32.GetWindowRect.restype = wintypes.BOOL
+    user32.MoveWindow.argtypes = [
+        wintypes.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wintypes.BOOL
+    ]
+    user32.MoveWindow.restype = wintypes.BOOL
+    user32.LoadImageW.argtypes = [
+        wintypes.HINSTANCE, wintypes.LPCWSTR, wintypes.UINT,
+        ctypes.c_int, ctypes.c_int, wintypes.UINT
+    ]
+    user32.LoadImageW.restype = wintypes.HANDLE
+    user32.SendMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    user32.SendMessageW.restype = wintypes.LPARAM
+    user32.GetSystemMetrics.argtypes = [ctypes.c_int]
+    user32.GetSystemMetrics.restype = ctypes.c_int
+    return user32
+
+
+def get_process_window_handles():
+    """Every visible top level window this Blender process owns.
+
+    Handles come back as plain ints so they can be compared and kept in a set.
+    """
+    user32 = _get_user32()
+    if user32 is None:
+        return []
+
+    try:
+        pid = ctypes.windll.kernel32.GetCurrentProcessId()
+    except (AttributeError, OSError):
+        return []
+
+    handles = []
+    enum_proc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+    def on_window(hwnd, lparam):
+        if user32.IsWindowVisible(hwnd):
+            window_pid = wintypes.DWORD()
+            user32.GetWindowThreadProcessId(hwnd, ctypes.byref(window_pid))
+            if window_pid.value == pid:
+                handles.append(int(hwnd))
+        return True
+
+    try:
+        user32.EnumWindows(enum_proc(on_window), 0)
+    except OSError:
+        return []
+
+    return handles
+
+
+def set_window_title(hwnd, title):
+    """Rename a window we already found. Returns True when Windows accepted it."""
+    user32 = _get_user32()
+    if user32 is None or not hwnd:
+        return False
+    try:
+        return bool(user32.SetWindowTextW(wintypes.HWND(hwnd), title))
+    except OSError:
+        return False
+
+
+def resize_window(hwnd, width, height):
+    """Resize in place, keeping the position Blender gave the window."""
+    user32 = _get_user32()
+    if user32 is None or not hwnd:
+        return False
+
+    handle = wintypes.HWND(hwnd)
+    rect = wintypes.RECT()
+    try:
+        if not user32.GetWindowRect(handle, ctypes.byref(rect)):
+            return False
+        return bool(user32.MoveWindow(handle, rect.left, rect.top, width, height, True))
+    except OSError:
+        return False
+
+
+WINDOW_ICON_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "images",
+    "asset_browser_window.ico",
+)
+
+# HICONs are process wide GDI handles. They are loaded once and kept alive for
+# as long as Blender runs - a window keeps referencing its icon, so destroying
+# one after handing it over would blank the title bar.
+_window_icon_cache = {}
+
+WM_SETICON = 0x0080
+ICON_SMALL = 0
+ICON_BIG = 1
+IMAGE_ICON = 1
+LR_LOADFROMFILE = 0x00000010
+SM_CXICON = 11
+SM_CXSMICON = 49
+
+
+def _load_window_icon(user32, size):
+    """A HICON at the given pixel size, loaded from the addon's .ico."""
+    if size in _window_icon_cache:
+        return _window_icon_cache[size]
+
+    handle = None
+    if os.path.isfile(WINDOW_ICON_PATH):
+        try:
+            handle = user32.LoadImageW(
+                None, WINDOW_ICON_PATH, IMAGE_ICON, size, size, LR_LOADFROMFILE
+            )
+        except OSError:
+            handle = None
+
+    _window_icon_cache[size] = handle
+    return handle
+
+
+def set_window_icon(hwnd):
+    """Give a window the addon's icon in the title bar and in Alt+Tab.
+
+    The taskbar button is not ours to change - Windows groups every window of a
+    process under the application icon, so that stays Blender's.
+    """
+    user32 = _get_user32()
+    if user32 is None or not hwnd:
+        return False
+
+    handle = wintypes.HWND(hwnd)
+    applied = False
+    for which, metric in ((ICON_SMALL, SM_CXSMICON), (ICON_BIG, SM_CXICON)):
+        try:
+            icon = _load_window_icon(user32, user32.GetSystemMetrics(metric))
+            if not icon:
+                continue
+            user32.SendMessageW(handle, WM_SETICON, which, icon)
+            applied = True
+        except OSError:
+            continue
+
+    return applied
 
     
 class LaunchAssetBrowserWindow(bpy.types.Operator):
@@ -21,9 +191,17 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
     def execute(self, context):
         
         scene = context.scene
-        asset_browser = scene.nms_asset_browser
-        asset_browser.asset_browser_number_of_columns_other = 8
+        # this column count is an addon preference. It used to be assigned to the
+        # AssetBrowser property group, which has no such property, so it silently
+        # went nowhere and the new window never got its wider layout.
+        prefs = get_preferences(context)
+        if prefs is not None:
+            prefs.asset_browser_number_of_columns_other = 8
         
+        # Taken before the window exists so the handle that appears afterwards
+        # is unambiguously the one we just asked for.
+        handles_before = set(get_process_window_handles())
+
         bpy.ops.wm.window_new()
         wm = context.window_manager
         if not wm.windows:
@@ -119,16 +297,46 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
 
         bpy.app.timers.register(switch_tab, first_interval=0.02)
 
-        try:
-            user32 = ctypes.windll.user32
-            hwnd = user32.GetForegroundWindow()
-            if hwnd:
-                user32.SetWindowTextW(hwnd, "Asset Browser")
-                rect = wintypes.RECT()
-                if user32.GetWindowRect(hwnd, ctypes.byref(rect)):
-                    user32.MoveWindow(hwnd, rect.left, rect.top, self.target_width, self.target_height, True)
-        except Exception:
-            pass
+        # The title used to be pushed onto GetForegroundWindow() the moment
+        # window_new() returned. That is the wrong window as often as not - the
+        # OS has not always handed focus over yet - so the rename either landed
+        # on the main Blender window or went nowhere. The new window is found by
+        # diffing the process' window handles instead.
+        window_title = "Asset Browser"
+        # Read off the operator now - the timer outlives execute, and self is
+        # not guaranteed to still be around by the time it runs.
+        target_width, target_height = self.target_width, self.target_height
+        title_state = {"hwnd": None, "attempts": 0, "reapplies": 0}
+
+        def apply_window_title():
+            title_state["attempts"] += 1
+
+            hwnd = title_state["hwnd"]
+            if hwnd is None:
+                new_handles = [
+                    handle for handle in get_process_window_handles()
+                    if handle not in handles_before
+                ]
+                if not new_handles:
+                    # The OS window can lag a moment behind wm.window_new().
+                    return 0.05 if title_state["attempts"] < 20 else None
+                hwnd = new_handles[0]
+                title_state["hwnd"] = hwnd
+                resize_window(hwnd, target_width, target_height)
+                set_window_icon(hwnd)
+
+            if not set_window_title(hwnd, window_title):
+                # The handle is no longer valid - the user closed the window.
+                return None
+
+            # Blender writes its own title while the window finishes setting
+            # itself up, so ours goes back on a few times over the first second.
+            title_state["reapplies"] += 1
+            if title_state["reapplies"] < 10:
+                return 0.1
+            return None
+
+        bpy.app.timers.register(apply_window_title, first_interval=0.0)
 
         return {'FINISHED'}
     
@@ -156,7 +364,11 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
         
         if self.is_preset:
             item_id = self.object_id
-            new_item = BUILDER.add_preset(item_id)
+            try:
+                new_item = BUILDER.add_preset(item_id)
+            except Exception as error:
+                self.report({'ERROR'}, f"Could not add preset {item_id}: {error}")
+                return {'CANCELLED'}
             if new_item:
                 new_item.select()
         elif self.has_variants:
@@ -173,14 +385,27 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
                         button.has_variants = False
             context.window_manager.popup_menu(draw_popup)
         else:
-            if self.object_id in dictionary.get_nice_names_diictionary():
-                item = builder_v2.add_part(self.object_id, builder_object=BUILDER)
-                bpy_obj = item.object
-                blend_utils.select(bpy_obj)
-                asset_browser.add_to_recents_list(self.object_id)
-                self.report({'INFO'}, f"Added {self.object_id} to scene")
-            else:
+            if self.object_id not in dictionary.get_nice_names_diictionary():
                 self.report({'ERROR'}, f"Could not add {self.object_id} to scene")
+                return {'CANCELLED'}
+
+            # A part can fail to build - a missing asset, or one of the override
+            # classes throwing. This used to go straight to item.object and turn
+            # that into an unhandled AttributeError in the operator.
+            try:
+                item = builder_v2.add_part(self.object_id, builder_object=BUILDER)
+            except Exception as error:
+                self.report({'ERROR'}, f"Could not add {self.object_id}: {error}")
+                return {'CANCELLED'}
+
+            bpy_obj = getattr(item, "object", None)
+            if bpy_obj is None:
+                self.report({'ERROR'}, f"Could not add {self.object_id} to scene")
+                return {'CANCELLED'}
+
+            blend_utils.select(bpy_obj)
+            asset_browser.add_to_recents_list(self.object_id)
+            self.report({'INFO'}, f"Added {self.object_id} to scene")
         return {'FINISHED'}
     
 class AssetBrowserObjectMoreOptions(bpy.types.Operator):
@@ -243,24 +468,11 @@ class AssetBrowserCategoryFavourite(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         asset_browser = scene.nms_asset_browser
-        prefs = context.preferences.addons[ADDON_ID].preferences
-        
-        fav_cats_str = prefs.favourite_categories
-        try:
-            fav_cats = json.loads(fav_cats_str) if fav_cats_str else []
-        except json.JSONDecodeError:
-            fav_cats = []
-            
-        if self.category in fav_cats:
-            fav_cats.remove(self.category)
-        else:
-            fav_cats.append(self.category)
-            
-        prefs.favourite_categories = json.dumps(fav_cats)
+        fav_cats = asset_browser_utils.toggle_stored_list(
+            "favourite_categories", self.category
+        )
         asset_browser.set_favourite_categories(fav_cats)
-        
-        bpy.ops.wm.save_userpref()
-        
+
         return {'FINISHED'}
     
 
@@ -274,23 +486,11 @@ class AssetBrowserObjectFavourite(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         asset_browser = scene.nms_asset_browser
-        prefs = context.preferences.addons[ADDON_ID].preferences
-        
-        fav_obj_str = prefs.favourite_objects
-        try:
-            fav_objs = json.loads(fav_obj_str) if fav_obj_str else []
-        except json.JSONDecodeError:
-            fav_objs = []
-            
-        if self.object_id in fav_objs:
-            fav_objs.remove(self.object_id)
-        else:
-            fav_objs.append(self.object_id)
-            
-        prefs.favourite_objects = json.dumps(fav_objs)
+        fav_objs = asset_browser_utils.toggle_stored_list(
+            "favourite_objects", self.object_id
+        )
         asset_browser.set_favourite_objects(fav_objs)
-        bpy.ops.wm.save_userpref()
-        
+
         for area in context.window.screen.areas:
             area.tag_redraw()
         
@@ -370,24 +570,20 @@ class AssetBrowserListSettings(bpy.types.Operator):
         )
 
     def execute(self, context):
-        bpy.ops.wm.save_userpref()
+        asset_browser_utils.save_preferences()
         return {"FINISHED"}
 
     def draw(self, context):
         layout = self.layout
-        prefs = context.preferences.addons[ADDON_ID].preferences
-        
-        grid_type = self.grid_type
-        if grid_type == "Grid":
-            icon_size_prop = "asset_browser_icon_size"
-            number_of_columns_prop = "asset_browser_number_of_columns"
-        elif grid_type == "List":
-            icon_size_prop = "asset_browser_icon_size_list"
-            number_of_columns_prop = "asset_browser_number_of_columns_list"
-        else:
-            icon_size_prop = "asset_browser_icon_size_other"
-            number_of_columns_prop = "asset_browser_number_of_columns_other"
-        
+        prefs = get_preferences(context)
+        if prefs is None:
+            layout.label(text="Addon preferences are not available", icon="ERROR")
+            return
+
+        icon_size_prop, number_of_columns_prop = (
+            asset_browser_utils.get_grid_size_properties(self.grid_type)
+        )
+
         layout.prop(prefs, icon_size_prop,text = "Icon Size")
         layout.separator()
         layout.prop(prefs, number_of_columns_prop, text = "Columns")
@@ -404,10 +600,22 @@ class AssetBrowserBatchReplace(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         batch_tool = scene.nms_batch_tool
-        selected_objects = context.selected_objects
-        if selected_objects:
-            batch_tool.batch_replace_with_object_id(self.object_id, selected_objects)
-        
+        selected_objects = list(context.selected_objects)
+
+        if not selected_objects:
+            self.report({'WARNING'}, "Select the objects to replace first")
+            return {'CANCELLED'}
+
+        # the id comes from the browser, but the browser can be showing a list
+        # built before the part dictionary was reloaded
+        if self.object_id not in dictionary.get_nice_names_diictionary():
+            self.report({'ERROR'}, f"{self.object_id} is not a part that can be built")
+            return {'CANCELLED'}
+
+        replaced = batch_tool.batch_replace_with_object_id(
+            self.object_id, selected_objects
+        )
+        self.report({'INFO'}, f"Replaced {len(replaced or [])} objects")
         return {'FINISHED'}
         
         

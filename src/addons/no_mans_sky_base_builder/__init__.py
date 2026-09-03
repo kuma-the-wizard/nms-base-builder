@@ -24,6 +24,7 @@ from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel
 from .save_editor.save_manager import SaveManager
 
 from .tools import batch_tool_operators, build_tool_operators, prooperties_operators, asset_browser_operators
+from .tools_menu import base_builder_menu, base_builder_menu_operators, save_manager_menu
 from .tools.batch_tool import BatchTool
 from .tools.batch_tool_presentation import NMS_PT_batch_tools_panel
 from .tools.build_tool import BuildTool
@@ -2014,9 +2015,9 @@ classes = (
     UngroupObjects
 )
 
-classes = classes + asset_browser_presentation.classes
+classes = classes + asset_browser_presentation.classes + base_builder_menu.classes + save_manager_menu.classes
 
-classes = classes  + save_editor_operators.classes + build_tool_operators.classes + batch_tool_operators.classes + prooperties_operators.classes + asset_browser_operators.classes
+classes = classes  + save_editor_operators.classes + build_tool_operators.classes + batch_tool_operators.classes + prooperties_operators.classes + asset_browser_operators.classes + base_builder_menu_operators.classes
 
 
 
@@ -2056,6 +2057,11 @@ def register():
     bpy.types.Scene.nms_properties = bpy.props.PointerProperty(type=Properties)
     bpy.types.Scene.nms_batch_tool = bpy.props.PointerProperty(type=BatchTool)
     bpy.types.Scene.nms_asset_browser = bpy.props.PointerProperty(type=AssetBrowser)
+
+    # Puts the "Base Builder" menu in the 3D viewport header. The menu classes
+    # themselves are registered with everything else, above.
+    base_builder_menu.register_menu()
+    save_manager_menu.register_menu()
     
     if reset_plugin_state not in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.append(reset_plugin_state)
@@ -2070,6 +2076,15 @@ def unregister():
         bpy.utils.previews.remove(pcoll)
     preview_collections.clear()
     icons.unregister_icons()
+
+    # Blender's own toolbar was patched by the workspace cleanup, so hand it
+    # back before we go.
+    workspace.restore_viewport_tools()
+
+    # Taken out of the header before its classes go, so nothing is left drawing
+    # a menu that no longer exists.
+    base_builder_menu.unregister_menu()
+    save_manager_menu.unregister_menu()
 
     for _class in reversed(classes):
         bpy.utils.unregister_class(_class)

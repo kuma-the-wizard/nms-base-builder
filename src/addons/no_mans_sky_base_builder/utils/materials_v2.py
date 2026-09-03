@@ -26,10 +26,12 @@ the game's own basebuildingobjectstable and cross-checked 84/84 against
 resources/DT_Palettes.csv. The JSON is the wider of the two - all 115 palettes
 with all four slots, against the CSV's 84 with two.
 
-Note the finish index only feeds the readable "Material" label - the library
-implements the colour half of the system, not the surface finishes.
+The finish index is handled too, but read the FINISHES_BY_LABEL note below
+before trusting what it looks like - the names are the game's, the surface
+values are ours.
 """
 
+import contextlib
 import json
 import os
 
@@ -50,6 +52,107 @@ SLOT_PROPS = ("nms_p", "nms_s", "nms_t", "nms_q")
 
 # Name prefix of the colourise node group carried by every asset file.
 COLOURISE_GROUP = "NMS_Colourise"
+
+# Object properties carrying the surface finish, read by the nodes
+# ensure_finish_nodes() splices into each colourable material. Both are
+# offsets onto whatever the part's own texture maps say, so 0 - which is what
+# an Attribute node reports for an object that has neither - means "exactly as
+# the textures have it". That keeps every part that predates this unchanged.
+PROP_FINISH_ROUGHNESS = "nms_finish_rough"
+PROP_FINISH_METALLIC = "nms_finish_metal"
+
+# A colour the finish multiplies over the part, and how strongly.
+# Kept as two properties rather than one RGBA so the "no tint" default needs
+# no assumption about what an Attribute node reports for a missing alpha:
+# a missing mix reads as 0, which is no tint at all.
+PROP_FINISH_TINT = "nms_finish_tint"
+PROP_FINISH_TINT_MIX = "nms_finish_tint_mix"
+
+# Marks a material whose node tree has already had the finish nodes spliced
+# in, so a second import does not stack a second copy on top.
+FINISH_NODES_TAG = "nms_finish_nodes"
+
+# The palette slots in their normal order. "Inverted" is the one finish that
+# reorders them, which is why it is also the only one that shows up under
+# Solid viewport shading - it is a colour difference, not a surface one.
+SLOT_ORDER = ("p", "s", "t", "q")
+SLOT_ORDER_INVERTED = ("s", "p", "q", "t")
+
+# What each finish does to a part's look.
+#
+# Keyed on the readable label rather than the raw index, because the index is
+# only meaningful inside its own material group: index 1 is "Inverted Gloss
+# Finish" on a corvette palette and plain "Rust" on a legacy one. The labels
+# come straight from resources/DT_Palettes.csv, which is also what the colour
+# picker shows, so what you choose in the UI is what is looked up here.
+#
+# The VALUES are ours, not the game's. What No Man's Sky actually does to its
+# shader for each finish was never worked out - the extracted
+# material_finishes.json carries names and indices and nothing else - so these
+# are chosen to tell the finishes apart in the direction their names point,
+# for previewing in Blender. Correct them here; nothing else reads them.
+#
+# None of this touches the saved UserData. The finish index is written and
+# read back exactly as before, so the game stays the authority on how a base
+# really looks - this only changes what Blender draws.
+#
+#   roughness / metallic: added to the texture value, clamped to 0..1
+#   tint / tint_mix: a colour multiplied over the part, and how strongly.
+#     Being a multiply, these are brighter than the colour you want out:
+#     a rust of (0.55, 0.26, 0.14) lands as dark oxide over a light hull.
+#   invert: swap the palette slots as above
+
+# What rust multiplies a surface by. Reads as a dark oxide over a light hull
+# while leaving the panel lines and decals showing through.
+RUST_TINT = (0.42, 0.17, 0.07)
+
+GLOSS = {"roughness": 0.40}
+GLOSS_INVERTED = {"roughness": 0.40, "invert": True}
+RUSTED = {"roughness": 0.80, "tint": (0.58, 0.53, 0.46), "tint_mix": 0.75}
+METALLIC = {"roughness": 0.25, "metallic": 5.0}
+
+FINISHES_BY_LABEL = {
+    # Corvette - the four the picker offers for a BIGGS palette.
+    # These panels are painted, so their maps are already fairly smooth; a
+    # negative offset here goes straight past "shiny" into mirror, which is why
+    # gloss sits slightly ROUGHER than the texture rather than smoother. Think
+    # moulded plastic, not a showroom floor.
+    "Corvette - Gloss Finish": GLOSS,
+    "Corvette - Inverted Gloss Finish": GLOSS_INVERTED,
+    # grimy rather than bleached: dulled right down and darkened towards a warm
+    # grey, but still recognisably the same paint underneath
+    "Corvette - Weathered Finish": RUSTED,
+    # Metal, but a painted piece of it. Metallic kills the diffuse term, so
+    # pushing it high turns the part into a dark mirror and the palette colour
+    # stops reading at all - kept low enough that the colour still comes
+    # through, with the roughness doing the work of making it look like metal.
+    "Corvette - Metallic Finish": METALLIC,
+
+    # Legacy - the original four building materials
+    "Legacy - Concrete": GLOSS,
+    "Legacy - Rust": GLOSS_INVERTED,
+    "Legacy - Stone": RUSTED,
+    "Legacy - Wood": METALLIC,
+
+    # the later material groups, all polished/worn pairs
+    "Stone - Polished Stone": {"roughness": 0.10},
+    "Stone - Aged Stone": {"roughness": 0.45},
+    "Timber - Polished Timber": {"roughness": 0.10},
+    "Timber - Weathered Timber": {"roughness": 0.45,
+                                  "tint": (0.74, 0.68, 0.60), "tint_mix": 0.50},
+    "Fiberglass - Polished Alloy": {"roughness": 0.10, "metallic": 0.25},
+    "Fiberglass - Rusted Alloy": {"roughness": 0.85, "tint": RUST_TINT,
+                                  "tint_mix": 1.0},
+    "Salvaged - Polished Salvage": {"roughness": 0.10, "metallic": 0.25},
+    "Salvaged - Rusted Salvage": {"roughness": 0.85, "tint": RUST_TINT,
+                                  "tint_mix": 1.0},
+
+    "Freighter": {"roughness": 0.15, "metallic": 0.30},
+}
+
+# Used for a finish that is not in the table - leaves the part exactly as its
+# textures make it.
+FINISH_NEUTRAL = {}
 
 # Written onto every mesh appended from models-high-res, holding the object id
 # it came from. It marks a part as belonging to the new colour system, which is
@@ -168,18 +271,41 @@ def get_nice_names(user_data_value):
 
 
 # Applying colour ---
-def apply_palette(bpy_object, palette):
-    """Write the four palette slots onto an object.
+def get_finish(user_data_value):
+    """The finish behaviour for a UserData value.
+
+    Args:
+        user_data_value: The packed UserData value.
+
+    Returns:
+        dict: An entry from FINISHES_BY_LABEL, or FINISH_NEUTRAL. Never None.
+    """
+    finish_name = get_nice_names(user_data_value)[1]
+    return FINISHES_BY_LABEL.get(finish_name, FINISH_NEUTRAL)
+
+
+def apply_palette(bpy_object, palette, finish=None):
+    """Write the four palette slots and the surface finish onto an object.
 
     Args:
         bpy_object (bpy.types.Object): The object to colour.
         palette (dict): A palette entry with p/s/t/q RGBA lists.
+        finish (dict): An entry from FINISHES_BY_LABEL. Defaults to neutral.
     """
-    primary = tuple(palette["p"])
-    bpy_object["nms_p"] = primary
-    bpy_object["nms_s"] = tuple(palette["s"])
-    bpy_object["nms_t"] = tuple(palette["t"])
-    bpy_object["nms_q"] = tuple(palette["q"])
+    finish = finish if finish is not None else FINISH_NEUTRAL
+
+    slots = SLOT_ORDER_INVERTED if finish.get("invert") else SLOT_ORDER
+    for prop_name, slot in zip(SLOT_PROPS, slots):
+        bpy_object[prop_name] = tuple(palette[slot])
+    primary = tuple(palette[slots[0]])
+
+    # Offsets rather than absolute values, so a part keeps the surface detail
+    # its own maps give it. 0 is "unchanged", which is also what the shader
+    # reads for an object that has never been given a finish.
+    bpy_object[PROP_FINISH_ROUGHNESS] = float(finish.get("roughness", 0.0))
+    bpy_object[PROP_FINISH_METALLIC] = float(finish.get("metallic", 0.0))
+    bpy_object[PROP_FINISH_TINT] = tuple(finish.get("tint", (0.0, 0.0, 0.0)))
+    bpy_object[PROP_FINISH_TINT_MIX] = float(finish.get("tint_mix", 0.0))
 
     # Solid viewport shading set to Object colour draws this, so parts can still
     # be told apart at a glance without waiting for textures. The old flat
@@ -208,7 +334,7 @@ def apply(bpy_object, user_data_value, tag=True):
     if palette is None:
         return None
 
-    apply_palette(bpy_object, palette)
+    apply_palette(bpy_object, palette, get_finish(user_data_value))
     colour_name, finish_name = get_nice_names(user_data_value)
     bpy_object[PROP_READONLY_COLOUR] = colour_name or ""
     bpy_object[PROP_READONLY_MATERIAL] = finish_name or ""
@@ -238,14 +364,16 @@ def apply_many(pairs, tag=False, update=False):
     for bpy_object, user_data_value in pairs:
         key = str(user_data_value)
         if key not in cache:
-            cache[key] = (get_palette(key), get_nice_names(key))
-        palette, names = cache[key]
+            names = get_nice_names(key)
+            cache[key] = (get_palette(key), names,
+                          FINISHES_BY_LABEL.get(names[1], FINISH_NEUTRAL))
+        palette, names, finish = cache[key]
 
         if palette is None:
             unresolved += 1
             continue
 
-        apply_palette(bpy_object, palette)
+        apply_palette(bpy_object, palette, finish)
         bpy_object[PROP_READONLY_COLOUR] = names[0] or ""
         bpy_object[PROP_READONLY_MATERIAL] = names[1] or ""
         if tag:
@@ -291,6 +419,12 @@ def recolour(objects, colour_index=None, material_index=None, tag=True):
         bpy_object["UserData"] = str(value)
         pairs.append((bpy_object, value))
 
+    # A base saved before finishes were handled has materials with no finish
+    # nodes in them, so the offsets below would land on nothing. Cheap to call
+    # again - materials that already have them carry a marker - so the first
+    # recolour after opening such a file quietly brings it up to date.
+    ensure_finish_nodes()
+
     return apply_many(pairs, tag=tag)
 
 
@@ -321,11 +455,15 @@ def recolour_from_user_data(objects, user_data_value, tag=True):
         return 0, len(objects)
 
     colour_name, finish_name = get_nice_names(user_data_value)
+    finish = FINISHES_BY_LABEL.get(finish_name, FINISH_NEUTRAL)
     value = str(user_data_value)
+
+    # see recolour() - keeps an older file working the moment it is touched
+    ensure_finish_nodes()
 
     for bpy_object in objects:
         bpy_object["UserData"] = value
-        apply_palette(bpy_object, palette)
+        apply_palette(bpy_object, palette, finish)
         bpy_object[PROP_READONLY_COLOUR] = colour_name or ""
         bpy_object[PROP_READONLY_MATERIAL] = finish_name or ""
         if tag:
@@ -449,6 +587,216 @@ def is_colourable(bpy_object):
 # a second of work at the end of an import. Materials are deliberately left
 # alone - they are cheap once they share their images, and two same named
 # materials from different assets are not guaranteed to be identical.
+def _splice_finish_offset(node_tree, socket, attribute_name, label):
+    """Add an object attribute onto whatever already feeds `socket`.
+
+    The Principled BSDF's Roughness and Metallic are driven by the part's own
+    texture maps, and those maps are shared by every placement of that part - so
+    the finish cannot be baked into them any more than the colour can. This adds
+    the object property on top instead, the same trick the colour slots use, and
+    clamps the result back into 0..1.
+
+    Args:
+        node_tree (bpy.types.NodeTree): The material's node tree.
+        socket (bpy.types.NodeSocket): The Principled input to drive.
+        attribute_name (str): The object property carrying the offset.
+        label (str): Label for the added nodes, so they are findable by hand.
+    """
+    nodes = node_tree.nodes
+    links = node_tree.links
+
+    attribute = nodes.new("ShaderNodeAttribute")
+    attribute.attribute_type = 'OBJECT'
+    attribute.attribute_name = attribute_name
+    attribute.label = label
+    attribute.location = (socket.node.location.x - 600,
+                          socket.node.location.y - 400)
+
+    add = nodes.new("ShaderNodeMath")
+    add.operation = 'ADD'
+    add.use_clamp = True
+    add.label = label
+    add.location = (socket.node.location.x - 300,
+                    socket.node.location.y - 400)
+
+    # whatever was feeding the socket becomes the first term - a texture, or the
+    # value that was typed into it if nothing was linked
+    existing = socket.links[0].from_socket if socket.is_linked else None
+    if existing is not None:
+        links.new(existing, add.inputs[0])
+    else:
+        add.inputs[0].default_value = socket.default_value
+
+    links.new(attribute.outputs["Fac"], add.inputs[1])
+    links.new(add.outputs["Value"], socket)
+
+
+def _splice_finish_tint(node_tree, socket):
+    """Wash a finish colour over whatever already feeds Base Color.
+
+    Rust is a colour as much as a roughness, and the part's own diffuse map
+    cannot carry it - that map is shared by every placement. So the tint goes
+    on as a mix at the end of the chain, driven by two object properties, the
+    same way the palette and the roughness are.
+
+    Args:
+        node_tree (bpy.types.NodeTree): The material's node tree.
+        socket (bpy.types.NodeSocket): The Principled Base Color input.
+    """
+    nodes = node_tree.nodes
+    links = node_tree.links
+
+    colour = nodes.new("ShaderNodeAttribute")
+    colour.attribute_type = 'OBJECT'
+    colour.attribute_name = PROP_FINISH_TINT
+    colour.label = "NMS Finish Tint"
+    colour.location = (socket.node.location.x - 900, socket.node.location.y + 300)
+
+    amount = nodes.new("ShaderNodeAttribute")
+    amount.attribute_type = 'OBJECT'
+    amount.attribute_name = PROP_FINISH_TINT_MIX
+    amount.label = "NMS Finish Tint Mix"
+    amount.location = (socket.node.location.x - 900, socket.node.location.y + 120)
+
+    mix = nodes.new("ShaderNodeMix")
+    mix.data_type = 'RGBA'
+    # MULTIPLY, not MIX. Mixing towards a flat colour washes the panel lines,
+    # decals and paint straight off the part - 60% towards a rust brown turned
+    # a hull into a smooth terracotta shape. Multiplying darkens and shifts the
+    # hue while every bit of that detail survives underneath.
+    mix.blend_type = 'MULTIPLY'
+    mix.clamp_factor = True
+    mix.label = "NMS Finish Tint"
+    mix.location = (socket.node.location.x - 300, socket.node.location.y + 220)
+
+    existing = socket.links[0].from_socket if socket.is_linked else None
+    if existing is not None:
+        links.new(existing, mix.inputs["A"])
+    else:
+        mix.inputs["A"].default_value = socket.default_value
+
+    links.new(amount.outputs["Fac"], mix.inputs["Factor"])
+    links.new(colour.outputs["Color"], mix.inputs["B"])
+    links.new(mix.outputs["Result"], socket)
+
+
+# Bulk builds ---
+#
+# dedupe_appended_data() and the no-argument form of ensure_finish_nodes() both
+# walk every material node tree in the file. That is the right cost to pay once
+# at the end of an import, and the wrong one to pay per part: builder_v2's
+# add_part() calls all of them for every single part it places, so a scene wide
+# rebuild - a proxy quality switch, a batch replace - spends most of its time
+# rescanning a library that only the last pass could have changed.
+#
+# Inside defer_shared_data() they record that they were wanted and return
+# immediately, and leaving the block runs each of them once.
+_defer_depth = 0
+_defer_pending = False
+
+
+@contextlib.contextmanager
+def defer_shared_data():
+    """Collapse the whole-library passes inside a bulk build into one each.
+
+    Nests: only the outermost block runs the deferred passes, so a caller can
+    wrap a batch without caring whether something inside it does the same.
+
+    Nothing is deferred that a caller asked for explicitly - passing a
+    materials list to ensure_finish_nodes() still does exactly that work, since
+    that form is already scoped to what changed.
+    """
+    global _defer_depth, _defer_pending
+    _defer_depth += 1
+    try:
+        yield
+    finally:
+        _defer_depth -= 1
+        if _defer_depth == 0 and _defer_pending:
+            _defer_pending = False
+            # dedupe first, so the surviving shared materials are the ones
+            # that get the finish nodes rather than copies about to be thrown
+            # away - the same order deserialise_from_data uses.
+            dedupe_appended_data()
+            ensure_finish_nodes()
+
+
+def _defer():
+    """Record that a deferred pass was wanted. True if it should be skipped."""
+    global _defer_pending
+    if not _defer_depth:
+        return False
+    _defer_pending = True
+    return True
+
+
+def note_appended_data():
+    """Record that an asset was appended, for whatever tidy up comes next.
+
+    Appending brings its own copies of the asset's textures and of the
+    colourise node group with it, and both have to be collapsed onto the ones
+    already in the file before the finish nodes are spliced in. Inside
+    defer_shared_data() this is what schedules that single pass at the end.
+
+    Outside one it deliberately does nothing: the callers that append without
+    deferring - builder_v2.add_part, builder_v2.deserialise_from_data - already
+    run the passes themselves, and running them here as well would put the per
+    asset cost back that deferring exists to remove.
+    """
+    _defer()
+
+
+def ensure_finish_nodes(materials=None):
+    """Give materials the nodes that let a finish change their surface.
+
+    Idempotent and cheap to call again: a material that already carries the
+    nodes is skipped by its marker, so re-importing an asset does not stack a
+    second copy of them.
+
+    Args:
+        materials (iterable): Materials to fix up. Defaults to all of them.
+
+    Returns:
+        int: How many materials were changed.
+    """
+    if materials is None and _defer():
+        return 0
+
+    materials = materials if materials is not None else bpy.data.materials
+
+    changed = 0
+    for mat in materials:
+        if mat is None or mat.get(FINISH_NODES_TAG) or not mat.node_tree:
+            continue
+
+        # Only the materials that carry the colourise group. That keeps this off
+        # the flat proxy materials and off anything of the user's own, and it
+        # also leaves a part's non-paintable materials - its lights and its glass
+        # - alone, which is right: a weathered finish should dull the hull, not
+        # the lamps set into it.
+        if not any(node.type == 'GROUP' and node.node_tree
+                   and node.node_tree.name.startswith(COLOURISE_GROUP)
+                   for node in mat.node_tree.nodes):
+            continue
+
+        principled = next((node for node in mat.node_tree.nodes
+                           if node.type == 'BSDF_PRINCIPLED'), None)
+        if principled is None:
+            # not a shaded material - nothing a finish could act on
+            continue
+
+        _splice_finish_offset(mat.node_tree, principled.inputs["Roughness"],
+                              PROP_FINISH_ROUGHNESS, "NMS Finish Roughness")
+        _splice_finish_offset(mat.node_tree, principled.inputs["Metallic"],
+                              PROP_FINISH_METALLIC, "NMS Finish Metallic")
+        _splice_finish_tint(mat.node_tree, principled.inputs["Base Color"])
+
+        mat[FINISH_NODES_TAG] = True
+        changed += 1
+
+    return changed
+
+
 def dedupe_appended_data():
     """Collapse the datablocks the appends duplicated.
 
@@ -459,6 +807,9 @@ def dedupe_appended_data():
     Returns:
         tuple: (images removed, node groups removed)
     """
+    if _defer():
+        return 0, 0
+
     image_map = _plan_image_dedupe()
     group_map = _plan_node_group_dedupe()
 
