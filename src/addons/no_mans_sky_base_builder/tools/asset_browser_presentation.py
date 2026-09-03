@@ -269,28 +269,65 @@ def draw_asset_browser(context, asset_browser_box, scene):
         )
         
 
+class NMS_UL_asset_browser_category_order(bpy.types.UIList):
+    """Rows for reordering categories, with an up/down button per row.
+
+    Favourites and non-favourites are kept in separate contiguous blocks by
+    AssetBrowser.move_category, so a plain up/down swap here can never let a
+    row cross into the other block - see asset_browser_utils.move_category.
+    """
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        row = layout.row(align=True)
+        row.label(text=item.category_name)
+
+        controls_row = row.row(align=True)
+        controls_row.alignment = "RIGHT"
+
+        fav_button = controls_row.operator(
+            "object.nms_asset_browser_category_favourite",
+            text="",
+            icon="PINNED" if item.is_fav else "UNPINNED",
+            emboss=False,
+        )
+        fav_button.category = item.category_name
+
+        controls_row.separator()
+
+        up_button = controls_row.operator(
+            "object.nms_asset_browser_category_move", text="", icon="TRIA_UP", emboss=False
+        )
+        up_button.category = item.category_name
+        up_button.direction = "UP"
+        down_button = controls_row.operator(
+            "object.nms_asset_browser_category_move", text="", icon="TRIA_DOWN", emboss=False
+        )
+        down_button.category = item.category_name
+        down_button.direction = "DOWN"
+
+
 def draw_asset_browser_left_options(context, asset_browser_box, scene):
     asset_browser = scene.nms_asset_browser
     prefs = get_preferences(context)
     display_what = asset_browser.enum_asset_browser_what_to_display
-    
+
     ab_category = asset_browser.asset_browser_caterogies
     ab_sub_category = asset_browser.asset_browser_sub_caterogies
     fav_cats = asset_browser.get_favourite_categories()
-    
-    
+
+
     search_column= asset_browser_box.column(align=True)
     search_column.scale_y = 1.4
     search_column.label(text = "Search")
     search_column.prop(asset_browser, "asset_broser_search_query", text="", icon='VIEWZOOM')
-    
+
     asset_browser_box.separator()
     if prefs is not None:
         size_column = asset_browser_box.column(align = True)
         size_column.prop(prefs, "asset_browser_icon_size_other",text = "Icon Size")
         size_column.prop(prefs, "asset_browser_number_of_columns_other", text = "Columns")
     asset_browser_box.separator()
-    
+
     def draw_button(parent,operator ,label, what_type ,icon = "LEFT"):
         cat_element_row = parent.box().row(align = True)
         cat_element_row.scale_y = 0.7
@@ -303,13 +340,23 @@ def draw_asset_browser_left_options(context, asset_browser_box, scene):
             emboss = False,
             icon = "TRIA_RIGHT" if what_type == display_what else "BLANK1"#"RIGHTARROW_THIN"
         )
-    
+
     cats_col = asset_browser_box.column(align = True)
-    cats_col.label(text="Categories" )
+    cats_header_row = cats_col.row(align = True)
+    cats_header_row.label(text="Categories" )
+    reorder_row = cats_header_row.row(align = True)
+    reorder_row.alignment = "RIGHT"
+    reorder_row.operator(
+        "object.nms_asset_browser_category_reorder_popup",
+        text = "Reorder",
+        icon = "SORTSIZE",
+    )
+    cats_col.separator()
     draw_button(cats_col,"object.nms_asset_browser_show_fav_items", "Favourite Items", icon = "FUND", what_type= "fav")
     draw_button(cats_col,"object.nms_asset_browser_show_recent_items", "Recent Items", icon = "RECOVER_LAST", what_type= "recent")
     draw_button(cats_col,"object.nms_asset_browser_show_presets", "Presets", icon = "ASSET_MANAGER", what_type = "preset")
     cats_col.separator()
+
     # created either way: it used to exist only when there were favourites, so
     # anything that reached the favourite branch without them raised
     # UnboundLocalError
@@ -319,15 +366,15 @@ def draw_asset_browser_left_options(context, asset_browser_box, scene):
     categories_col.enabled = not asset_browser.check_display_search_results
     for category_element in asset_browser.get_enum_categories_list():
         category = category_element[0]
-        
+
         is_active = category == ab_category
         is_fav = fav_cats and category in fav_cats
-        
+
         if is_fav:
             cat_element_col = fav_cats_col.box().column(align = True)
         else:
             cat_element_col = categories_col.box().column(align = True)
-            
+
         cat_container_row = cat_element_col.row(align = True)
         cat_container_row.scale_y = 0.7
         cat_row = cat_container_row.row(align = True)
@@ -340,17 +387,17 @@ def draw_asset_browser_left_options(context, asset_browser_box, scene):
             icon = "TRIA_DOWN" if is_active and display_what == "asset" else "BLANK1" #"RIGHTARROW_THIN"
         )
         cat_button.category = category
-        
+
         cat_fav_button_row = cat_container_row.row(align = True)
         cat_fav_button_row.alignment = "RIGHT"
         fav_button = cat_fav_button_row.row(align = True).operator(
             "object.nms_asset_browser_category_favourite",
-            text = "", 
-            icon = "PINNED" if is_fav else "UNPINNED", 
+            text = "",
+            icon = "PINNED" if is_fav else "UNPINNED",
             emboss = False
         )
         fav_button.category = category
-        
+
         if is_active and display_what == "asset":
             sub_cat_main_row = cat_element_col.row(align = True)
             sub_cat_main_row.scale_y = 0.8
@@ -362,7 +409,7 @@ def draw_asset_browser_left_options(context, asset_browser_box, scene):
             for sub_cat in asset_browser.get_enum_sub_categories_list():
                 sub_category = sub_cat[0]
                 is_sub_active = sub_category == ab_sub_category
-                
+
                 sub_cat_row = sub_cat_col.row(align = True)
                 sub_cat_row.alignment = "LEFT"
                 sub_cat_button = sub_cat_row.operator(
@@ -373,8 +420,8 @@ def draw_asset_browser_left_options(context, asset_browser_box, scene):
                     icon = "TRIA_RIGHT" if is_sub_active else "BLANK1"
                 )
                 sub_cat_button.sub_category = sub_category
-    
-    
+
+
 
 def draw_asset_browser_right_options(context,asset_browser_box, scene, grid_type = "Grid"):
     asset_browser = scene.nms_asset_browser
@@ -462,6 +509,7 @@ class NMS_PT_asset_browser_new_window_panel_left(bpy.types.Panel):
         draw_asset_browser_left_options(context, layout, scene)
         
 classes = (
+    NMS_UL_asset_browser_category_order,
     NMS_PT_asset_browser_properties_panel,
     NMS_PT_asset_browser_panel,
     NMS_PT_asset_browser_new_window_panel_left

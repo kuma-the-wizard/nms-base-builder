@@ -464,7 +464,7 @@ class AssetBrowserCategoryFavourite(bpy.types.Operator):
     bl_description = "Mark this category favourite"
 
     category: bpy.props.StringProperty()
-    
+
     def execute(self, context):
         scene = context.scene
         asset_browser = scene.nms_asset_browser
@@ -473,8 +473,68 @@ class AssetBrowserCategoryFavourite(bpy.types.Operator):
         )
         asset_browser.set_favourite_categories(fav_cats)
 
+        for area in context.window.screen.areas:
+            area.tag_redraw()
+
         return {'FINISHED'}
-    
+
+
+class AssetBrowserCategoryReorderPopup(bpy.types.Operator):
+    """Reorder categories, and mark them favourite or not, in a popup window."""
+
+    bl_idname = "object.nms_asset_browser_category_reorder_popup"
+    bl_label = "Reorder Categories"
+    bl_description = "Reorder categories, and mark them favourite or not"
+
+    def invoke(self, context, event):
+        scene = context.scene
+        asset_browser = scene.nms_asset_browser
+        asset_browser.refresh_category_order_list()
+        return context.window_manager.invoke_popup(self, width=280)
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def draw(self, context):
+        scene = context.scene
+        asset_browser = scene.nms_asset_browser
+
+        layout = self.layout
+        layout.label(text="Reorder Categories", icon="SORTALPHA")
+        layout.label(text="Favourites always stay on top", icon="INFO")
+        layout.separator()
+
+        row_count = len(asset_browser.category_order_list) + 2
+        layout.template_list(
+            "NMS_UL_asset_browser_category_order",
+            "",
+            asset_browser,
+            "category_order_list",
+            asset_browser,
+            "category_order_list_index",
+            rows=row_count,
+        )
+
+
+class AssetBrowserCategoryMove(bpy.types.Operator):
+    bl_idname = "object.nms_asset_browser_category_move"
+    bl_label = "Move Category"
+    bl_description = "Move this category up or down among categories with the same favourite state"
+    bl_options = {'INTERNAL'}
+
+    category: bpy.props.StringProperty()
+    direction: bpy.props.StringProperty(default="UP")
+
+    def execute(self, context):
+        scene = context.scene
+        asset_browser = scene.nms_asset_browser
+        asset_browser.move_category(self.category, self.direction)
+
+        for area in context.window.screen.areas:
+            area.tag_redraw()
+
+        return {'FINISHED'}
+
 
 class AssetBrowserObjectFavourite(bpy.types.Operator):
     bl_idname = "object.nms_asset_browser_object_favourite"
@@ -626,6 +686,8 @@ classes = (
     AssetBrowserCategorySelected,
     AssetBrowserCategorySubSelected,
     AssetBrowserCategoryFavourite,
+    AssetBrowserCategoryReorderPopup,
+    AssetBrowserCategoryMove,
     AssetBrowserCategoryShowFavItems,
     AssetBrowserObjectFavourite,
     AssetBrowserCategoryShowRecentItems,

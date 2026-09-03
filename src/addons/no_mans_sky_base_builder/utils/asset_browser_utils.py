@@ -49,7 +49,7 @@ DATA_DIRECTORY_ENV = "NMS_BASE_BUILDER_DATA_DIR"
 
 # What the store holds. These were preference names first, and the keys were
 # kept the same so the migration is a straight copy.
-STORE_KEYS = ("favourite_objects", "favourite_categories", "recent_objects")
+STORE_KEYS = ("favourite_objects", "favourite_categories", "recent_objects", "category_order")
 
 # The file is read on every redraw through the panels, so it is held in memory
 # and only re-read when it changes underneath us - another Blender running at
@@ -425,6 +425,71 @@ def build_category_tree(favourite_ids=None, nice_names=None):
             parent.setdefault("variants", []).append(object_id)
 
     return categories_list
+
+
+def order_categories(categories, favourite_categories, stored_order=None):
+    """All category names, favourites first, each group in its saved order.
+
+    A category that has never been placed - a new one, or the very first time
+    this runs - is appended to its group in `categories`'s own order, so
+    nothing goes missing just because it predates a reorder.
+
+    Args:
+        categories (iterable): Every category name that currently exists.
+        favourite_categories (iterable): Names currently marked favourite.
+        stored_order (list): The last saved order. Read from disk when None.
+
+    Returns:
+        list: Category names, favourites first.
+    """
+    if stored_order is None:
+        stored_order = load_stored_list("category_order")
+
+    valid_categories = list(categories)
+    valid_set = set(valid_categories)
+    favourite_set = set(favourite_categories)
+
+    known_order = [name for name in stored_order if name in valid_set]
+    known_set = set(known_order)
+    full_order = known_order + [name for name in valid_categories if name not in known_set]
+
+    favourites = [name for name in full_order if name in favourite_set]
+    others = [name for name in full_order if name not in favourite_set]
+    return favourites + others
+
+
+def move_category(categories, favourite_categories, category, direction):
+    """Move a category up or down within its favourite/other group.
+
+    A move is refused rather than crossing into the other group - favourites
+    stay above everything else no matter how far either side is nudged.
+
+    Args:
+        categories (iterable): Every category name that currently exists.
+        favourite_categories (iterable): Names currently marked favourite.
+        category (str): The category to move.
+        direction (str): "UP" or "DOWN".
+
+    Returns:
+        list: The resulting order. Saved to disk when the move happened.
+    """
+    order = order_categories(categories, favourite_categories)
+    if category not in order:
+        return order
+
+    favourite_set = set(favourite_categories)
+    is_fav = category in favourite_set
+    index = order.index(category)
+    target = index + (-1 if direction == "UP" else 1)
+
+    if target < 0 or target >= len(order):
+        return order
+    if (order[target] in favourite_set) != is_fav:
+        return order
+
+    order[index], order[target] = order[target], order[index]
+    save_stored_list("category_order", order)
+    return order
 
 
 def build_enum_entries(names):

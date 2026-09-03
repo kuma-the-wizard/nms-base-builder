@@ -27,23 +27,31 @@ def draw_base_builder_menu(layout, context):
     # so further sections can be added below without running together.
     clipboard_box = layout.column(align=True)
     clipboard_box.label(text="Clipboard")
-    clipboard_box.separator()
-    clipboard_column = clipboard_box.column(align=False)
+    #clipboard_box.separator()
+    clipboard_column = clipboard_box.row(align=False)
     clipboard_column.operator("object.nms_import_nms_data", icon="PASTEDOWN")
     clipboard_export_column = clipboard_column.column(align=True)
+
+    clipboard_export_column.operator("object.nms_export_nms_data", icon="COPYDOWN")
     if nms_main is not None:
         # The export operator reads this off the scene when it runs, so
         # this checkbox and the panel's are the one setting.
         clipboard_export_column.prop(nms_main, "check_export_objects_only", text="Objects Only")
 
-    clipboard_export_column.operator("object.nms_export_nms_data", icon="COPYDOWN")
+    # Asset Browser: launches the asset browser in its own window.
+    asset_browser_box = layout.column(align=True)
+    asset_browser_box.label(text="Asset Browser")
+    #asset_browser_box.separator()
+    asset_browser_box.operator(
+        "object.nms_launch_asset_browser_window", text="Launch Asset Browser", icon="ASSET_MANAGER"
+    )
 
     # Proxy Quality: switch every placed part in the scene between the
     # models-high-res library and the old fbx proxies.
     proxy_box = layout.column(align=True)
     proxy_box.separator()
-    proxy_box.label(text="Proxy Quality")
-    proxy_box.separator()
-    proxy_column = proxy_box.column(align=True)
-    proxy_column.operator("object.nms_switch_proxies_to_low", icon="MESH_CUBE")
-    proxy_column.operator("object.nms_switch_proxies_to_high", icon="MESH_MONKEY")
+    proxy_box.label(text="Switch Proxy Quality")
+    #proxy_box.separator()
+    proxy_column = proxy_box.row(align=False)
+    proxy_column.operator("object.nms_switch_proxies_to_low", icon="MESH_CUBE", text = "Simple Proxies")
+    proxy_column.operator("object.nms_switch_proxies_to_high", icon="MESH_MONKEY", text = "High-res Proxies")

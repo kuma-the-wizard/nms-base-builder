@@ -20,7 +20,7 @@ class VIEW3D_PT_nms_base_builder(bpy.types.Panel):
     bl_region_type = "HEADER"
     bl_label = "Base Builder"
     # Popovers size themselves from this rather than from their content.
-    bl_ui_units_x = 8
+    bl_ui_units_x = 13
 
     def draw(self, context):
         draw_base_builder_menu(self.layout, context)

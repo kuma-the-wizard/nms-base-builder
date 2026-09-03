@@ -13,6 +13,13 @@ load_json_preference = asset_browser_utils.load_json_preference
 load_stored_list = asset_browser_utils.load_stored_list
 
 
+class NMSCategoryOrderItem(bpy.types.PropertyGroup):
+    """One row of the category reorder list."""
+
+    category_name: bpy.props.StringProperty()
+    is_fav: bpy.props.BoolProperty()
+
+
 class AssetBrowser(bpy.types.PropertyGroup):
     """The asset browser's Blender state.
 
@@ -77,6 +84,9 @@ class AssetBrowser(bpy.types.PropertyGroup):
         default = "asset"
     )
 
+    category_order_list: bpy.props.CollectionProperty(type=NMSCategoryOrderItem)
+    category_order_list_index: bpy.props.IntProperty()
+
     favourite_categories = []
     favourite_objects_data = {}
     recent_objects_data = {}
@@ -90,24 +100,40 @@ class AssetBrowser(bpy.types.PropertyGroup):
     sub_categories_by_category = {}
 
     def initialise_asset_browser(self):
-        categories_data = self.get_categories_data()
+        self.get_categories_data()
+        self.refresh_categories()
 
-        # Rebuilt in place rather than appended to. The class attribute outlives
-        # unregister, so running this again after an addon disable/enable used to
-        # leave the category list doubled - 16 categories became 32.
-        AssetBrowser.enum_categories[:] = asset_browser_utils.build_enum_entries(
-            categories_data
-        )
         AssetBrowser.sub_categories_by_category.clear()
 
         AssetBrowser.presets_data = self.get_presets_data()
         AssetBrowser.enum_sub_categories = self.extract_enum_sub_categories()
-        AssetBrowser.favourite_categories = self.get_favourite_categories()
 
         if self.enum_asset_browser_what_to_display == "search":
             search_text = self.asset_broser_search_query
             search_results = self.filter_objects_with_string(search_text)
             AssetBrowser.search_results = search_results
+
+    def refresh_categories(self):
+        """Rebuild the category enum, favourites first in their saved order.
+
+        Called on first use and again whenever a category's favourite state or
+        order changes, so the categories enum and the reorder list stay in
+        sync with what is actually stored.
+
+        Note:
+            Rebuilt in place rather than appended to. The class attribute
+            outlives unregister, so running this again after an addon
+            disable/enable used to leave the category list doubled - 16
+            categories became 32.
+        """
+        categories_data = self.get_categories_data()
+        favourite_categories = self.get_favourite_categories()
+        ordered_categories = asset_browser_utils.order_categories(
+            categories_data.keys(), favourite_categories
+        )
+        AssetBrowser.enum_categories[:] = asset_browser_utils.build_enum_entries(
+            ordered_categories
+        )
 
 
     def get_grid_size_prop_string(self):
@@ -212,6 +238,10 @@ class AssetBrowser(bpy.types.PropertyGroup):
 
     def set_favourite_categories(self, favourite_categories):
         AssetBrowser.favourite_categories = favourite_categories
+        self.refresh_categories()
+        # Cheap enough to always keep in sync, so the reorder popup reflects a
+        # favourite toggled from either the popup itself or the main panel.
+        self.refresh_category_order_list()
 
     def get_favourite_categories(self, context = None):
         # the default used to be bpy.context itself, which binds whatever context
@@ -221,6 +251,25 @@ class AssetBrowser(bpy.types.PropertyGroup):
                 asset_browser_utils.load_stored_list("favourite_categories")
             )
         return AssetBrowser.favourite_categories
+
+    def refresh_category_order_list(self):
+        """Rebuild the reorder list rows from the current category order."""
+        favourite_categories = self.get_favourite_categories()
+        self.category_order_list.clear()
+        for category_element in AssetBrowser.enum_categories:
+            category = category_element[0]
+            item = self.category_order_list.add()
+            item.category_name = category
+            item.is_fav = category in favourite_categories
+
+    def move_category(self, category, direction):
+        categories_data = self.get_categories_data()
+        favourite_categories = self.get_favourite_categories()
+        asset_browser_utils.move_category(
+            categories_data.keys(), favourite_categories, category, direction
+        )
+        self.refresh_categories()
+        self.refresh_category_order_list()
 
     def set_favourite_objects(self, new_favourite_objects):
         AssetBrowser.favourite_objects_data = asset_browser_utils.apply_favourites(

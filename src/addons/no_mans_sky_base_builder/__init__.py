@@ -31,7 +31,7 @@ from .tools.build_tool import BuildTool
 from .tools.build_tool_presentation import NMS_PT_tools_panel
 from .tools.properties import Properties
 from .tools.properties_presentation import NMS_PT_base_prop_panel, NMS_PT_transformation_panel
-from .tools.asset_browser import AssetBrowser
+from .tools.asset_browser import AssetBrowser, NMSCategoryOrderItem
 from .tools import asset_browser_presentation
 
 from .utils import blend_utils, curve, dictionary
@@ -1993,8 +1993,9 @@ classes = (
     Properties,
     BatchTool,
     WorkspaceSettings,
+    NMSCategoryOrderItem,
     AssetBrowser,
-    
+
     NMS_UL_actions_list,
     NMS_PT_hero_panel,
     NMS_PT_file_buttons_panel,
