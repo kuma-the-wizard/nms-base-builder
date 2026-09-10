@@ -61,8 +61,15 @@ class Line(part.Part):
             start (object): Pass a start control, if None a new one is made.
             end (object): Pass an end control, if None a new one is made.
         """
-        # Start creating controls.
-        world_pos = copy(self.object.matrix_world)
+        # Safely compose the matrix directly from local transforms, bypassing stale depsgraph
+        world_pos = mathutils.Matrix.LocRotScale(
+            self.object.location, self.object.rotation_euler, self.object.scale
+        )
+        
+        # Account for parent offsets if any exist
+        if self.object.parent:
+            world_pos = self.object.parent.matrix_world @ self.object.matrix_parent_inverse @ world_pos
+
         world_loc = world_pos.decompose()[0]
         if not start:
             start = Line.create_point(
@@ -97,6 +104,12 @@ class Line(part.Part):
         end["power_line"] = self.object.name
 
     def split(self):
+        # Fetch the controls first
+        prev_start_control_name = self.object["start_control"]
+        prev_end_control_name = self.object["end_control"]
+        prev_start_control = blend_utils.get_item_by_name(prev_start_control_name)
+        prev_end_control = blend_utils.get_item_by_name(prev_end_control_name)
+
         # Middle control.
         middle_control_a = self.create_point(
             self.builder, "_".join([self.name, "MID_A"])
@@ -104,60 +117,55 @@ class Line(part.Part):
         middle_control_b = self.create_point(
             self.builder, "_".join([self.name, "MID_B"])
         )
-        # Snap the middle locations to the middle of power line.
-        world_pos = copy(self.matrix_world)
-        world_loc = world_pos.decompose()[0]
-        mid_a_pos = mathutils.Vector(
-            [world_pos[0][2] * 0.4, world_pos[1][2] * 0.4, world_pos[2][2] * 0.4]
-        )
-        middle_a_location = world_loc + mid_a_pos
-        middle_control_a.location = middle_a_location
-
-        mid_b_pos = mathutils.Vector(
-            [world_pos[0][2] * 0.6, world_pos[1][2] * 0.6, world_pos[2][2] * 0.6]
-        )
-        middle_b_location = world_loc + mid_b_pos
-        middle_control_b.location = middle_b_location
+        
+        # Snap the middle locations mathematically using LERP
+        middle_control_a.location = prev_start_control.location.lerp(prev_end_control.location, 0.4)
+        middle_control_b.location = prev_start_control.location.lerp(prev_end_control.location, 0.6)
+        
         # Create new powerline.
         new_powerline = self.builder.add_part(self.object_id, build_rigs=False)
-        # Create additional controls.
-        prev_start_control_name = self.object["start_control"]
-        prev_end_control_name = self.object["end_control"]
-        prev_start_control = blend_utils.get_item_by_name(prev_start_control_name)
-        prev_end_control = blend_utils.get_item_by_name(prev_end_control_name)
+        
         # Remove constraints of the original power line.
         self.remove_constraints()
+        
         # Assign new controls to the power lines.
         self.build_rig(prev_start_control, middle_control_a)
         new_powerline.build_rig(middle_control_b, prev_end_control)
-        # Select the middle controller.
-        blend_utils.select([middle_control_a, middle_control_b])
+        
+        # Select the middle controller safely (from previous fix)
+        try:
+            blend_utils.select([middle_control_a, middle_control_b])
+        except RuntimeError:
+            pass
 
     def divide(self):
-        # Middle control.
-        middle_control = self.create_point(self.builder, "_".join([self.name, "MID"]))
-        # Snap the middle location to the middle of power line.
-        world_pos = copy(self.matrix_world)
-        world_loc = world_pos.decompose()[0]
-        at_vec = mathutils.Vector(
-            [world_pos[0][2] / 2, world_pos[1][2] / 2, world_pos[2][2] / 2]
-        )
-        middle_location = world_loc + at_vec
-        middle_control.location = middle_location
-        # Create new powerline.
-        new_powerline = self.builder.add_part(self.object_id, build_rigs=False)
-        # Create additional controls.
+        # Fetch the controls first
         prev_start_control_name = self.object["start_control"]
         prev_end_control_name = self.object["end_control"]
         prev_start_control = blend_utils.get_item_by_name(prev_start_control_name)
         prev_end_control = blend_utils.get_item_by_name(prev_end_control_name)
+
+        # Middle control.
+        middle_control = self.create_point(self.builder, "_".join([self.name, "MID"]))
+        
+        # Snap the middle location mathematically using LERP
+        middle_control.location = prev_start_control.location.lerp(prev_end_control.location, 0.5)
+        
+        # Create new powerline.
+        new_powerline = self.builder.add_part(self.object_id, build_rigs=False)
+        
         # Remove constraints of the original power line.
         self.remove_constraints()
+        
         # Assign new controls to the power lines.
         self.build_rig(prev_start_control, middle_control)
         new_powerline.build_rig(middle_control, prev_end_control)
-        # Select the middle controller.
-        blend_utils.select(middle_control)
+        
+        # Select the middle controller safely (from previous fix)
+        try:
+            blend_utils.select(middle_control)
+        except RuntimeError:
+            pass
 
     # Class Methods ---
     @classmethod

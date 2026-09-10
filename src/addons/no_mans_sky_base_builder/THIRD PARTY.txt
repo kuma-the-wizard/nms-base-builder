@@ -1,0 +1,22 @@
+Bundled Windows dependencies (upstream runtime binaries)
+
+LZ4 4.4.5
+https://pypi.org/project/lz4/4.4.5/
+https://github.com/python-lz4/python-lz4
+Copyright and license notices are included in the wheel's dist-info directory.
+
+PySide6 Essentials and Shiboken6 6.11.1
+https://pypi.org/project/PySide6-Essentials/6.11.1/
+https://pypi.org/project/shiboken6/6.11.1/
+https://code.qt.io/cgit/pyside/pyside-setup.git/?h=6.11.1
+https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.11.1-src/
+Qt/PySide license texts and third-party notices remain in the supplied wheels.
+The DLLs are dynamically loaded from Blender's extension dependency directory;
+they are not built into the extension's Python code.
+
+Blender handles wheel installation using the extension manifest:
+https://docs.blender.org/manual/en/dev/advanced/extensions/python_wheels.html
+
+The PySide wheel is repacked with build tag 1. Four unused QML compile-time .obj
+files were omitted because their paths exceed the normal Windows install limit.
+Runtime DLLs, Python modules, resources and license files are unchanged.

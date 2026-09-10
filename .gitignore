@@ -158,3 +158,31 @@ dist/
 
 # JetBrains project configuration
 .idea/
+
+# Required files for the self-contained station reference extension.
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_B_MONU.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_CLASS_A.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_CLASS_B.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_CLASS_S.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_CONSTRUCT.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_FISHPOND.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_F_MONU.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_F_MONU_FA.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_INT_SHIPSAL.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_INT_SUMMARY.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_MAYORTERM.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_MONUMENT.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_MONUMENT_FA.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_STAFFBUILD.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_T_MONU.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_T_MONU_FA.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/SET_WEAPONBOX.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/S_TOWER.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/S_TOWER_B.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/S_TOWER_B_FA.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/S_TOWER_C.png
+!/src/addons/no_mans_sky_base_builder/asset_browser/icons/S_TOWER_FA.png
+!/src/addons/no_mans_sky_base_builder/wheels/
+!/src/addons/no_mans_sky_base_builder/wheels/lz4-4.4.5-cp313-cp313-win_amd64.whl
+!/src/addons/no_mans_sky_base_builder/wheels/pyside6_essentials-6.11.1-1-cp310-abi3-win_amd64.whl
+!/src/addons/no_mans_sky_base_builder/wheels/shiboken6-6.11.1-cp310-abi3-win_amd64.whl

@@ -592,7 +592,7 @@ Right click on a tab to pin it to the left of the tab bar.""",
 
         BUILDER = no_mans_sky_base_builder.BUILDER
 
-        nms_tool = bpy.context.scene.nms_base_tool
+        nms_tool = bpy.context.scene.nms_main
         if item_id in preset.Preset.get_presets():
             nms_tool.new_file()
             preset.Preset(

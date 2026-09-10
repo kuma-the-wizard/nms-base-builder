@@ -61,7 +61,7 @@ class SaveFile:
             self.json_data,
             separators=(",", ":"),
             ensure_ascii=False
-        ).encode("utf-8")
+        ).encode("utf-8") + b"\x00"
 
         blocks = []
 
@@ -134,6 +134,14 @@ class SaveFile:
         save_type = data[SaveTranslation.active_context]
         key_base_list = SaveTranslation.base_context if save_type == "Main" else SaveTranslation.expedition_context
         return data[key_base_list][SaveTranslation.player_state_data][SaveTranslation.ship_ownership]
+    
+    # Return pointer to ShipOwnership Element in save data
+    def get_ship_ownsership_element(self, userdata):
+        ship_ownsership_pointer = self.get_ship_ownership_pointer()
+        if userdata < 0 or userdata >= len(ship_ownsership_pointer):
+            print(f"UserData = {userdata} , value is invalid")
+            return None
+        return ship_ownsership_pointer[userdata]
 
     # Return pointer to PlayerFreighterName in save data
     def get_freighter_name(self):
@@ -226,7 +234,12 @@ class SaveFile:
             identifier.user_data
         )
         
+        if identifier.base_type == BaseType.STATION:
+            if str(base[SaveTranslation.galactic_address]) != str(identifier.galactic_address):
+                return False
         return base_tuple == identifier_tuple
+    
+    
             
             
     

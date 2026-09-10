@@ -34,8 +34,20 @@ class BONE_REPLACER(part.Part):
         return part
 
     def swap_object(self):
+        # imported here rather than at the top: builder_v2 pulls in the override
+        # table, which pulls in this module
+        from .. import builder_v2
+
         matrix = copy(self.object.matrix_world)
+        # the save keeps the colour on the placeholder, so carry it across or the
+        # bone is built on the default palette and every fossil comes out the
+        # same colour
+        user_data = self.object.get("UserData", 0)
         bone_id = self.message
         blend_utils.delete(self.object)
-        bone_part = self.builder.add_part(bone_id)
+        # the bone id is in the override table too, so this lands on BONE, which
+        # builds it out of the high res library
+        bone_part = builder_v2.add_part(
+            bone_id, user_data=user_data, builder_object=self.builder
+        )
         bone_part.object.matrix_world = matrix

@@ -17,7 +17,8 @@ class Thumb(QtWidgets.QLabel):
     def __init__(self, part_id=None, *args, **kwargs):
         super(Thumb, self).__init__(*args, **kwargs)
         part_id = part_id or ""
-        icon_path = ":{}".format(part_id)
+        custom_icon_path = os.path.join(ICON_PATH, "{}.png".format(part_id))
+        icon_path = custom_icon_path if os.path.isfile(custom_icon_path) else ":{}".format(part_id)
         if QtCore.QFile.exists(icon_path):
             pixmap = QtGui.QPixmap(icon_path)
             scaled = pixmap.scaled(
