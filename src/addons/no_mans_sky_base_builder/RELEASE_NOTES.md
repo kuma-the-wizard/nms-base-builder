@@ -1,3 +1,15 @@
+# Community update 18.0.2
+
+- Import from Clipboard and Open Base (.json) now automatically load the station
+  reference when the imported record identifies a PlayerSpaceStationBase.
+- Those imports expose a collapsed Station Reference section under Import/Export,
+  without requiring Save Manager or access to a local save slot.
+- Parts-only JSON remains a parts-only import. Arrays are accepted as well as
+  Objects dictionaries; station detection never uses a previous import's type.
+- Station records without GalacticAddress load with an isolated appearance key.
+- Checked the real clipboard operator with a 318-part station, JSON-file imports,
+  repeat imports, reference refresh, and ordinary base/Corvette imports.
+
 # Community update 18.0.1
 
 Based on Kuma's 18.0.0 release of DjMonkey's No Man's Sky Base Builder.

@@ -23,6 +23,13 @@ Blender installer through the extension manifest.
 
 ## Additional changes by FuriousFurby
 
+The 18.0.2 follow-up also recognizes complete station-base JSON imported through
+Import from Clipboard or Open Base. It loads the reference automatically and
+offers a collapsed Station Reference section under Import/Export, independent of
+Save Manager. Objects-only JSON contains no base type and remains a parts-only
+import. This path was checked with the real clipboard operator and a 318-part
+station, plus ordinary bases, repeat imports, missing addresses and JSON files.
+
 - New parts inherit the active object's transform only when that object is
   selected. With nothing selected, placement retains the part's default origin,
   rotation, and scale. This covers both builders and native browser placement.

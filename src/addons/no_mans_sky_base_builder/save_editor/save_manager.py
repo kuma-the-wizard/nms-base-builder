@@ -96,6 +96,7 @@ class SaveManager(bpy.types.PropertyGroup):
     station_key: bpy.props.StringProperty(default="")
     station_choices_json: bpy.props.StringProperty(default="{}")
     station_status: bpy.props.StringProperty(default="")
+    station_transfer_reference: bpy.props.BoolProperty(default=False, options={'HIDDEN'})
     station_group: bpy.props.EnumProperty(name="Shape group", items=station_reference.group_items, update=station_reference.group_changed)
     station_option: bpy.props.EnumProperty(name="Option", items=station_reference.option_items, update=station_reference.option_changed)
 

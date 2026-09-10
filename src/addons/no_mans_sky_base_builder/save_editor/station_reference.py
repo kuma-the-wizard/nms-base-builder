@@ -200,13 +200,32 @@ def organise_parts(context,parts):
     context.view_layer.active_layer_collection=next(c for c in context.view_layer.layer_collection.children if c.collection==dest)
     return dest
 
-def imported_station(context,base,parts):
+def finish_transfer_import(context,base,previous_objects):
+    """Use explicit base metadata, never the previous scene type or part IDs."""
+    if not isinstance(base,dict): return False
+    base_type=base.get('BaseType')
+    if not isinstance(base_type,dict) or base_type.get('PersistentBaseTypes')!='PlayerSpaceStationBase':
+        return False
+    parts=[obj for obj in context.scene.objects if obj not in previous_objects]
+    imported_station(context,base,parts,transfer=True)
+    return True
+
+
+def imported_station(context,base,parts,transfer=False):
     manager=context.scene.nms_save_data
-    key=str(base['GalacticAddress'])
+    address=base.get('GalacticAddress')
+    # A partial station record can still load the reference, but must not borrow
+    # another unidentified station's saved appearance.
+    if address is None or not str(address).strip():
+        from uuid import uuid4
+        key='unidentified:'+uuid4().hex
+    else:
+        key=str(address)
     profile=load_profiles().get(key,{})
     if not isinstance(profile,dict): profile={}
     choices=valid_choices(profile.get('choices',{}))
     manager.station_key=key
+    manager.station_transfer_reference=transfer
     manager.station_choices_json=json.dumps(choices)
     manager.station_group=catalog()['familyGroup']
     manager.station_status='Saved station visibility' if profile else 'Choose a hull and big parts with the Outliner eyes'

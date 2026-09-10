@@ -1,4 +1,4 @@
-NO MAN'S SKY BASE BUILDER - COMMUNITY UPDATE 18.0.1
+NO MAN'S SKY BASE BUILDER - COMMUNITY UPDATE 18.0.2
 Based on Kuma's 18.0.0 release; original creator and branding: DjMonkey.
 
 REQUIREMENTS
@@ -21,13 +21,21 @@ In Save Manager, enable the save controls, choose your account and save slot,
 click Station, choose your station, then Import from Save.
 Space remains available for orbital space bases, separately from stations.
 
+Import from Clipboard and Open Base (.json) also load the station reference
+automatically when the JSON includes BaseType.PersistentBaseTypes set to
+PlayerSpaceStationBase. Copy the complete station base record from the editor.
+Objects-only lists do not identify the base type and import only the parts;
+use Save Manager or the complete station base JSON to get the reference.
+
 Station Player Parts contains the editable build. Station Reference contains
 Outside and Inside. Outside has all six hull families and the major optional
 parts. Use the Outliner triangles to expand and the eyes to show/hide them.
 Keep one hull body and compatible attachments visible. See
 resources/station/Station exterior choices.md for the combinations.
 Inside has separate floors/fixtures, roof, and wall cutaways.
-The station controls appear only in the Station tab after a station is imported.
+For Save Manager imports, reference controls appear in the Station tab.
+For clipboard/JSON station imports, expand Station Reference under Import/Export.
+These controls do not require Save Manager to be enabled or a save to be selected.
 
 Click Remember Station Visibility to reuse that station's eye settings.
 For an older station scene, Refresh Reference Library replaces the reference

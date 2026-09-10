@@ -199,8 +199,12 @@ class NMSMain(PropertyGroup):
             return
 
         # Start a new file
+        if isinstance(nms_import_data, list):
+            nms_import_data = {"Objects": nms_import_data}
         self.deserialise_from_data(nms_import_data)
+        previous_objects = set(bpy.context.scene.objects)
         builder_v2.deserialise_from_data(nms_import_data)
+        station_reference.finish_transfer_import(bpy.context, nms_import_data, previous_objects)
         #BUILDER.deserialise_from_data(nms_import_data)
 
     def export_nms_data(self, objects_only=False):
@@ -242,8 +246,12 @@ class NMSMain(PropertyGroup):
                 ShowMessageBox(message=message, title="Import")
                 return
         # Build from Data
+        if isinstance(save_data, list):
+            save_data = {"Objects": save_data}
         self.deserialise_from_data(save_data)
+        previous_objects = set(bpy.context.scene.objects)
         BUILDER.deserialise_from_data(save_data)
+        station_reference.finish_transfer_import(bpy.context, save_data, previous_objects)
 
     def new_file(self):
         """Reset's the entire Blender scene to default.
@@ -281,6 +289,7 @@ class NMSMain(PropertyGroup):
 
         station_reference.clear_reference(bpy.context.scene)
         bpy.context.scene.nms_save_data.station_key = ""
+        bpy.context.scene.nms_save_data.station_transfer_reference = False
         # Reset room vis
         self.room_vis_switch = 0
 
@@ -612,6 +621,25 @@ class NMS_PT_file_buttons_panel(Panel):
         second_column.prop(nms_tool,"check_export_objects_only", text = "Objects only") 
         second_column.operator("object.nms_export_nms_data", icon="COPYDOWN")
             
+
+
+class NMS_PT_station_transfer_reference(Panel):
+    bl_idname = "NMS_PT_station_transfer_reference"
+    bl_label = "Station Reference"
+    bl_parent_id = "NMS_PT_file_buttons_panel"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "No Mans Sky Base Builder"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        manager = context.scene.nms_save_data
+        return bool(manager.station_transfer_reference and manager.station_key
+                    and any(c.get(station_reference.TAG) for c in context.scene.collection.children))
+
+    def draw(self, context):
+        station_reference.draw(self.layout, context)
 
 
 # Colour Panel ---
@@ -2004,6 +2032,7 @@ classes = (
     NMS_UL_actions_list,
     NMS_PT_hero_panel,
     NMS_PT_file_buttons_panel,
+    NMS_PT_station_transfer_reference,
     NMS_PT_save_editor_panel,
     NMS_PT_transformation_panel,
     NMS_PT_colour_panel,
