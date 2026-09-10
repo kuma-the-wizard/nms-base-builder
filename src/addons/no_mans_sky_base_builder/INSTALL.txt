@@ -1,0 +1,63 @@
+NO MAN'S SKY BASE BUILDER - COMMUNITY UPDATE 18.0.2
+Based on Kuma's 18.0.0 release; original creator and branding: DjMonkey.
+
+REQUIREMENTS
+64-bit Windows, Blender 5.1 (tested with Blender 5.1.2 / Python 3.13).
+The station reference library was saved with Blender 5.1. This combined build
+does not claim the Blender 4.2 compatibility of Kuma's original ZIP.
+Models, textures, settlement icons and Python dependency wheels are included.
+No separate model download, NMSDK, external Python or pip command is required.
+
+INSTALL / UPDATE
+1. Save your Blender work. Keep this ZIP intact.
+2. Edit > Preferences > Get Extensions > top-right menu > Install from Disk.
+3. Select the ZIP and enable No Man's Sky Base Builder.
+4. Restart Blender after upgrading.
+This replaces the installed extension with the same ID; do not enable duplicate
+copies of Base Builder at the same time. Keep your previous ZIP for rollback.
+
+STATION WORKFLOW
+In Save Manager, enable the save controls, choose your account and save slot,
+click Station, choose your station, then Import from Save.
+Space remains available for orbital space bases, separately from stations.
+
+Import from Clipboard and Open Base (.json) also load the station reference
+automatically when the JSON includes BaseType.PersistentBaseTypes set to
+PlayerSpaceStationBase. Copy the complete station base record from the editor.
+Objects-only lists do not identify the base type and import only the parts;
+use Save Manager or the complete station base JSON to get the reference.
+
+Station Player Parts contains the editable build. Station Reference contains
+Outside and Inside. Outside has all six hull families and the major optional
+parts. Use the Outliner triangles to expand and the eyes to show/hide them.
+Keep one hull body and compatible attachments visible. See
+resources/station/Station exterior choices.md for the combinations.
+Inside has separate floors/fixtures, roof, and wall cutaways.
+For Save Manager imports, reference controls appear in the Station tab.
+For clipboard/JSON station imports, expand Station Reference under Import/Export.
+These controls do not require Save Manager to be enabled or a save to be selected.
+
+Click Remember Station Visibility to reuse that station's eye settings.
+For an older station scene, Refresh Reference Library replaces the reference
+and preserves player parts and visibility. Save the blend afterwards to retain
+the smaller reference. Imports/refreshes compact the collection lists once;
+opening a saved blend retains its saved layout.
+
+The exterior is matched manually. The saved procedural station seed has not
+been decoded. The reference does not alter the in-game station.
+
+PLACEMENT
+With no active object selected, adding a part uses its normal origin, rotation
+and scale. With an active object selected, the part inherits that transform.
+This applies to both the native Asset Browser and legacy/proxy add paths.
+
+SHARING
+Send this complete ZIP. Recipients use their own saves. Personal saves, test
+scenes, appearance profiles and research tools are not included. The download
+retains Kuma's full high-resolution library, so it is roughly 2 GB even though
+the station reference itself is about 55 MB.
+
+CREDITS
+DjMonkey's name, artwork and support links are unchanged. Additional contributor
+credits for Kuma The Wizard of Cosmos and FuriousFurby appear in extension
+Preferences and CONTRIBUTORS.txt.

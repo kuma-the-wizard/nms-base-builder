@@ -1,0 +1,21 @@
+NO MAN'S SKY BASE BUILDER
+
+Original creator: DjMonkey
+The original product name, artwork, creator credit, and support/community links
+are retained. This community update builds on DjMonkey's work.
+
+Kuma The Wizard of Cosmos
+High-resolution assets, proxy and material systems, native Asset Browser,
+and continued builder and save-manager updates. Based on Kuma's 18.0.0 release.
+
+FuriousFurby
+Station reference models and workflow, shared geometry and prebuilt cutaways,
+settlement icons and class-marker catalog additions, placement fix integration,
+and portable release packaging.
+
+This is a community-maintained 18.0.1 build. It does not imply that DjMonkey
+published or endorsed this particular build.
+
+No Man's Sky and its game assets belong to their respective rights holders.
+The extension's GPL code license does not relicense game assets. See LICENSE.txt
+and THIRD PARTY.txt for code and bundled dependency notices.

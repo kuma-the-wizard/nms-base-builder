@@ -1,0 +1,45 @@
+[
+  {
+    "id": "STACONNECT",
+    "display": "Logical anchor; wire axes, no invented solid model"
+  },
+  {
+    "id": "STATION_CORE",
+    "display": "Logical anchor; wire axes, no invented solid model"
+  },
+  {
+    "id": "STATION_LSHELVE",
+    "scene": "MODELS/PLANETS/BIOMES/COMMON/BUILDINGS/PARTS/BUILDABLEPARTS/DECORATION/STATION_LARGESHELVES.SCENE.MBIN",
+    "vertices": 8320,
+    "triangles": 6464,
+    "coordinateFrame": "NMS local Y-up; placement rotation applied by Base Builder"
+  },
+  {
+    "id": "STATION_SERVR",
+    "scene": "MODELS/PLANETS/BIOMES/COMMON/BUILDINGS/PARTS/BUILDABLEPARTS/DECORATION/STATION_SERVERSINGLE.SCENE.MBIN",
+    "vertices": 4072,
+    "triangles": 3710,
+    "coordinateFrame": "NMS local Y-up; placement rotation applied by Base Builder"
+  },
+  {
+    "id": "STA_HOLO3D",
+    "scene": "MODELS/SPACE/SPACESTATION/DECOR/SPACEHOLOGRAM3D.SCENE.MBIN",
+    "vertices": 16579,
+    "triangles": 28335,
+    "coordinateFrame": "NMS local Y-up; placement rotation applied by Base Builder"
+  },
+  {
+    "id": "STA_SMALLSIGN",
+    "scene": "MODELS/SPACE/SPACESTATION/DECOR/SPACEBILLBOARDSMALL.SCENE.MBIN",
+    "vertices": 11437,
+    "triangles": 10976,
+    "coordinateFrame": "NMS local Y-up; placement rotation applied by Base Builder"
+  },
+  {
+    "id": "U_PARAGON",
+    "scene": "MODELS/PLANETS/BIOMES/COMMON/BUILDINGS/PARTS/BUILDABLEPARTS/UTILITYPARTS/PARAGON.SCENE.MBIN",
+    "vertices": 24,
+    "triangles": 12,
+    "coordinateFrame": "NMS local Y-up; placement rotation applied by Base Builder"
+  }
+]

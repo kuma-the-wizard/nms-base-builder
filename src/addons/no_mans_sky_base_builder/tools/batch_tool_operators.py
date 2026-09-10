@@ -24,6 +24,21 @@ class SelectSameColoredObjects(bpy.types.Operator):
         self.report({'INFO'}, f"found {found_matches} matches")
         return {"FINISHED"}
     
+class SelectAllSameColoredObjects(bpy.types.Operator):
+    """Select objects with similar colors for easy experimentation."""
+
+    bl_idname = "object.nms_select_all_same_colors"
+    bl_label = "Select same colors"
+    bl_options = {"UNDO", "REGISTER"}
+
+    def execute(self, context):
+        scene = context.scene
+        batch_tool = scene.nms_batch_tool
+        
+        found_matches =  batch_tool.select_all_same_colored_objects()
+        self.report({'INFO'}, f"found {found_matches} matches")
+        return {"FINISHED"}
+    
 
 class SelectSameObjects(bpy.types.Operator):
     """Select objects with similar colors for easy experimentation."""
@@ -47,14 +62,46 @@ class BatchReplaceTarget(bpy.types.Operator):
     bl_idname = "object.nms_batch_replace_target"
     bl_label = "Batch Replace"
     bl_options = {"UNDO", "REGISTER"}
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(
+            self,
+            title="Batch Replace",
+            confirm_text="Replace"
+        )
 
     def execute(self, context):
         scene = context.scene
         batch_tool = scene.nms_batch_tool
-        
         replaced_count = batch_tool.batch_replace_with_target_object()
         self.report({'INFO'}, f"replaced {replaced_count} objects")
+        
+        
+        def clear_picker():
+            batch_tool.target_object = None
+            return None
+        
+        # clear value after operator execution finishes so that blender doesnt fire a warning popup
+        bpy.app.timers.register(clear_picker, first_interval=0.0)
+        
         return {"FINISHED"}
+    
+    def draw(self, context):
+        layout = self.layout
+        batch_tool = context.scene.nms_batch_tool
+        
+        batch_replace_box = layout.column(align = True)
+        batch_replace_box.label(text = "Replace with a", icon = "GROUP_VERTEX")
+        batch_replace_col = batch_replace_box.column(align = True)
+        batch_replace_col.row(align = True).prop(batch_tool,"nms_batch_replace_type", expand = True)
+        batch_replace_col.separator()
+        if batch_tool.nms_batch_replace_type == "target":
+            batch_replace_col.label(text = "Replace with a target object")
+            batch_replace_col.prop(batch_tool,"target_object", text = "")
+        else :
+            batch_replace_col.label(text = "Replace with ObjectId")
+            batch_replace_col.prop(batch_tool,"object_id", text = "")
+        batch_replace_col.separator()
     
     
 class BatchSelectRandom(bpy.types.Operator):
@@ -238,14 +285,34 @@ class BatchSelectPattern(bpy.types.Operator):
             else:
                 if enabled:
                     obj.select_set(False)
+                    
+                    
+
+class SelectAllGroups(bpy.types.Operator):
+    """Select objects with similar colors for easy experimentation."""
+
+    bl_idname = "object.nms_select_all_groups"
+    bl_label = "Select Groups"
+    bl_options = {"UNDO", "REGISTER"}
+
+    def execute(self, context):
+        scene = context.scene
+        batch_tool = scene.nms_batch_tool
+        
+        group_count =  batch_tool.select_all_groups()
+        self.report({'INFO'}, f"found {group_count} groups")
+        return {"FINISHED"}
 
     
     
     
 classes = (
     SelectSameColoredObjects,
+    SelectAllSameColoredObjects,
     SelectSameObjects,
     BatchReplaceTarget,
     BatchSelectRandom,
-    BatchSelectPattern
+    BatchSelectPattern,
+    
+    SelectAllGroups
 )

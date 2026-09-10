@@ -6,9 +6,10 @@ from copy import copy
 import bpy
 import mathutils
 
-from .utils import blend_utils, material
+from .utils import blend_utils, material, materials_v2
 from .utils import python as python_utils
 
+z_compensate = mathutils.Matrix.Rotation(math.radians(-90.0), 4, "X")
 
 class Part(object):
 
@@ -20,6 +21,20 @@ class Part(object):
 
     SNAP_MATRIX_DICTIONARY = python_utils.load_dictionary(SNAP_MATRIX_JSON)
     SNAP_PAIR_DICTIONARY = python_utils.load_dictionary(SNAP_PAIR_JSON)
+    
+    """parts property names."""
+    PROP_OBJECT_ID = "ObjectID"
+    PROP_SNAP_ID = "SnapID"
+    PROP_USER_DATA = "UserData"
+    PROP_TIMESTAMP = "Timestamp"
+    PROP_MESSAGE = "Message"
+    
+    PROP_POSITION = "Position"
+    PROP_UP = "Up"
+    PROP_AT = "At"
+    
+    PROP_BELONGS_TO_PRESET = "belongs_to_preset"
+    PROP_ORDER= "order"
 
     SNAP_CACHE = {}
 
@@ -269,6 +284,16 @@ class Part(object):
         """
         # Duplicate existing.
         existing_object = self.builder.find_object_by_id(object_id)
+
+        # ...but never a high res one. duplicate() copies the mesh and the
+        # materials, which is exactly the sharing the high res library exists to
+        # avoid - one duplicate of a big part costs a whole extra mesh and its
+        # material set. Reaching here means an old proxy was asked for anyway,
+        # so drop the cache hit and import one. See utils/materials_v2.py.
+        cached_bpy_object = getattr(existing_object, "object", None)
+        if cached_bpy_object is not None and materials_v2.is_high_res(cached_bpy_object):
+            existing_object = None
+
         if existing_object:
             duped = existing_object.duplicate()
             duped = duped.object
@@ -288,15 +313,32 @@ class Part(object):
             ]
             item = bpy.data.objects[new_objects[0]]
             item.name = object_id
-            # for convenience if saving obj/mtl files, delete any imported materials
             item.data.materials.clear()
-            item.select_set(False)
+            
+            # SAFE SELECTION
+            try:
+                item.select_set(False)
+            except RuntimeError:
+                pass 
+                
             blend_utils.add_to_scene(item)
             return item
 
-        # Create cube.
-        bpy.ops.mesh.primitive_cube_add()
-        item = bpy.data.objects[bpy.context.object.name]
+        from .save_editor import station_part_models
+        native = station_part_models.load(object_id)
+        if native is not None:
+            blend_utils.add_to_scene(native)
+            return native
+
+        # Create cube safely bypassing bpy.ops context constraints
+        try:
+            bpy.ops.mesh.primitive_cube_add()
+            item = bpy.context.active_object
+        except RuntimeError:
+            # If active collection is excluded, build object at the data level
+            mesh = bpy.data.meshes.new(object_id)
+            item = bpy.data.objects.new(object_id, mesh)
+            
         item.name = object_id
         blend_utils.add_to_scene(item)
         return item
@@ -308,33 +350,24 @@ class Part(object):
         Returns:
             dict: Dictionary of part information.
         """
+        
         # Get Matrix Data
         world_matrix = self.matrix_world
         # Bring the matrix from Blender Z-Up space into standard Y-up space.
-        z_compensate = mathutils.Matrix.Rotation(math.radians(-90.0), 4, "X")
         world_matrix_offset = z_compensate @ world_matrix
+        
         # Retrieve Position, Up and At vectors.
-        pos = world_matrix_offset.decompose()[0]
-        up = [
-            world_matrix_offset[0][1],
-            world_matrix_offset[1][1],
-            world_matrix_offset[2][1],
-        ]
-        at = mathutils.Vector(
-            (
-                world_matrix_offset[0][2],
-                world_matrix_offset[1][2],
-                world_matrix_offset[2][2],
-            )
-        )
-        at = at.normalized()
+        pos = world_matrix_offset.translation
+        up = world_matrix_offset.col[1].to_3d()
+        at = world_matrix_offset.col[2].to_3d().normalized()
+        
         return {
-            "ObjectID": self.object_id_format,
-            "Position": [pos[0], pos[1], pos[2]],
-            "Up": [up[0], up[1], up[2]],
-            "At": [at[0], at[1], at[2]],
-            "Timestamp": int(self.time_stamp),
-            "UserData": int(self.user_data),
+            Part.PROP_OBJECT_ID: self.object_id_format,
+            Part.PROP_POSITION : list(pos),
+            Part.PROP_UP: list(up),
+            Part.PROP_AT: list(at),
+            Part.PROP_TIMESTAMP: int(self.time_stamp),
+            Part.PROP_USER_DATA: int(self.user_data),
         }
 
     # Class Methods ---
@@ -374,51 +407,67 @@ class Part(object):
         part.user_data = data.get("UserData", 0)
         part.message = data.get("Message", "")
         return part
+    
+    SUFFIX_COMPASS_ID_PAIRS = [
+            ("_NE", "_NW"),
+            ("_NE1", "_NW1"),
+            ("_NE2", "_NW2"),
+            ("_NE3", "_NW3"),
+            ("_NETB", "_NWTB"),
+            ("_NETB1", "_NWTB1"),
+            ("_NETB2", "_NWTB2"),
+            ("_NETB3", "_NWTB3"),
+            ("_E", "_W"),
+            ("_N", "_S"),
+            ("_0", "_1"),
+        ]
+    
+    FLIP_COMPASS_IDS = [
+                "N",
+                "E",
+                "W",
+                "S",
+                "NE",
+                "NE1",
+                "NE2",
+                "NE3",
+                "NW",
+                "NW1",
+                "NW2",
+                "NW3",
+                "NETB",
+                "NETB1",
+                "NETB2",
+                "NETB3",
+                "NWTB",
+                "NWTB1",
+                "NWTB2",
+                "NWTB3",
+            ]
 
     # Static Methods ---
     @staticmethod
     def get_mirror_part_id(object_id):
         # Handle Compass
-        east_compass_ids = [
-            "NE",
-            "NE1",
-            "NE2",
-            "NE3",
-            "NETB",
-            "NETB1",
-            "NETB2",
-            "NETB3",
-        ]
-        west_compass_ids = [
-            "NW",
-            "NW1",
-            "NW2",
-            "NW3",
-            "NWTB",
-            "NWTB1",
-            "NWTB2",
-            "NWTB3",
-        ]
-        for idx, east_compass_id in enumerate(east_compass_ids):
-            if object_id.endswith(f"_{east_compass_id}"):
-                return (
-                    object_id[: -(len(east_compass_id) + 1)]
-                    + "_"
-                    + west_compass_ids[idx]
-                )
-        for idx, west_compass_id in enumerate(west_compass_ids):
-            if object_id.endswith(f"_{west_compass_id}"):
-                return (
-                    object_id[: -(len(west_compass_id) + 1)]
-                    + "_"
-                    + east_compass_ids[idx]
-                )
-
+        for compass_pairs in Part.SUFFIX_COMPASS_ID_PAIRS:
+            east_str = compass_pairs[0]
+            west_str = compass_pairs[1]
+            is_east = object_id.endswith(east_str)
+            is_west = object_id.endswith(west_str)
+            if is_east:
+                return object_id[: -(len(east_str))] + west_str
+            elif is_west:
+                return object_id[: -(len(west_str))] + east_str
+        
         # Handle Winged
-        if object_id.endswith("_R"):
-            return object_id[:-2]
-        else:
-            return object_id + "_R"
+        if object_id.startswith("B_WNG"):
+            if object_id == "B_WNG_R" or object_id == "B_WNG_R_R":
+                #Exception case, Default Aeron Wing's object ID ends with R and mirror part's ID ends with R_R
+                return "B_WNG_R_R" if object_id == "B_WNG_R" else "B_WNG_R"
+            elif object_id.endswith("_R"):
+                return object_id[:-2]
+            else:
+                return object_id + "_R"
 
     @staticmethod
     def get_flip_part_id(object_id):
@@ -426,29 +475,8 @@ class Part(object):
         if "_Y_" in object_id:
             return object_id.replace("_Y_", "_")
         # Then check for unflipped.
-        compass_ids = [
-            "N",
-            "E",
-            "W",
-            "S",
-            "NE",
-            "NE1",
-            "NE2",
-            "NE3",
-            "NW",
-            "NW1",
-            "NW2",
-            "NW3",
-            "NETB",
-            "NETB1",
-            "NETB2",
-            "NETB3",
-            "NWTB",
-            "NWTB1",
-            "NWTB2",
-            "NWTB3",
-        ]
-        for compass_id in compass_ids:
+        
+        for compass_id in Part.FLIP_COMPASS_IDS:
             if object_id.endswith(f"_{compass_id}"):
                 return object_id[: -(len(compass_id) + 1)] + "_Y_" + compass_id
         return None

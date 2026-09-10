@@ -2,36 +2,45 @@ import json
 import os
 import subprocess
 import sys
-import uuid
 import webbrowser
 
-import blf
 import bpy
 import bpy.ops
 import bpy.utils
 import bpy.utils.previews
+import math
 from bpy.app.handlers import persistent
 from bpy.props import (BoolProperty, EnumProperty, FloatProperty, IntProperty,
                        PointerProperty, StringProperty)
 from bpy.types import Panel, PropertyGroup
-from numpy import isin
+from pathlib import Path
 
-from . import builder, icons, part, preset
+from . import builder, icons, part, preset, group, builder_v2, viewport_overlay
+from .base_properties import NMSBaseProperties
+from .addon_preferences import NMSAddonPreferences
 from .part_overrides import line
-from .save_editor import save_editor_operators, save_editor_utils
+from .save_editor import save_editor_operators, save_editor_utils, station_reference
 from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel
 from .save_editor.save_manager import SaveManager
-from .tools import batch_tool_operators, build_tool_operators
+
+from .tools import batch_tool_operators, build_tool_operators, prooperties_operators, asset_browser_operators
+from .tools_menu import base_builder_menu, base_builder_menu_operators
 from .tools.batch_tool import BatchTool
 from .tools.batch_tool_presentation import NMS_PT_batch_tools_panel
 from .tools.build_tool import BuildTool
 from .tools.build_tool_presentation import NMS_PT_tools_panel
 from .tools.properties import Properties
-from .tools.properties_presentation import NMS_PT_base_prop_panel
-from .utils import blend_utils, collection_utils, curve, curve_utils
+from .tools.properties_presentation import NMS_PT_base_prop_panel, NMS_PT_transformation_panel
+from .tools.asset_browser import AssetBrowser, NMSCategoryOrderItem
+from .tools import asset_browser_presentation
+
+from .utils import blend_utils, curve, dictionary
 from .utils import material as _material
+from .utils import materials_v2 as _materials_v2
 from .utils import python as python_utils
 from .utils import workspace
+
+
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
@@ -42,8 +51,7 @@ BUILDER = builder.Builder()
 GHOSTED_JSON = os.path.join(FILE_PATH, "resources", "ghosted.json")
 ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
 GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
-NICE_JSON = os.path.join(FILE_PATH, "resources", "nice_names.json")
-nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
+nice_name_dictionary = dictionary.get_nice_names_diictionary()
 
 ADDON_ID = __package__
 
@@ -70,7 +78,7 @@ def part_switch(self, context):
 def get_line_type_from_enum(context):
     line_object = "U_POWERLINE"
     scene = context.scene
-    nms_tool = scene.nms_base_tool
+    nms_tool = scene.nms_main
     line_value = nms_tool.line_switch
     if line_value == "TELEPORT":
         line_object = "U_PORTALLINE"
@@ -84,7 +92,7 @@ def get_line_type_from_enum(context):
 
 
 # Core Settings Class
-class NMSSettings(PropertyGroup):
+class NMSMain(PropertyGroup):
     # Build Array of base part types. (Vanilla Parts - Mods - Presets)
     enum_items = []
     for pack, _ in BUILDER.available_packs:
@@ -123,184 +131,12 @@ class NMSSettings(PropertyGroup):
     preset_name: StringProperty(
         name="preset_name", description="The of a preset.", default="", maxlen=1024
     )
-
-    string_base: StringProperty(
-        name="Base Name",
-        description="The name of the base set in game.",
-        default="",
-        maxlen=1024,
-    )
-
-    string_address: StringProperty(
-        name="Galactic Address",
-        description="The galactic address.",
-        default="",
-        maxlen=1024,
-    )
-
-    string_userdata: StringProperty(
-        name="User Data",
-        description="User Data - important for corvette bases.",
-        default="",
-        maxlen=1024,
-    )
-
-    string_base_type: StringProperty(
-        name="The base type",
-        description="Planet or Freighter.",
-        default="HomePlanetBase",
-        maxlen=1024,
-    )
-
-    string_usn: StringProperty(
-        name="USN", description="The username attribute.", default="", maxlen=1024
-    )
-
-    string_uid: StringProperty(
-        name="UID", description="A user ID.", default="", maxlen=1024
-    )
-
-    string_lid: StringProperty(
-        name="LID", description="Not sure what this is.", default="", maxlen=1024
-    )
-
-    string_ptk: StringProperty(
-        name="PTK", description="Not sure what this is.", default="", maxlen=1024
-    )
-
-    string_ts: StringProperty(
-        name="TS",
-        description="Timestamp.",
-        default="",
-        maxlen=1024,
-    )
-
-    string_last_ts: StringProperty(
-        name="LastUpdatedTimestamp",
-        description="Timestamp - last updated timestamp.",
-        default="",
-        maxlen=1024,
-    )
-
-    float_pos_x: FloatProperty(
-        name="X", description="The X position of the base in planet space.", default=0.0
-    )
-
-    float_pos_y: FloatProperty(
-        name="Y", description="The Y position of the base in planet space.", default=0.0
-    )
-
-    float_pos_z: FloatProperty(
-        name="Z", description="The Z position of the base in planet space.", default=0.0
-    )
-
-    float_ori_x: FloatProperty(
-        name="X",
-        description="The X orientation vector of the base in planet space.",
-        default=0.0,
-    )
-
-    float_ori_y: FloatProperty(
-        name="Y",
-        description="The Y orientation vector of the base in planet space.",
-        default=0.0,
-    )
-
-    float_ori_z: FloatProperty(
-        name="Z",
-        description="The Z orientation vector of the base in planet space.",
-        default=0.0,
-    )
-
-    # Unimportant details...
-    LastEditedById: StringProperty(
-        name="LastEditedByID",
-        description="LastEditedByID.",
-        default="",
-        maxlen=1024,
-    )
-    LastEditedByUsername_value: StringProperty(
-        name="LastEditedByUsername",
-        description="LastEditedByUsername.",
-        default="",
-        maxlen=1024,
-    )
-    original_base_version: IntProperty(
-        name="OriginalBaseVersion", description="OriginalBaseVersion.", default=3
-    )
-
-    screenshot_at_x: FloatProperty(
-        name="SAX",
-        description="The X orientation vector of the screenshot.",
-        default=1.0,
-    )
-
-    screenshot_at_y: FloatProperty(
-        name="SAY",
-        description="The Y orientation vector of the screenshot.",
-        default=0.0,
-    )
-
-    screenshot_at_z: FloatProperty(
-        name="SAZ",
-        description="The Z orientation vector of the screenshot.",
-        default=0.0,
-    )
-
-    screenshot_pos_x: FloatProperty(
-        name="SPX",
-        description="The X pos vector of the screenshot.",
-        default=1.0,
-    )
-
-    screenshot_pos_y: FloatProperty(
-        name="SPY",
-        description="The Y pos vector of the screenshot.",
-        default=1.0,
-    )
-
-    screenshot_pos_z: FloatProperty(
-        name="SUZ",
-        description="The Z pos vector of the screenshot.",
-        default=0.0,
-    )
-
-    game_mode: StringProperty(
-        name="GameMode", description="GameMode.", default="Unspecified"
-    )
-
-    platform_token: StringProperty(
-        name="PlatformToken", description="PlatformToken.", default=""
-    )
-
-    is_reported: BoolProperty(
-        name="IsReported", description="Is Reported.", default=False
-    )
-
-    is_featured: BoolProperty(
-        name="IsFeatured", description="Is Featured.", default=False
-    )
-
-    difficulty_flags: IntProperty(
-        name="DifficultyFlags", description="DifficultyFlags.", default=0
-    )
-
-    difficulty_preset: StringProperty(
-        name="DifficultyPresetType",
-        description="DifficultyPresetType.",
-        default="Creative",
-    )
-
-    auto_power_setting: StringProperty(
-        name="AutoPowerSetting", description="AutoPowerSetting.", default="UseDefault"
-    )
     
     is_workspace_cleaned: BoolProperty(
         name="Is Workspace Cleaned", description="Check if workspace has been cleaned by user", default=False
     )
 
     room_vis_switch: IntProperty(name="room_vis_switch", default=0)
-    
     
     color_picker: bpy.props.PointerProperty(
         name="Colour Picker",
@@ -310,73 +146,20 @@ class NMSSettings(PropertyGroup):
         update = lambda self, context: self.on_color_picked()
     )
 
-    def deserialise_from_data(self, nms_data):
-        # Start new file
-        self.new_file()
 
-        # Start bringing the data in.
-        if "GalacticAddress" in nms_data:
-            self.string_address = str(nms_data["GalacticAddress"])
-        if "UserData" in nms_data:
-            self.string_userdata = str(nms_data["UserData"])
-        if "BaseType" in nms_data:
-            self.string_base_type = str(nms_data["BaseType"]["PersistentBaseTypes"])
-        if "Position" in nms_data:
-            self.float_pos_x = nms_data["Position"][0]
-            self.float_pos_y = nms_data["Position"][1]
-            self.float_pos_z = nms_data["Position"][2]
-        if "Forward" in nms_data:
-            self.float_ori_x = nms_data["Forward"][0]
-            self.float_ori_y = nms_data["Forward"][1]
-            self.float_ori_z = nms_data["Forward"][2]
-        if "Name" in nms_data:
-            self.string_base = str(nms_data["Name"])
-        if "LastUpdateTimestamp" in nms_data:
-            self.string_last_ts = str(nms_data["LastUpdateTimestamp"])
-        if "Owner" in nms_data:
-            Owner_details = nms_data["Owner"]
-            self.string_uid = str(Owner_details.get("UID", ""))
-            self.string_ts = str(Owner_details.get("TS", ""))
-            self.string_lid = str(Owner_details.get("LID", ""))
-            self.string_usn = str(Owner_details.get("USN"))
-            self.string_ptk = str(Owner_details.get("PTK"))
-        # Extras/Unimportant
-        if "LastEditedById" in nms_data:
-            self.LastEditedById = str(nms_data["LastEditedById"])
-        if "LastEditedByUsername" in nms_data:
-            self.LastEditedByUsername_value = str(nms_data["LastEditedByUsername"])
-        if "OriginalBaseVersion" in nms_data:
-            self.original_base_version = nms_data["OriginalBaseVersion"]
-        if "ScreenshotAt" in nms_data:
-            self.screenshot_at_x = nms_data["ScreenshotAt"][0]
-            self.screenshot_at_y = nms_data["ScreenshotAt"][1]
-            self.screenshot_at_z = nms_data["ScreenshotAt"][2]
-        if "ScreenshotPos" in nms_data:
-            self.screenshot_pos_x = nms_data["ScreenshotPos"][0]
-            self.screenshot_pos_y = nms_data["ScreenshotPos"][1]
-            self.screenshot_pos_z = nms_data["ScreenshotPos"][2]
-        if "GameMode" in nms_data:
-            self.game_mode = nms_data["GameMode"]["PresetGameMode"]
-        if "PlatformToken" in nms_data:
-            self.platform_token = nms_data["PlatformToken"]
-        if "IsReported" in nms_data:
-            self.is_reported = nms_data["IsReported"]
-        if "IsFeatured" in nms_data:
-            self.is_featured = nms_data["IsFeatured"]
-        if "AutoPowerSetting" in nms_data:
-            auto_power_container = nms_data.get("AutoPowerSetting", {})
-            self.auto_power_setting = auto_power_container.get(
-                "BaseAutoPowerSetting", "UseDefault"
-            )
-        if "Difficulty" in nms_data:
-            difficulty_container = nms_data.get("Difficulty", {})
-            sub_difficulty_container = difficulty_container.get("DifficultyPreset")
-            self.difficulty_preset = sub_difficulty_container.get(
-                "DifficultyPresetType", "Creative"
-            )
-            self.difficulty_flags = difficulty_container.get(
-                "PersistentBaseDifficultyFlags", 0
-            )
+    check_export_objects_only: bpy.props.BoolProperty(
+        name="Objectsd Only",
+        description="Checking this will only export objects when export button is clicked",
+        default=False,
+    )
+    
+    def deserialise_from_data(self, nms_data, start_new_file = True):
+        if start_new_file:
+            # Start new file
+            self.new_file()
+
+        base_props = bpy.context.scene.nms_base_tool
+        base_props.deserialise_from_data(nms_data)
 
     def serialise(self, get_presets=False, objects_only=False):
         """Export the data in the blender scene to NMS compatible data.
@@ -384,52 +167,15 @@ class NMSSettings(PropertyGroup):
         This will slot the data into the clip-board so you can easy copy
         and paste data back and forth between the tool.
         """
-        # Try making the address an int, if not it should be a string.
-        data = {
-            "BaseVersion": 5,
-            "OriginalBaseVersion": self.original_base_version,
-            "GalacticAddress": python_utils.prefer_int(self.string_address),
-            "Position": [self.float_pos_x, self.float_pos_y, self.float_pos_z],
-            "Forward": [self.float_ori_x, self.float_ori_y, self.float_ori_z],
-            "UserData": python_utils.prefer_int(self.string_userdata),
-            "LastUpdateTimestamp": python_utils.prefer_int(self.string_last_ts),
-            "RID": "",
-            "Owner": {
-                "UID": self.string_uid,
-                "LID": self.string_lid,
-                "USN": self.string_usn,
-                "PTK": self.string_ptk,
-                "TS": python_utils.prefer_int(self.string_ts),
-            },
-            "Name": self.string_base,
-            "BaseType": {"PersistentBaseTypes": self.string_base_type},
-            "LastEditedById": self.LastEditedById,
-            "LastEditedByUsername": self.LastEditedByUsername_value,
-            "ScreenshotAt": [
-                self.screenshot_at_x,
-                self.screenshot_at_y,
-                self.screenshot_at_z,
-            ],
-            "ScreenshotPos": [
-                self.screenshot_pos_x,
-                self.screenshot_pos_y,
-                self.screenshot_pos_z,
-            ],
-            "GameMode": {"PresetGameMode": self.game_mode},
-            "PlatformToken": self.platform_token,
-            "IsReported": self.is_reported,
-            "IsFeatured": self.is_featured,
-            "Difficulty": {
-                "DifficultyPreset": {"DifficultyPresetType": self.difficulty_preset},
-                "PersistentBaseDifficultyFlags": self.difficulty_flags,
-            },
-            "AutoPowerSetting": {"BaseAutoPowerSetting": self.auto_power_setting},
-        }
+        
         # Capture Individual Objects
         objects_data = BUILDER.serialise(get_presets=get_presets)
         if objects_only:
             return objects_data["Objects"]
-
+        
+        base_props = bpy.context.scene.nms_base_tool
+        data = base_props.serialise()
+        
         data.update(objects_data)
         return data
 
@@ -453,8 +199,13 @@ class NMSSettings(PropertyGroup):
             return
 
         # Start a new file
+        if isinstance(nms_import_data, list):
+            nms_import_data = {"Objects": nms_import_data}
         self.deserialise_from_data(nms_import_data)
-        BUILDER.deserialise_from_data(nms_import_data)
+        previous_objects = set(bpy.context.scene.objects)
+        builder_v2.deserialise_from_data(nms_import_data)
+        station_reference.finish_transfer_import(bpy.context, nms_import_data, previous_objects)
+        #BUILDER.deserialise_from_data(nms_import_data)
 
     def export_nms_data(self, objects_only=False):
         """Generate data and place it into the user's clipboard.
@@ -495,8 +246,12 @@ class NMSSettings(PropertyGroup):
                 ShowMessageBox(message=message, title="Import")
                 return
         # Build from Data
+        if isinstance(save_data, list):
+            save_data = {"Objects": save_data}
         self.deserialise_from_data(save_data)
+        previous_objects = set(bpy.context.scene.objects)
         BUILDER.deserialise_from_data(save_data)
+        station_reference.finish_transfer_import(bpy.context, save_data, previous_objects)
 
     def new_file(self):
         """Reset's the entire Blender scene to default.
@@ -514,37 +269,8 @@ class NMSSettings(PropertyGroup):
         blend_utils.remove_object("Light")
         blend_utils.remove_object("Camera")
 
-        self.string_address = ""
-        self.string_userdata = ""
-        self.string_base = ""
-        self.string_lid = ""
-        self.string_ts = ""
-        self.string_uid = ""
-        self.string_usn = ""
-        self.string_ptk = ""
-        self.float_pos_x = 0
-        self.float_pos_y = 0
-        self.float_pos_z = 0
-        self.float_ori_x = 0
-        self.float_ori_y = 0
-        self.float_ori_z = 0
-        self.string_last_ts = ""
-        self.LastEditedById = ""
-        self.original_base_version = 3
-        self.LastEditedByUsername_value = ""
-        self.screenshot_at_x = 1
-        self.screenshot_at_y = 0
-        self.screenshot_at_z = 0
-        self.screenshot_up_x = 0
-        self.screenshot_up_y = 1
-        self.screenshot_up_z = 0
-        self.game_mode = "Unspecified"
-        self.platform_token = ""
-        self.is_reported = False
-        self.is_featured = False
-        self.difficulty_preset = "Creative"
-        self.difficulty_flags = 0
-        self.auto_power_setting = "UseDefault"
+        base_props = bpy.context.scene.nms_base_tool
+        base_props.new_file()
 
         # Remove all no mans sky items from scene.
         # Deselect all
@@ -555,9 +281,15 @@ class NMSSettings(PropertyGroup):
             preset_check = "PresetID" in bpy_object
             light_check = "NMS_LIGHT" in bpy_object
             rig_check = "rig_item" in bpy_object
-            if any([id_check, preset_check, light_check, rig_check]):
+            
+            curve_check = "CurveID" in bpy_object
+            group_check = "GroupID" in bpy_object
+            if any([id_check, preset_check, light_check, rig_check, curve_check, group_check]):
                 blend_utils.remove_object(bpy_object.name)
 
+        station_reference.clear_reference(bpy.context.scene)
+        bpy.context.scene.nms_save_data.station_key = ""
+        bpy.context.scene.nms_save_data.station_transfer_reference = False
         # Reset room vis
         self.room_vis_switch = 0
 
@@ -628,6 +360,27 @@ class NMSSettings(PropertyGroup):
 
         # Apply Colour Material.
         maeterial_index = int(material.split("_")[0])
+
+        # A high res part is repainted in place, all of them in one pass - its
+        # colour is four object properties, so it never needs a mesh of its own
+        # and goes on sharing the one datablock for its ObjectID no matter how
+        # many colours are on screen. Only the flat material fbx proxies still
+        # need a copy per colour, which is what the ObjectID cache below is for.
+        _materials_v2.recolour(
+            [obj for obj in selected_objects if _materials_v2.is_high_res(obj)],
+            colour_index=int(colour_index),
+            material_index=int(maeterial_index),
+        )
+
+        unique_objects = {}
+        for obj in selected_objects:
+            if "ObjectID" in obj and not _materials_v2.is_high_res(obj):
+                obj_id = obj["ObjectID"]
+                if obj_id not in unique_objects:
+                    obj.data = obj.data.copy()
+                    _material.assign_material(obj, int(colour_index), int(maeterial_index))
+                    unique_objects[obj_id] = obj
+
         for obj in selected_objects:
             # detect if object is nms curve
             if "has_linked_objects" in obj and curve.is_bezier_or_nurbs_path(obj):
@@ -635,10 +388,16 @@ class NMSSettings(PropertyGroup):
                     if "curve_parent" in child_obj and child_obj["curve_parent"] == obj.name:
                         _material.assign_material(child_obj, int(colour_index), int(maeterial_index))
                         obj["dup_UserData"] = child_obj["UserData"]
-                        break
+            elif "GroupID" in obj:
+                _material.assign_material(obj, int(colour_index), int(maeterial_index))
             # for any other object
             else :
-                _material.assign_material(obj, int(colour_index), int(maeterial_index))
+                if "ObjectID" in obj:
+                    obj_id = obj["ObjectID"]
+                    if obj_id in unique_objects:
+                        key = unique_objects[obj_id]
+                        obj.data = key.data
+                        obj["UserData"] = key["UserData"]
 
         # Refresh the viewport.
         bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
@@ -683,14 +442,42 @@ class NMSSettings(PropertyGroup):
             target_userdata = target_object["UserData"]
         elif "has_linked_objects" in target_object:
             target_userdata = target_object["dup_UserData"]
-        
+            
+        unique_keys = {}
+        selected_objects = bpy.context.selected_objects
+
+        # High res parts take the picked UserData straight onto the object and
+        # keep the mesh they already share. Everything else is a flat material
+        # proxy, so one object per ObjectID gets its own copy and the rest of
+        # that id point at it - they all end up on the same UserData here, so
+        # ObjectID alone is enough to key the cache.
+        _materials_v2.recolour_from_user_data(
+            [obj for obj in selected_objects if _materials_v2.is_high_res(obj)],
+            target_userdata,
+        )
+
+        for obj in selected_objects:
+            if "ObjectID" not in obj or _materials_v2.is_high_res(obj):
+                continue
+            obj_id = obj["ObjectID"]
+            if obj_id not in unique_keys:
+                obj.data = obj.data.copy()
+                _material.restore_material(obj, target_userdata)
+                unique_keys[obj_id] = obj
+
         if target_userdata is not None:
-            selected_objects = bpy.context.selected_objects
+
             for obj in selected_objects:
                 if "has_linked_objects" in obj and curve.is_bezier_or_nurbs_path(obj):
                     curve.apply_color(obj, target_userdata)
-                else :
-                    _material.restore_material(obj, target_userdata)
+                elif "ObjectID" in obj and not _materials_v2.is_high_res(obj):
+                    obj_id = obj["ObjectID"]
+                    key = unique_keys.get(obj_id, None)
+                    if key is not None:
+                        obj.data = key.data
+                        obj["UserData"] = target_userdata
+                    else:
+                        _material.restore_material(obj, target_userdata)
         
         def clear_picker():
             self.color_picker = None
@@ -717,7 +504,7 @@ class NMS_PT_hero_panel(Panel):
 
     def draw(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         layout = self.layout
         
         pcoll = icons.get_icons_pscroll()
@@ -762,11 +549,29 @@ class NMS_PT_hero_panel(Panel):
         
         workspace_row = layout.row(align=True)
         workspace_box = workspace_row.box()
-        workspace_column = workspace_box.column(align = True)
-        workspace_column.label(text = "Workspace")
-        workspace_column.operator("object.nms_launch_asset_browser", text = "Launch Asset Browser", icon = "DESKTOP")
-        if not nms_tool.is_workspace_cleaned:
-            workspace_column.operator("object.nms_cleanup_workspace", text = "Simplify Blender Workspace", icon = "WORKSPACE")
+        workspace_column = workspace_box.column(align = False)
+        workspace_label_row = workspace_column.row(align = True)
+        workspace_label_row.label(text = "Workspace")
+        
+        workspace_column_2 = workspace_column.column(align = True)
+        workspace_column_2.operator("object.nms_launch_asset_browser_window", text = "Launch Asset Browser", icon = "ASSET_MANAGER")
+        workspace_cleanup_row = workspace_column_2.row(align = True)
+        workspace_cleanup_row.enabled = not nms_tool.is_workspace_cleaned
+        workspace_cleanup_row.operator("object.nms_cleanup_workspace", text = "Simplify Blender Workspace", icon = "WORKSPACE")
+        
+        workspace_column_2.separator()
+        workspace_column_2.operator("object.nms_workspace_settings", text = "Workspace Settings", icon = "SETTINGS")
+        
+        
+        
+        file_box = workspace_row.box()
+        file_column = file_box.column(align = True)
+            
+        file_column.label(text="File")# icon = "COLLECTION_COLOR_04"
+        file_column.operator("object.nms_new_file", icon="FILE_NEW")
+        file_column.separator()
+        file_column.operator("object.nms_save_data", icon="FILE_TICK")
+        file_column.operator("object.nms_load_data", icon="FILE_FOLDER")
 
 
 # File Buttons Panel ---
@@ -786,25 +591,55 @@ class NMS_PT_file_buttons_panel(Panel):
         
         layout = self.layout
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
+        base_props = scene.nms_base_tool
         
-        file_row = layout.row(align=True)
+        file_col = layout.column(align = True)
+        file_row = file_col.row(align=True)
         file_box = file_row.box()
         first_column = file_box.column(align=True)
-        first_column.label(text="File")# icon = "COLLECTION_COLOR_04"
-        first_column.operator("object.nms_new_file", icon="FILE_NEW")
-        first_column.separator()
-        first_column.operator("object.nms_save_data", icon="FILE_TICK")
-        first_column.operator("object.nms_load_data", icon="FILE_FOLDER")
+        first_column.scale_x = 0.5 if base_props.string_base_type == "PlayerShipBase" else 1.0
+        first_column.label(text="Metadata", icon = "PROPERTIES")
+        first_column.label(text="Base Name")
+        first_column.prop(base_props, "string_base", text = "")
+        first_row = first_column.row(align = True)
+        first_row.enabled = False
+        fc_1 = first_row.column(align = True)
+        fc_1.label(text="Basetype")
+        fc_1.prop(base_props, "string_base_type", text = "")
+        
+        if base_props.string_base_type == "PlayerShipBase":
+            fc_2 = first_row.column(align = True)
+            fc_2.label(text="Userdata")
+            fc_2.prop(base_props, "string_userdata", text = "")
 
         clipboard_box = file_row.box()
-        second_column = clipboard_box.column(align=True)
-        second_column.label(text="Import & Export")
+        clipboard_box.label(text="Import & Export", icon = "IMPORT")
+        second_column = clipboard_box.column(align=False)
         second_column.operator("object.nms_import_nms_data", icon="PASTEDOWN")
         second_column.separator()
+        second_column.prop(nms_tool,"check_export_objects_only", text = "Objects only") 
         second_column.operator("object.nms_export_nms_data", icon="COPYDOWN")
-        second_column.operator("object.nms_export_nms_data_objects", icon="COPYDOWN")
             
+
+
+class NMS_PT_station_transfer_reference(Panel):
+    bl_idname = "NMS_PT_station_transfer_reference"
+    bl_label = "Station Reference"
+    bl_parent_id = "NMS_PT_file_buttons_panel"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "No Mans Sky Base Builder"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        manager = context.scene.nms_save_data
+        return bool(manager.station_transfer_reference and manager.station_key
+                    and any(c.get(station_reference.TAG) for c in context.scene.collection.children))
+
+    def draw(self, context):
+        station_reference.draw(self.layout, context)
 
 
 # Colour Panel ---
@@ -824,7 +659,7 @@ class NMS_PT_colour_panel(Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         colours = _material.get_colours_from_palette(nms_tool.material_switch)
         pcoll = preview_collections["main"]
         
@@ -871,7 +706,7 @@ class NMS_PT_logic_panel(Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         layout = self.layout
         
         box = layout.box()
@@ -922,9 +757,10 @@ class NMS_PT_build_panel(Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         
-        main_col = layout.box().column(align = True)
+        build_column = layout.column(align = True)
+        main_col = build_column.box().column(align = True)
         col = main_col.column(align=True)
         col.label(text = "Asset Browser")
         col.operator("object.nms_launch_asset_browser", icon = "DESKTOP" )# icon="COLLECTION_COLOR_03"
@@ -937,6 +773,12 @@ class NMS_PT_build_panel(Panel):
         row = presets_box.row(align=True)
         row.operator("object.nms_get_more_presets", icon="WORLD_DATA")
         row.operator("object.nms_open_preset_folder", icon="FILE_FOLDER")
+        
+        presets_v2_col = main_col
+        presets_v2_col.label(text = "Grouping")
+        presets_v2_row = presets_v2_col.row(align = True)
+        presets_v2_row.operator("object.nms_group_objects", text = "Group", icon = "OUTLINER_OB_POINTCLOUD" )
+        presets_v2_row.operator("object.nms_ungroup_objects", text = "Ungroup",  icon = "OUTLINER_DATA_POINTCLOUD")
         
 class NMS_PT_nms_legacy_asset_browser(Panel):
     bl_label = "Legacy Asset Browser";  
@@ -952,7 +794,7 @@ class NMS_PT_nms_legacy_asset_browser(Panel):
         layout = self.layout
         
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         
         lab_col = layout.box().column(align = True)
         lab_col.label(text = "Parts and Prefabs", icon = "ASSET_MANAGER")
@@ -1109,7 +951,7 @@ class NewFile(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         nms_tool.new_file()
         return {"FINISHED"}
 
@@ -1124,7 +966,7 @@ class SaveData(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         nms_tool.save_nms_data(self.filepath)
         return {"FINISHED"}
 
@@ -1141,7 +983,7 @@ class LoadData(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         nms_tool.load_nms_data(self.filepath)
         return {"FINISHED"}
 
@@ -1157,7 +999,7 @@ class ImportData(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         nms_tool.import_nms_data()
         return {"FINISHED"}
 
@@ -1168,8 +1010,9 @@ class ExportData(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.export_nms_data()
+        nms_tool = scene.nms_main
+        objects_only = nms_tool.check_export_objects_only
+        nms_tool.export_nms_data( objects_only )
         return {"FINISHED"}
 
 
@@ -1179,7 +1022,7 @@ class ExportObjectsData(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         nms_tool.export_nms_data(objects_only=True)
         return {"FINISHED"}
     
@@ -1191,7 +1034,7 @@ class SwitchWorkspace(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         nms_tool.is_workspace_cleaned = True
         workspace.cleanup_workspace(context)
         return {"FINISHED"}
@@ -1208,7 +1051,7 @@ class SaveAsPreset(bpy.types.Operator):
         BUILDER.save_preset_to_file(self.preset_name)
         # Refresh Preset List.
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         if nms_tool.enum_switch == {"PRESETS"}:
             refresh_ui_part_list(scene, "presets")
         # Reset string variable.
@@ -1378,7 +1221,7 @@ class ListBuildOperator(bpy.types.Operator):
         if self.part_id in preset.Preset.get_presets():
             new_item = BUILDER.add_preset(self.part_id)
         else:
-            new_item = BUILDER.add_part(self.part_id)
+            new_item = builder_v2.add_part(self.part_id, builder_object=BUILDER)
             if hasattr(new_item, "build_rig"):
                 new_item.build_rig()
 
@@ -1402,7 +1245,7 @@ class ListEditOperator(bpy.types.Operator):
     part_id: StringProperty()
 
     def execute(self, context):
-        nms_tool = context.scene.nms_base_tool
+        nms_tool = context.scene.nms_main
         if self.part_id in preset.Preset.get_presets():
             nms_tool.new_file()
             preset.Preset(
@@ -1429,7 +1272,7 @@ class ListDeleteOperator(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = context.scene.nms_base_tool
+        nms_tool = context.scene.nms_main
         if self.part_id in preset.Preset.get_presets():
             preset.Preset.delete_preset(self.part_id)
             if nms_tool.enum_switch == {"PRESETS"}:
@@ -1455,7 +1298,7 @@ class ApplyColour(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         material = nms_tool.material_switch
         nms_tool.apply_colour(colour_index=self.colour_index, material=material)
         return {"FINISHED"}
@@ -1475,7 +1318,7 @@ class ApplyDefaultColour(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        nms_tool = scene.nms_base_tool
+        nms_tool = scene.nms_main
         nms_tool.apply_default_colour()
         return {"FINISHED"}
 
@@ -1699,7 +1542,7 @@ class LogicButton(bpy.types.Operator):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
         # Build button.
-        button = BUILDER.add_part("U_SWITCHBUTTON")
+        button = builder_v2.add_part("U_SWITCHBUTTON", builder_object=BUILDER)
         # Snap to selection.
         if selection:
             selection = BUILDER.get_builder_object_from_bpy_object(selection)
@@ -1720,7 +1563,7 @@ class LogicWallSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_SWITCHWALL")
+        button = builder_v2.add_part("U_SWITCHWALL", builder_object=BUILDER)
         # Snap to selection.
         if selection:
             selection = BUILDER.get_builder_object_from_bpy_object(selection)
@@ -1740,7 +1583,7 @@ class LogicProxSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_SWITCHPROX")
+        button = builder_v2.add_part("U_SWITCHPROX", builder_object=BUILDER)
         # Snap to selection.
         if selection:
             selection = BUILDER.get_builder_object_from_bpy_object(selection)
@@ -1760,7 +1603,7 @@ class LogicInvSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_TRANSISTOR1")
+        button = builder_v2.add_part("U_TRANSISTOR1", builder_object=BUILDER)
         # Snap to selection.
         if selection:
             selection = BUILDER.get_builder_object_from_bpy_object(selection)
@@ -1780,7 +1623,7 @@ class LogicAutoSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_TRANSISTOR2")
+        button = builder_v2.add_part("U_TRANSISTOR2", builder_object=BUILDER)
         # Snap to selection.
         if selection:
             selection = BUILDER.get_builder_object_from_bpy_object(selection)
@@ -1800,7 +1643,7 @@ class LogicFloorSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_SWITCHPRESS")
+        button = builder_v2.add_part("U_SWITCHPRESS", builder_object=BUILDER)
         # Snap to selection.
         if selection:
             selection = BUILDER.get_builder_object_from_bpy_object(selection)
@@ -1820,7 +1663,7 @@ class LogicBeatSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("BYTEBEATSWITCH")
+        button = builder_v2.add_part("BYTEBEATSWITCH", builder_object=BUILDER)
         # Snap to selection.
         if selection:
             selection = BUILDER.get_builder_object_from_bpy_object(selection)
@@ -1862,122 +1705,286 @@ class SplitPreset(bpy.types.Operator):
         self.report({"INFO"}, f"Prefabs split: {len(names)}, parts: {total}")
         return {"FINISHED"}
     
+class GroupObjects(bpy.types.Operator):
+    """Group parts together into"""
 
+    bl_idname = "object.nms_group_objects"
+    bl_label = "Group Objects together"
+    bl_options = {'REGISTER', 'UNDO'}
 
-# Track  curve objects
-known_curves = set()
+    origin_type: bpy.props.EnumProperty(
+        name="Select Origin",
+        description="Choose how to group the objects",
+        items=[
+            ("median", "Median", "Use median of obejcts in viewport as origin of Group",  "PIVOT_MEDIAN", 0),
+            ("active", "Active Object", "Use active object in viewport as origin of Group", "CON_PIVOT", 1),
+            ("cursor", "3D Cursor", "Use 3D cursor in viewport as origin of Group",  "CURSOR", 2)
+            
+        ],
+        default='active',
+    )
+    
+    def invoke(self, context, event):
+        
+        selected_objects = context.selected_objects
+        if not selected_objects or len(selected_objects) < 2:
+            message = "Please select atleast two objects"
+            ShowMessageBox(
+                message,
+                title="Group Objects",
+                icon = "WARNING_LARGE"
+            )
+            return {"CANCELLED"}
+        
+        return context.window_manager.invoke_props_dialog(
+            self,
+            title="Group Objects",
+            confirm_text="Group"
+        )
+
+    def execute(self, context):
+        selected_objects = context.selected_objects
+        
+        # Grab the full matrix instead of just the location
+        if self.origin_type == "active" and context.active_object:
+            target_matrix = context.active_object.matrix_world.copy()
+        elif self.origin_type == "cursor" and context.scene.cursor:
+            target_matrix = context.scene.cursor.matrix.copy()
+        else :
+            target_matrix = None
+            
+        # Pass the matrix to our group function
+        if not selected_objects or len(selected_objects) < 2:
+            return {"CANCELLED"}
+        
+        merged_object = group.Group.group_objects(selected_objects, target_matrix)
+        if merged_object is not None:
+            self.report({'INFO'}, f"{len(selected_objects)} objects merged into {merged_object.name}")
+        
+        return {"FINISHED"}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text = "Select Origin of Merged Object", icon = "OUTLINER_OB_POINTCLOUD")
+        type_row = layout.row(align=True)
+        type_row.prop(self, "origin_type", expand = True)
+        layout.label(text="This point will act as transformations pivot point")
+    
+class UngroupObjects(bpy.types.Operator):
+    """Ungroup Parts"""
+
+    bl_idname = "object.nms_ungroup_objects"
+    bl_label = "Ungroup Objects"
+
+    def execute(self, context):
+        selected_objects = bpy.context.selected_objects
+        restored_obejcts_collection = []
+        for item in selected_objects:
+            if "GroupID" in item:
+                restored_obejcts = group.Group.ungroup_objects(BUILDER,item)
+                if restored_obejcts is not None:
+                    restored_obejcts_collection += restored_obejcts
+        if len(restored_obejcts_collection) > 0:
+            self.report({'INFO'}, f"ungrouped into {len(restored_obejcts_collection)} objects")
+            blend_utils.select(restored_obejcts_collection)
+        return {"FINISHED"}
+    
+class WorkspaceSettings(bpy.types.Operator):
+    """Some settings related to workspace"""
+
+    bl_idname = "object.nms_workspace_settings"
+    bl_label = "Workspace Settings"
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+    
+    def draw(self, context):
+        prefs = context.preferences.addons[ADDON_ID].preferences
+        layout = self.layout
+        column = layout.column(align = True)
+        column.label(text = "Part Count")
+        column.prop(prefs,"nms_check_show_part_count")
+        part_cout_pos_row = column.row(align = True)
+        part_cout_pos_row.enabled = prefs.nms_check_show_part_count
+        part_cout_pos_row.label(text = "Position :", icon = "BLANK1")
+        part_cout_pos_row.prop(prefs,"nms_part_count_position", expand = True)
+        
+        column.separator()
+        column.separator()
+        column.label(text = "Active_object properties")
+        column.prop(prefs,"nms_check_show_active_object_properties")
+        prop_row = column.row(align = True)
+        prop_row.enabled = prefs.nms_check_show_active_object_properties
+        prop_row.label(text = "Position :", icon = "BLANK1")
+        prop_row.prop(prefs,"nms_active_object_properties_position", expand = True)
+        
+        column.separator()
+    
+    def execute(self, context):
+        return {"FINISHED"}
+    
+    
+
+# Track objects
+known_curve_names = set()
+last_active = None
+first_update_skipped = False
 
 # To reset toggle button of save editor and initialize curve registry
 @persistent
 def reset_plugin_state(dummy):
+    _material.optimise_materials()
     
     # collect all curves when a blend file is reopened
-    global known_curves
-    known_curves = set( obj for obj in bpy.data.objects  if obj.type == 'CURVE' and obj.get("has_linked_objects", False) )
-    curve.update_curves(known_curves)
+    global known_curve_names
+    known_curves = set( obj for obj in bpy.context.scene.objects  if obj.type == 'CURVE' and obj.get("has_linked_objects", False) )
+    known_curve_names = set( obj.name for obj in known_curves )
+    # one scene pass shared by every curve, rather than one per curve
+    curve.update_curves(known_curves, children_by_curve=curve.get_curve_children_map())
+    
     
     # reset save editor's state to closed
     for scene in bpy.data.scenes:
         save_data = scene.nms_save_data
         save_data.check_plugin_enabled = False
-
-last_active = None
-# keep track of active object to display or hide additional options related to that object
-@persistent
-def active_object_watcher(scene, depsgraph):
-    global last_active
-
-    active = bpy.context.view_layer.objects.active
-    properties = scene.nms_properties
-    
-    # only continue when active object actually changes
-    if active != last_active:
-        last_active = active
-        properties.set_active_obect(active)
         
+        asset_browser = scene.nms_asset_browser
+        asset_browser.initialise_asset_browser()
+
             
 # Whenever a curve is modified, automatically update whatever child objects that are associated with that curve.
 @persistent
-def curve_udpate_handler(scene, depsgraph):
-    global known_curves
+def udpates_handler(scene, depsgraph):
     
-    # check each object in scene to detect if their parent curve has been deleted by user or not
-    # if not, we update object's base scale to keep track of transformation changes made by user
-    current_curves = set()
-    for obj in bpy.data.objects:
-        # if object type is a linked curve
-        if obj.type == 'CURVE' and obj.get("has_linked_objects", False):
-            current_curves.add(obj)
-        # if object type is a child of curve
-        elif "curve_parent" in obj:
-            parent_curve = bpy.data.objects.get(obj["curve_parent"])
-            # remove object if it's parent curve has been deleted
-            if parent_curve is None:
-                bpy.data.objects.remove(obj, do_unlink=True)
-            # Update base scale to persiste changes to scale made by user when curve mode is switched
-            elif not parent_curve.get("parent_selected", True):
-                obj["base_scale"] = curve.calculate_base_scale(parent_curve, obj)
+    global known_curve_names
+    global last_active
     
-    # Detect dead curves, cuerves that have been deleted by user through blender
-    dead_curves = known_curves - current_curves
-    if dead_curves:
-        known_curves.difference_update(dead_curves)
     
-    # identify new curves
-    new_curves_detected = []
-    
+    active_object = bpy.context.view_layer.objects.active
+
+    # keep track of active object to display or hide additional options related to that object
+    # only continue when active object actually changes
+    if active_object is not None and active_object != last_active:
+        properties = scene.nms_properties
+        properties.set_active_obect(active_object)
+        last_active = active_object
+
     # Collect curves that have recieved updates by user
-    updated_curves = set()
+    updated_curve_names = set()
     for update in depsgraph.updates:
         if isinstance(update.id, bpy.types.Object):
             # validate each object
             orig_obj = bpy.data.objects.get(update.id.name)
-            if orig_obj and orig_obj.type == 'CURVE' and orig_obj.get("has_linked_objects", False):
-                updated_curves.add(orig_obj)
-                if orig_obj not in known_curves and orig_obj not in new_curves_detected:
-                    # a completely new curve should not exist in know_curves set
-                    new_curves_detected.append(orig_obj)
+            # the object can already be gone by the time we look it up
+            if orig_obj is None:
+                continue
+            if orig_obj.type == 'CURVE' and curve.Curve.PROP_CURVE_ID in orig_obj:
+                updated_curve_names.add(orig_obj.name)
+            elif curve.Curve.PROP_CURVE_PARENT in orig_obj:
+                parent_curve_name = orig_obj[curve.Curve.PROP_CURVE_PARENT]
+                parent_curve = bpy.context.scene.objects.get(parent_curve_name,None)
+                if parent_curve is not None and not parent_curve.get(curve.Curve.PROP_PARENT_SELECTED,True):
+                    #store base scale of object 
+                    orig_obj[curve.Curve.PROP_BASE_SCALE] = curve.calculate_base_scale(parent_curve, orig_obj)
+    
+    # identify new curves
+    new_curve_names_detected = updated_curve_names - known_curve_names
                     
-    # Handle duplication syncing
-    if new_curves_detected and known_curves:
-        for new_curve in new_curves_detected:
-            # if two curves have equal "unique_id", that means they have been duplicated using shift+d
+    # Detect Shift+d duplication of curves and Handle syncing
+    if new_curve_names_detected and known_curve_names:
+        for new_curve_name in new_curve_names_detected:
+            # if two curves have equal Curve.PROP_CURVE_ID, that means they have been duplicated using shift+d
             # we need to duplicate objects in similar way on new curve too
             try:
-                new_uuid = new_curve.get("unique_id")
+                new_curve = bpy.context.scene.objects.get(new_curve_name,None)
+                if new_curve is None:
+                    continue
+                new_uuid = new_curve.get(curve.Curve.PROP_CURVE_ID)
                 # Look for curves that have same unique_id as new curve
                 # if a duplciate unique_id found, new curve must be duplicate of that curve
-                matching_curve = next((c for c in known_curves if c.get("unique_id") == new_uuid and c != new_curve), None)
-                if matching_curve is not None:
-                    curve.sync_curves(new_curve, matching_curve)
+                for curve_name in known_curve_names:
+                    matching_curve = bpy.context.scene.objects.get(curve_name,None)
+                    if matching_curve is not None and matching_curve.get(curve.Curve.PROP_CURVE_ID) == new_uuid and matching_curve.name != new_curve.name:
+                        curve.sync_curves(new_curve, matching_curve)
+                        break
             except ReferenceError as error:
                 print("Reference error :", error)
                 continue
     
-    # Loop through all curves and update their children's transformations
-    curve.update_curves(known_curves)
+    # Work out whether there is anything to rebuild at all.
+    #
+    # This used to rebuild the active curve on EVERY depsgraph update - moving
+    # the camera, changing a selection, editing an unrelated part - and each
+    # rebuild scans the whole scene looking for that curve's children. On a
+    # 5000 part base that is 3.3 ms of work per update against a 16 ms frame,
+    # which is what made big bases feel sticky. Now it only runs when the curve
+    # itself changed, or when the count/radius sliders moved.
+    properties = scene.nms_properties
+    sliders_moved = (
+        properties.active_curve_number_of_objects != properties.prev_curve_number_of_objects
+        or properties.active_curve_radius_multiplier != properties.prev_curve_radius_multiplier
+    )
+
+    curves_to_update = []
+    if last_active is not None:
+        if sliders_moved:
+            # the sliders apply to everything selected, so all of them rebuild
+            selected = getattr(bpy.context, "selected_objects", None) or []
+            curves_to_update = [
+                obj for obj in selected if curve.Curve.PROP_CURVE_ID in obj
+            ]
+        elif updated_curve_names:
+            # otherwise only the curves the depsgraph says actually moved
+            scene_objects = scene.objects
+            curves_to_update = [
+                obj for obj in (scene_objects.get(name) for name in updated_curve_names)
+                if obj is not None
+            ]
+
+        if (active_object is not None
+                and curve.Curve.PROP_CURVE_ID in active_object
+                and (sliders_moved or active_object.name in updated_curve_names)
+                and active_object not in curves_to_update):
+            curves_to_update.append(active_object)
+
+    if curves_to_update:
+        # one pass over the scene grouping every follower by the curve it is on,
+        # instead of one full scan per curve inside update_curve_children
+        curve.update_curves(
+            curves_to_update, children_by_curve=curve.get_curve_children_map()
+        )
+
+
+    
+    dead_curve_names = set()
+    # check for deleted curve in know curves
+    for curve_name in known_curve_names:
+        if bpy.context.scene.objects.get(curve_name,None) is None:
+            dead_curve_names.add(curve_name)
+    # delete dead curves
+    if dead_curve_names:
+        known_curve_names.difference_update(dead_curve_names)
+        # one batch rather than a remove() per orphan - each of those re-syncs the
+        # whole scene, which is ~4 ms a piece once a base gets big
+        orphans = [
+            obj for obj in curve.get_follower_objects()
+            if obj.get(curve.Curve.PROP_CURVE_PARENT) in dead_curve_names
+        ]
+        if orphans:
+            bpy.data.batch_remove(orphans)
         
     # Sync back down to the global tracking set 
-    known_curves = current_curves
-            
-
-class NMSAddonPreferences(bpy.types.AddonPreferences):
-    bl_idname = ADDON_ID
-
-    nms_save_folder_path: StringProperty(
-        name="Save Directory",
-        description="Folder where save files are stored",
-        subtype='DIR_PATH',
-        default = str(save_editor_utils.get_default_save_folder())
-    )
-    
+    known_curve_names |= updated_curve_names  
+                
 
 preview_collections = {}
 
 # Plugin Registration ---
 
 classes = (
-    NMSSettings,
+    NMSMain,
+    NMSBaseProperties,
+    
     Point,
     Connect,
     Divide,
@@ -2018,26 +2025,34 @@ classes = (
     BuildTool,
     Properties,
     BatchTool,
-    
+    WorkspaceSettings,
+    NMSCategoryOrderItem,
+    AssetBrowser,
+
     NMS_UL_actions_list,
     NMS_PT_hero_panel,
     NMS_PT_file_buttons_panel,
+    NMS_PT_station_transfer_reference,
     NMS_PT_save_editor_panel,
-    NMS_PT_base_prop_panel,
+    NMS_PT_transformation_panel,
     NMS_PT_colour_panel,
     NMS_PT_logic_panel,
     NMS_PT_tools_panel,
     NMS_PT_batch_tools_panel,
     NMS_PT_build_panel,
     NMS_PT_nms_legacy_asset_browser,
-    
     NMSAddonPreferences,
     
     SwitchWorkspace,
-    SplitPreset
+    SplitPreset,
+    
+    GroupObjects,
+    UngroupObjects
 )
 
-classes = classes  + save_editor_operators.classes + build_tool_operators.classes + batch_tool_operators.classes
+classes = classes + asset_browser_presentation.classes + base_builder_menu.classes 
+
+classes = classes  + save_editor_operators.classes + station_reference.classes + build_tool_operators.classes + batch_tool_operators.classes + prooperties_operators.classes + asset_browser_operators.classes + base_builder_menu_operators.classes
 
 
 
@@ -2063,33 +2078,32 @@ def register():
         )
         
     preview_collections["main"] = pcoll
-    
     icons.register_icons()
     
-    
-
     # Register Plugin
     for _class in classes:
         bpy.utils.register_class(_class)
-    bpy.types.Scene.nms_base_tool = PointerProperty(type=NMSSettings)
+    bpy.types.Scene.nms_main = PointerProperty(type=NMSMain)
+    bpy.types.Scene.nms_base_tool = PointerProperty(type = NMSBaseProperties)
     bpy.types.Scene.col = bpy.props.CollectionProperty(type=PartCollection)
     bpy.types.Scene.col_idx = bpy.props.IntProperty(default=0)
     bpy.types.Scene.nms_save_data = bpy.props.PointerProperty(type=SaveManager)
     bpy.types.Scene.nms_build_tool = bpy.props.PointerProperty(type=BuildTool)
     bpy.types.Scene.nms_properties = bpy.props.PointerProperty(type=Properties)
     bpy.types.Scene.nms_batch_tool = bpy.props.PointerProperty(type=BatchTool)
+    bpy.types.Scene.nms_asset_browser = bpy.props.PointerProperty(type=AssetBrowser)
+
+    # Puts the "Base Builder" menu in the 3D viewport header. The menu classes
+    # themselves are registered with everything else, above.
+    base_builder_menu.register_menu()
     
     if reset_plugin_state not in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.append(reset_plugin_state)
     
-    if active_object_watcher not in bpy.app.handlers.depsgraph_update_post:
-        bpy.app.handlers.depsgraph_update_post.append(active_object_watcher)
+    if udpates_handler not in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.append(udpates_handler)
     
-    if curve_udpate_handler not in bpy.app.handlers.depsgraph_update_post:
-        bpy.app.handlers.depsgraph_update_post.append(curve_udpate_handler)
-        
-        
-    
+    bpy.app.timers.register(viewport_overlay.register_draw, first_interval=0.01)
 
 def unregister():
     for pcoll in preview_collections.values():
@@ -2097,25 +2111,32 @@ def unregister():
     preview_collections.clear()
     icons.unregister_icons()
 
+    # Blender's own toolbar was patched by the workspace cleanup, so hand it
+    # back before we go.
+    workspace.restore_viewport_tools()
+
+    # Taken out of the header before its classes go, so nothing is left drawing
+    # a menu that no longer exists.
+    base_builder_menu.unregister_menu()
+
     for _class in reversed(classes):
         bpy.utils.unregister_class(_class)
         
+    del bpy.types.Scene.nms_main
     del bpy.types.Scene.nms_base_tool
     del bpy.types.Scene.nms_save_data
     del bpy.types.Scene.nms_build_tool
     del bpy.types.Scene.nms_properties
     del bpy.types.Scene.nms_batch_tool
+    del bpy.types.Scene.nms_asset_browser
     
     if reset_plugin_state in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(reset_plugin_state)
+        
+    if udpates_handler in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.remove(udpates_handler)
     
-    if active_object_watcher in bpy.app.handlers.depsgraph_update_post:
-        bpy.app.handlers.depsgraph_update_post.remove(active_object_watcher)
-        
-    if curve_udpate_handler in bpy.app.handlers.depsgraph_update_post:
-        bpy.app.handlers.depsgraph_update_post.remove(curve_udpate_handler)
-        
-        
+    viewport_overlay.unregister_draw()
 
 
 if __name__ == "__main__":

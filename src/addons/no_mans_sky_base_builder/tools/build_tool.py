@@ -2,21 +2,18 @@ from ..utils import mirror_utils
 import bpy
 import os
 import uuid
-from ..utils import blend_utils, curve
-from ..utils import python as python_utils
-from .. import builder, part
+import json
+from ..utils import blend_utils, curve, dictionary, material
+from .. import builder, builder_v2, part, group
 from ..utils.mirror_utils import ShowMessageBox
 
-FILE_PATH = os.path.dirname(os.path.realpath(__file__))
-NICE_JSON = os.path.join(FILE_PATH,"..","resources","nice_names.json")
+from ..group import Group
+from ..utils.curve import Curve
 
-GHOSTED_JSON = os.path.join(FILE_PATH,"..", "resources", "ghosted.json")
-ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
-GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
-nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
+from mathutils import Vector,Matrix
+
+nice_name_dictionary = dictionary.get_nice_names_diictionary()
 BUILDER = builder.Builder()
-
-from mathutils import Vector
 
 class BuildTool(bpy.types.PropertyGroup):
     
@@ -62,8 +59,7 @@ class BuildTool(bpy.types.PropertyGroup):
         description = "Select center of reflection, a point arround which mirroring will take place",
         items = [
             ("World Origin", "World Origin", "World origin will always be 0,0,0","OBJECT_ORIGIN",0),
-            ("3D cursor", "3D cursor", "3d curson can be changed at any time with shift + right click","CURSOR",1),
-            ("Object", "Object", "An object's origin will be take in to account for center of reflection","CON_PIVOT",2),
+            ("3D cursor", "3D cursor", "3d curson can be changed at any time with shift + right click","CURSOR",1)
         ],
         options={'SKIP_SAVE'},
         default = 'World Origin'
@@ -79,18 +75,30 @@ class BuildTool(bpy.types.PropertyGroup):
     )
     
     
-    def mirror(self, axis = None, center = None, change_orientation = False, auto_duplicate = False):
+    def mirror(self, axis = None, center = None, change_orientation = False, auto_duplicate = False, objects_to_mirror = None):
         """Mirror the object acording to parameters provided"""
-        # Store selection.
-        selected_objects = bpy.context.selected_objects
-
-        # Validate
+        # Store selection and validate.
+        selected_objects = bpy.context.selected_objects if objects_to_mirror is None else objects_to_mirror
         if not selected_objects:
             ShowMessageBox(
                 message="Make sure you have an item selected.", 
                 title="Mirror"
             )
             return
+        
+        hierarchy_data = {}
+        if objects_to_mirror is None and not auto_duplicate:
+            for obj in selected_objects:
+                if obj is not None and curve.Curve.PROP_CURVE_PARENT in obj:
+                    continue
+                
+                if obj.parent:
+                    hierarchy_data[obj.name] = obj.parent.name
+                    current_world_matrix = obj.matrix_world.copy()
+                    obj.parent = None
+                    obj.matrix_world = current_world_matrix
+        
+        existing_groups = Group.get_all_groups() if objects_to_mirror is None else []
 
         # Get Selected item.
         new_items = []
@@ -105,16 +113,25 @@ class BuildTool(bpy.types.PropertyGroup):
                 else :
                     new_item = target
                 
-                # Build Item.
+                # If mirror part exist for an object, like for a corvette part,
                 mirror_part_exist =  mirror_id in nice_name_dictionary.keys()
                 if mirror_part_exist:
+                    # mirror_part owns the mesh policy now - it either points the
+                    # object at the twin's own library mesh, which is meant to be
+                    # shared, or flips a private copy. Copying again here would
+                    # give every mirrored part its own duplicate of the library.
                     new_item = BUILDER.mirror_part(target)
-
+                     
                 if not change_orientation:
-                    mirrored_matrix_world = mirror_utils.mirror_matrix_world_universal(object_id, new_item.matrix_world, axis,center)
+                    mirrored_matrix_world = mirror_utils.mirror_matrix_world_universal(
+                        object_id, 
+                        new_item.matrix_world.copy(), 
+                        axis,center, 
+                        mirror_part_exist = mirror_part_exist
+                    )
                     new_item.matrix_world = mirrored_matrix_world
                 else :
-                    mirrored_matrix_world = mirror_utils.change_orientation(object_id,new_item.matrix_world, axis, mirror_part_exist)
+                    mirrored_matrix_world = mirror_utils.change_orientation(object_id,new_item.matrix_world.copy(), axis, mirror_part_exist)
                     new_item.matrix_world = mirrored_matrix_world
                         
                 if hasattr(new_item, "object"):
@@ -128,12 +145,85 @@ class BuildTool(bpy.types.PropertyGroup):
                     continue
                 
                 should_auto_duplicate = auto_duplicate and not change_orientation
-                new_curve_obj = curve.mirror_curve(target, axis, center, should_auto_duplicate)
+                new_curve_obj = curve.mirror_curve( self, target, axis, center, should_auto_duplicate)
                 if new_curve_obj is not None:
                     new_items.append(new_curve_obj)
+            
+            # mirror if object is a nms group
+            elif Group.PROP_GROUP_ID in target and objects_to_mirror is None: 
+                is_target_mirror = target.get(Group.PROP_IS_MIRROR, False)   
+                found_match = Group.find_mirror_group(target, existing_groups)
+                if found_match is None:
+                    # if there is no mirror present for target object 
+                    # create a mirror by ungrouping -> mirroring ungrouped objects -> grouping them again
+                    new_obj = blend_utils.duplicate_part(target) if auto_duplicate else target
+                    old_group_id = new_obj[Group.PROP_GROUP_ID]
+                    
+                    group_matrix_world = new_obj.matrix_world.copy()
+                    group_matrix_world = mirror_utils.mirror_matrix_world_universal(None, group_matrix_world, axis,center)
+                    
+                    # split group into objects
+                    ungrouped_objects = Group.ungroup_objects(BUILDER,new_obj)
+                    
+                    # mirror all objects normally
+                    if ungrouped_objects:
+                        ungrouped_objects = self.mirror( axis, center, objects_to_mirror = ungrouped_objects)
+                    
+                    # regroup objects into a group
+                    mirrored_group = Group.group_objects(ungrouped_objects, group_matrix_world)
+                    # restore GroupID
+                    mirrored_group[Group.PROP_GROUP_ID] = old_group_id
+                    # flip boolean that describes which side of mirror group belongs
+                    mirrored_group[Group.PROP_IS_MIRROR] = not is_target_mirror
+                else:
+                    # un-grouping and re-grouping is an expeisive task, it can be optimised by reusing existing mirrors
+                    # if a mirroed group already exist, use it's mesh and data to mirror target
+                    
+                    # duplicate existing mirror group
+                    mirrored_group = blend_utils.duplicate_part(found_match)
+                    
+                    # assign that duplicate a mirrored matrix world of target
+                    old_matrix_world = target.matrix_world.copy()
+                    new_matrix_world = mirror_utils.mirror_matrix_world_universal(None, old_matrix_world, axis,center)
+                    mirrored_group.matrix_world = new_matrix_world
+                    
+                    # delete target if auto duplicate is not checked
+                    if not auto_duplicate:
+                        group_name = target.name
+                        bpy.data.objects.remove(target, do_unlink=True)
+                        mirrored_group.name = group_name
+                        
+                # append newly generated morrors to existing_groups list for optimised search operations
+                existing_groups.append(mirrored_group)
+                new_items.append(mirrored_group)
                 
-        blend_utils.select(new_items)
-        return {"FINISHED"}
+            else:
+                if target is not None:
+                    if auto_duplicate:
+                        new_item = blend_utils.duplicate_part(target)
+                    else:
+                        new_item = target
+                    new_item.matrix_world = mirror_utils.mirror_matrix_world_universal(None, new_item.matrix_world, axis,center)
+                    new_items.append(new_item)
+        
+        if hierarchy_data:
+            for obj_name, parent_name in hierarchy_data.items():
+                if parent_name:
+                    parent = bpy.context.scene.objects.get(parent_name,None)
+                    obj = bpy.context.scene.objects.get(obj_name,None)
+                    # Re-parenting inherently alters the transform, so we force the 
+                    # mirrored matrix_world back onto the object after reparenting
+                    if parent and obj:
+                        obj.parent = parent
+                        obj.matrix_world = obj.matrix_world.copy()
+        
+        #material.optimise_materials()
+        
+        # filter out deleted objects
+        new_items = [obj for obj in new_items if obj is not None]
+        if new_items:
+            blend_utils.select(new_items)
+        return new_items
     
     # called my Perform Mirror button in advanced mirroring options
     def advanced_mirror(self):
@@ -228,7 +318,7 @@ class BuildTool(bpy.types.PropertyGroup):
             curve_object = new_curve_object
         
         else :
-            curve_object["unique_id"] = str(uuid.uuid4())
+            curve_object[Curve.PROP_CURVE_ID] = str(uuid.uuid4())
             curve_object["parent_selected"] = True
             curve_object.show_in_front = True
             self.selected_curve_object_is_parent = True
@@ -259,15 +349,22 @@ class BuildTool(bpy.types.PropertyGroup):
                 message="Select an item to delete from the scene.", title="Delete"
             )
             return
-
+        deleted_count = 0
         for item in selected_objects:
-            blend_utils.delete(item)
+            if item:
+                if "CurveID" in item:
+                    curve.delete_curve_and_children(item)
+                else:
+                    blend_utils.delete(item)
+                deleted_count += 1
+                
+        return deleted_count
 
     def duplicate(self):
         """Snaps one object to another based on selection."""
         # Store selection.
         selected_objects = bpy.context.selected_objects
-
+        
         # Validate
         if not selected_objects:
             ShowMessageBox(
@@ -276,35 +373,48 @@ class BuildTool(bpy.types.PropertyGroup):
             return
 
         # Get Selected item.
-        target = blend_utils.get_current_selection()
+        #target = blend_utils.get_current_selection()
+        duplicates = []
+        for target in selected_objects:
+            
+            if "ObjectID" not in target and "PresetID" not in target and "CurveID" not in target:
+                message = (
+                    "This item can not be duplicated via the No Man's Sky tool. "
+                    "Try using Blender hotkey instead (Shift-D)."
+                )
+                ShowMessageBox(message=message, title="Duplicate")
+                return
+            if "CurveID" in target:
+                new_item = curve.duplicate_curve(target)
+                duplicates.append(new_item)
+            else:
+                # Part
+                if "ObjectID" in target:
+                    object_id = target["ObjectID"]
+                    user_data = target["UserData"]
+                    # Build Item.
+                    new_item = builder_v2.add_part(
+                        object_id, user_data=user_data, builder_object=BUILDER
+                    )
+                    duplicates.append(new_item)
+                elif "PresetID" in target:
+                    preset_id = target["PresetID"]
+                    # Build Item.
+                    new_item = BUILDER.add_preset(preset_id)
+                    duplicates.append(new_item)
+                else:
+                    new_item = None
 
-        if "ObjectID" not in target and "PresetID" not in target:
-            message = (
-                "This item can not be duplicated via the No Man's Sky tool. "
-                "Try using Blender hotkey instead (Shift-D)."
-            )
-            ShowMessageBox(message=message, title="Duplicate")
-            return
-
-        # Part
-        if "ObjectID" in target:
-            object_id = target["ObjectID"]
-            user_data = target["UserData"]
-            # Build Item.
-            new_item = BUILDER.add_part(object_id, user_data=user_data)
-            new_item.select()
-        if "PresetID" in target:
-            preset_id = target["PresetID"]
-            # Build Item.
-            new_item = BUILDER.add_preset(preset_id)
-            new_item.select()
-
-        # Build Rig if need to.
-        if hasattr(new_item, "build_rig"):
-            new_item.build_rig()
-        # Snap.
-        target = BUILDER.get_builder_object_from_bpy_object(target)
-        new_item.snap_to(target)
+                if new_item is not None:
+                    # Build Rig if need to.
+                    if hasattr(new_item, "build_rig"):
+                        new_item.build_rig()
+                    # Snap.
+                    target = BUILDER.get_builder_object_from_bpy_object(target)
+                    new_item.snap_to(target)
+                    
+        return duplicates
+        
         
     def snap(
         self, next_source=False, prev_source=False, next_target=False, prev_target=False
@@ -353,3 +463,16 @@ class BuildTool(bpy.types.PropertyGroup):
                 next_target=next_target,
                 prev_target=prev_target,
             )
+        
+    def get_part_count(self):
+        parts_count = 0
+        # Iterate through all objects and count parts
+        for obj in bpy.context.scene.objects:
+            # count 1 if object has perperty "ObjectID"
+            if "ObjectID" in obj:
+                parts_count += 1
+                
+            # size of a group is stored in its "part_count" property
+            if "GroupID" in obj:
+                parts_count += obj.get("part_count", 0)
+        return parts_count
