@@ -8,29 +8,15 @@ into its popover, so the sidebar and the dropdown cannot drift apart.
 import bpy
 from bpy.types import Panel
 
-from .. import icons
+from .. import addon_preferences, icons
 from .save_editor_utils import BaseType
 from .save_manager import SaveManager
-
-ADDON_ID = __package__.rsplit(".", 1)[0]
 
 
 def get_save_data(context):
     """The save editor's property group, or None if it is not registered yet."""
     return getattr(context.scene, "nms_save_data", None)
 
-
-def get_save_folder_path(context):
-    """The configured save folder, or None if the preferences are unavailable.
-
-    A draw can run before the addon's preferences exist - during registration,
-    or after a disable while the header is still on screen - so this never
-    assumes the lookup succeeds.
-    """
-    addon = context.preferences.addons.get(ADDON_ID)
-    if addon is None:
-        return None
-    return addon.preferences.nms_save_folder_path
 
 def draw_pinned_base(container, save_data, base_props):
     """Draw the pinned base UI section if a base is pinned."""
@@ -74,7 +60,7 @@ def draw_pinned_base(container, save_data, base_props):
     
 def draw_base_picker(container, save_data):
     
-    save_folder_path = get_save_folder_path(bpy.context)
+    save_folder_path = addon_preferences.get_save_folder_path()
     
     # Make a separate section to display elements related to selecting bases.
     save_folder_box = container
@@ -201,7 +187,7 @@ def draw_save_manager(layout, context):
     """
     save_data = get_save_data(context)
     base_props = getattr(context.scene, "nms_base_tool", None)
-    save_folder_path = get_save_folder_path(context)
+    save_folder_path = addon_preferences.get_save_folder_path()
 
     if save_data is None or base_props is None or save_folder_path is None:
         layout.label(text="Save Manager unavailable", icon="ERROR")

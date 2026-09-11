@@ -128,6 +128,11 @@ def set_material(item, material):
     # Don't bother if we can't even apply material to object.
     if not hasattr(item.data, "materials"):
         return
+
+    # colour lives on the mesh, so a shared mesh would recolour every part using it
+    if item.data.users > 1 and "curve_parent" not in item:
+        item.data = item.data.copy()
+
     # Assign Material
     if not item.data.materials:
         # Add the material to the object
@@ -285,4 +290,41 @@ def assign_material(item, colour_index=0, material_index=0):
 
     set_material(item, material)
     return material
+
+
+# parts with the same ObjectID and UserData share one mesh
+# override classes and curve followers are left alone, they manage their own meshes
+# returns (parts relinked, meshes removed)
+def optimise_materials():
+    from ..builder import overrides
+
+    shared_meshes = {}
+    replaced_meshes = set()
+    relinked = 0
+
+    for obj in bpy.data.objects:
+        if obj.type != "MESH" or "ObjectID" not in obj or "curve_parent" in obj:
+            continue
+        if overrides.get_override_class(obj["ObjectID"]) is not None:
+            continue
+
+        mesh = obj.data
+        # a shape key or an open edit session would be lost by swapping the mesh
+        if mesh.shape_keys or mesh.is_editmode:
+            continue
+
+        # the first part's mesh is reused, nothing is copied
+        key = (obj["ObjectID"], str(obj.get("UserData", 0)))
+        shared_mesh = shared_meshes.setdefault(key, mesh)
+        if shared_mesh != mesh:
+            obj.data = shared_mesh
+            replaced_meshes.add(mesh)
+            relinked += 1
+
+    # one batch, a remove() per mesh re-syncs the whole file each time
+    unused_meshes = [mesh for mesh in replaced_meshes if mesh.users == 0]
+    if unused_meshes:
+        bpy.data.batch_remove(unused_meshes)
+
+    return relinked, len(unused_meshes)
 

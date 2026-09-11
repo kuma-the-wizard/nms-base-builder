@@ -19,6 +19,8 @@ from numpy import isin
 from . import icons, part, preset
 from .builder import get_builder
 from .group import Group
+from . import addon_preferences
+from .addon_preferences import NMSAddonPreferences
 from .utils.blend_utils import ShowMessageBox
 from .part_overrides import line
 from .save_editor import save_editor_operators, save_editor_utils
@@ -47,7 +49,6 @@ GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
 NICE_JSON = os.path.join(FILE_PATH, "resources", "nice_names.json")
 nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
 
-ADDON_ID = __package__
 
 
 # Setting Support Methods ---
@@ -641,6 +642,9 @@ class NMSSettings(PropertyGroup):
             else :
                 _material.assign_material(obj, int(colour_index), int(maeterial_index))
 
+        # recolouring gives parts their own mesh, parts now the same colour share one again
+        _material.optimise_materials()
+
         # Refresh the viewport.
         bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
 
@@ -673,6 +677,9 @@ class NMSSettings(PropertyGroup):
                     elif parent_folder == "stone_structures":
                         index = 23
             _material.assign_default_material(obj, index=index)
+
+        # recolouring gives parts their own mesh, parts now the same colour share one again
+        _material.optimise_materials()
 
         # Refresh the viewport.
         bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
@@ -1980,6 +1987,11 @@ def reset_plugin_state(dummy):
         save_data = scene.nms_save_data
         save_data.check_plugin_enabled = False
 
+    # identical parts share one mesh, which keeps big bases light in memory and on disk
+    relinked, removed = _material.optimise_materials()
+    if relinked:
+        print(f"NMS: {relinked} parts now share meshes, {removed} duplicate meshes removed")
+
     # the toolbar trim isn't saved in the file, so apply it again for a simplified workspace
     if bpy.context.scene.nms_base_tool.is_workspace_cleaned:
         workspace.hide_viewport_tools()
@@ -2069,17 +2081,6 @@ def curve_udpate_handler(scene, depsgraph):
 
     known_curve_names |= updated_curve_names
             
-
-class NMSAddonPreferences(bpy.types.AddonPreferences):
-    bl_idname = ADDON_ID
-
-    nms_save_folder_path: StringProperty(
-        name="Save Directory",
-        description="Folder where save files are stored",
-        subtype='DIR_PATH',
-        default = str(save_editor_utils.get_default_save_folder())
-    )
-    
 
 preview_collections = {}
 
@@ -2198,11 +2199,14 @@ def register():
     
     if curve_udpate_handler not in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.append(curve_udpate_handler)
-        
-        
-    
+
+    addon_preferences.apply_duplicate_mesh_setting()
+
 
 def unregister():
+    # put blender's Duplicate Data > Mesh back the way it was
+    addon_preferences.restore_duplicate_mesh_setting()
+
     for pcoll in preview_collections.values():
         bpy.utils.previews.remove(pcoll)
     preview_collections.clear()

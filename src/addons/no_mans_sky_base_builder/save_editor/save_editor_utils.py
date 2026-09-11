@@ -11,10 +11,10 @@ from datetime import datetime
 
 from . import save_translation
 from .save_translation import SaveTranslation
+from .. import addon_preferences
 from ..utils.blend_utils import ShowMessageBox
 
 system = platform.system()
-ADDON_ID = __package__.rsplit(".", 1)[0]
 
 class BaseType:
     CORVETTE = "PlayerShipBase"
@@ -114,9 +114,10 @@ def get_hg_files_in_folder(folder):
 
 #Returns all account folders
 def get_accounts_list(context):
-    prefs = context.preferences.addons[ADDON_ID].preferences
-    save_folder_path = prefs.nms_save_folder_path
-    
+    save_folder_path = addon_preferences.get_save_folder_path()
+    if not save_folder_path or not os.path.isdir(save_folder_path):
+        return []
+
     steam_names = get_steam_names()
     accounts_list = []
     root_dir = Path(save_folder_path)
