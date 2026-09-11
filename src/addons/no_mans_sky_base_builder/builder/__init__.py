@@ -1,13 +1,18 @@
 """Access to the builder shared by the whole addon.
 
-Other addons can swap the builder or add part classes from their register():
+Other addons can swap the builder, add part classes or supply their own
+materials from their register():
 
     nms_builder.set_builder(MyBuilder())             # MyBuilder subclasses Builder
     nms_builder.register_override(MyPart, ["CUBEROOM"])
+    nms_builder.set_material_provider(MyMaterials()) # MyMaterials subclasses MaterialProvider
 
-and undo both from unregister() with set_builder(None) and unregister_override().
+and undo them from unregister() with set_builder(None), unregister_override()
+and set_material_provider(None).
 """
 
+from ..utils.material_provider import (MaterialProvider, get_material_provider,
+                                       set_material_provider)
 from .builder import Builder
 from .overrides import register_override, unregister_override
 
@@ -17,6 +22,9 @@ __all__ = [
     "set_builder",
     "register_override",
     "unregister_override",
+    "MaterialProvider",
+    "get_material_provider",
+    "set_material_provider",
 ]
 
 _default_builder = None
