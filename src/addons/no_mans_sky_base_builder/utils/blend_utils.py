@@ -8,6 +8,19 @@ import bpy
 from ..utils import blend_utils
 
 
+def ShowMessageBox(message="", title="Message Box", icon="INFO"):
+    """Show a message in a popup, or print it when there is no window."""
+    # popups crash blender when there is no window, e.g. in background mode
+    if bpy.app.background or bpy.context.window_manager is None or not bpy.context.window_manager.windows:
+        print(f"{title}: {message}")
+        return
+
+    def draw(self, context):
+        self.layout.label(text=message)
+
+    bpy.context.window_manager.popup_menu(draw, title=title, icon=icon)
+
+
 def load_plugin(plugin_name):
     """Load a blender plugin."""
     is_enabled, _ = addon_utils.check(plugin_name)

@@ -1,6 +1,6 @@
 import bpy
 from ..utils import blend_utils, curve
-from ..utils.mirror_utils import ShowMessageBox
+from ..utils.blend_utils import ShowMessageBox
 
 from mathutils import Vector
 

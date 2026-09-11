@@ -25,12 +25,6 @@ POSITION_OFFSETS = {
 }
 
 
-def ShowMessageBox(message="", title="Message Box", icon="INFO"):
-    def draw(self, context):
-        self.layout.label(text=message)
-    bpy.context.window_manager.popup_menu(draw, title=title, icon=icon)
-
-
 #This function mirrors matrix world across x axis
 def mirror_matrix_world(object_id, old_matrix_world, across_x=True):
 

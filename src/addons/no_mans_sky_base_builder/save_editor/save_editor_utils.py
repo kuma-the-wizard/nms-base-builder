@@ -11,6 +11,7 @@ from datetime import datetime
 
 from . import save_translation
 from .save_translation import SaveTranslation
+from ..utils.blend_utils import ShowMessageBox
 
 system = platform.system()
 ADDON_ID = __package__.rsplit(".", 1)[0]
@@ -57,14 +58,8 @@ class BaseData:
         self.galactic_address = str(base[SaveTranslation.galactic_address])
         self.base_type = in_base_type
         self.parts_count = parts_count
-        
-        
-# called to display messages/notificatoin
-def ShowMessageBox(message="", title="Message Box", icon="INFO"):
-    def draw(self, context):
-        self.layout.label(text=message)
-    bpy.context.window_manager.popup_menu(draw, title=title, icon=icon)
-    
+
+
 # return save folder path for different OS versions
 def get_default_save_folder():
     if system == "Windows":

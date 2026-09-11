@@ -5,7 +5,7 @@ import uuid
 from ..utils import blend_utils, curve
 from ..utils import python as python_utils
 from .. import part
-from ..utils.mirror_utils import ShowMessageBox
+from ..utils.blend_utils import ShowMessageBox
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 NICE_JSON = os.path.join(FILE_PATH,"..","resources","nice_names.json")

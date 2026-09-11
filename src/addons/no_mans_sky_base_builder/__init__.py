@@ -19,6 +19,7 @@ from numpy import isin
 from . import icons, part, preset
 from .builder import get_builder
 from .group import Group
+from .utils.blend_utils import ShowMessageBox
 from .part_overrides import line
 from .save_editor import save_editor_operators, save_editor_utils
 from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel
@@ -50,13 +51,6 @@ ADDON_ID = __package__
 
 
 # Setting Support Methods ---
-def ShowMessageBox(message="", title="Message Box", icon="INFO"):
-    def draw(self, context):
-        self.layout.label(text=message)
-
-    bpy.context.window_manager.popup_menu(draw, title=title, icon=icon)
-
-
 def part_switch(self, context):
     """Toggle method for switching between parts and presets."""
     scene = context.scene
