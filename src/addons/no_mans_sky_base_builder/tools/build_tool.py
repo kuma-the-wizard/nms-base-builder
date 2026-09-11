@@ -228,7 +228,7 @@ class BuildTool(bpy.types.PropertyGroup):
             curve_object = new_curve_object
         
         else :
-            curve_object["unique_id"] = str(uuid.uuid4())
+            curve_object[curve.Curve.PROP_CURVE_ID] = str(uuid.uuid4())
             curve_object["parent_selected"] = True
             curve_object.show_in_front = True
             self.selected_curve_object_is_parent = True
@@ -261,7 +261,10 @@ class BuildTool(bpy.types.PropertyGroup):
             return
 
         for item in selected_objects:
-            blend_utils.delete(item)
+            if curve.Curve.PROP_CURVE_ID in item:
+                curve.delete_curve_and_children(item)
+            else:
+                blend_utils.delete(item)
 
     def duplicate(self):
         """Snaps one object to another based on selection."""
@@ -277,6 +280,10 @@ class BuildTool(bpy.types.PropertyGroup):
 
         # Get Selected item.
         target = blend_utils.get_current_selection()
+
+        if curve.Curve.PROP_CURVE_ID in target:
+            blend_utils.select(curve.duplicate_curve(target))
+            return
 
         if "ObjectID" not in target and "PresetID" not in target:
             message = (

@@ -555,7 +555,8 @@ class NMSSettings(PropertyGroup):
             preset_check = "PresetID" in bpy_object
             light_check = "NMS_LIGHT" in bpy_object
             rig_check = "rig_item" in bpy_object
-            if any([id_check, preset_check, light_check, rig_check]):
+            curve_check = curve.Curve.PROP_CURVE_ID in bpy_object
+            if any([id_check, preset_check, light_check, rig_check, curve_check]):
                 blend_utils.remove_object(bpy_object.name)
 
         # Reset room vis
@@ -1864,17 +1865,29 @@ class SplitPreset(bpy.types.Operator):
     
 
 
-# Track  curve objects
-known_curves = set()
+# Track curve objects by name, object references die with undo
+known_curve_names = set()
 
 # To reset toggle button of save editor and initialize curve registry
 @persistent
 def reset_plugin_state(dummy):
-    
+
     # collect all curves when a blend file is reopened
-    global known_curves
-    known_curves = set( obj for obj in bpy.data.objects  if obj.type == 'CURVE' and obj.get("has_linked_objects", False) )
-    curve.update_curves(known_curves)
+    global known_curve_names
+    known_curves = [
+        obj for obj in bpy.context.scene.objects
+        if obj.type == 'CURVE' and obj.get("has_linked_objects", False)
+    ]
+    for curve_obj in known_curves:
+        curve.migrate_legacy_curve(curve_obj)
+    known_curve_names = set(obj.name for obj in known_curves)
+
+    # followers are saved in place, so nothing is rebuilt on load, and the saved
+    # slider difference must never be applied to every curve in the file
+    for scene in bpy.data.scenes:
+        properties = scene.nms_properties
+        properties.prev_curve_number_of_objects = properties.active_curve_number_of_objects
+        properties.prev_curve_radius_multiplier = properties.active_curve_radius_multiplier
     
     # reset save editor's state to closed
     for scene in bpy.data.scenes:
@@ -1899,66 +1912,70 @@ def active_object_watcher(scene, depsgraph):
 # Whenever a curve is modified, automatically update whatever child objects that are associated with that curve.
 @persistent
 def curve_udpate_handler(scene, depsgraph):
-    global known_curves
-    
-    # check each object in scene to detect if their parent curve has been deleted by user or not
-    # if not, we update object's base scale to keep track of transformation changes made by user
-    current_curves = set()
-    for obj in bpy.data.objects:
-        # if object type is a linked curve
-        if obj.type == 'CURVE' and obj.get("has_linked_objects", False):
-            current_curves.add(obj)
-        # if object type is a child of curve
-        elif "curve_parent" in obj:
-            parent_curve = bpy.data.objects.get(obj["curve_parent"])
-            # remove object if it's parent curve has been deleted
-            if parent_curve is None:
-                bpy.data.objects.remove(obj, do_unlink=True)
-            # Update base scale to persiste changes to scale made by user when curve mode is switched
-            elif not parent_curve.get("parent_selected", True):
-                obj["base_scale"] = curve.calculate_base_scale(parent_curve, obj)
-    
-    # Detect dead curves, cuerves that have been deleted by user through blender
-    dead_curves = known_curves - current_curves
-    if dead_curves:
-        known_curves.difference_update(dead_curves)
-    
-    # identify new curves
-    new_curves_detected = []
-    
+    global known_curve_names
+    Curve = curve.Curve
+
+    # fired from inside a curve rebuild, the rebuild isn't finished yet
+    if curve.is_busy():
+        return
+
     # Collect curves that have recieved updates by user
-    updated_curves = set()
+    updated_curve_names = set()
     for update in depsgraph.updates:
-        if isinstance(update.id, bpy.types.Object):
-            # validate each object
-            orig_obj = bpy.data.objects.get(update.id.name)
-            if orig_obj and orig_obj.type == 'CURVE' and orig_obj.get("has_linked_objects", False):
-                updated_curves.add(orig_obj)
-                if orig_obj not in known_curves and orig_obj not in new_curves_detected:
-                    # a completely new curve should not exist in know_curves set
-                    new_curves_detected.append(orig_obj)
-                    
-    # Handle duplication syncing
-    if new_curves_detected and known_curves:
-        for new_curve in new_curves_detected:
-            # if two curves have equal "unique_id", that means they have been duplicated using shift+d
-            # we need to duplicate objects in similar way on new curve too
+        if not isinstance(update.id, bpy.types.Object):
+            continue
+        # the object can already be gone by the time we look it up
+        orig_obj = bpy.data.objects.get(update.id.name)
+        if orig_obj is None:
+            continue
+        if orig_obj.type == 'CURVE' and Curve.PROP_CURVE_ID in orig_obj:
+            updated_curve_names.add(orig_obj.name)
+        elif Curve.PROP_CURVE_PARENT in orig_obj:
+            # keep scale changes the user makes to a follower while its curve isn't selected
+            parent_curve = scene.objects.get(orig_obj[Curve.PROP_CURVE_PARENT])
+            if parent_curve is not None and not parent_curve.get(Curve.PROP_PARENT_SELECTED, True):
+                orig_obj[Curve.PROP_BASE_SCALE] = curve.calculate_base_scale(parent_curve, orig_obj)
+
+    # a new curve sharing a CurveID with a known one was duplicated with shift+d
+    new_curve_names = updated_curve_names - known_curve_names
+    if new_curve_names and known_curve_names:
+        for new_curve_name in new_curve_names:
             try:
-                new_uuid = new_curve.get("unique_id")
-                # Look for curves that have same unique_id as new curve
-                # if a duplciate unique_id found, new curve must be duplicate of that curve
-                matching_curve = next((c for c in known_curves if c.get("unique_id") == new_uuid and c != new_curve), None)
-                if matching_curve is not None:
-                    curve.sync_curves(new_curve, matching_curve)
+                new_curve = scene.objects.get(new_curve_name)
+                if new_curve is None:
+                    continue
+                new_uuid = new_curve.get(Curve.PROP_CURVE_ID)
+                for curve_name in known_curve_names:
+                    matching_curve = scene.objects.get(curve_name)
+                    if (matching_curve is not None
+                            and matching_curve.get(Curve.PROP_CURVE_ID) == new_uuid
+                            and matching_curve.name != new_curve.name):
+                        curve.sync_curves(new_curve, matching_curve)
+                        break
             except ReferenceError as error:
                 print("Reference error :", error)
                 continue
-    
-    # Loop through all curves and update their children's transformations
-    curve.update_curves(known_curves)
-        
-    # Sync back down to the global tracking set 
-    known_curves = current_curves
+
+    # only rebuild curves that changed, the sliders apply themselves through their update callback
+    curves_to_update = [
+        obj for obj in (scene.objects.get(name) for name in updated_curve_names)
+        if obj is not None
+    ]
+    if curves_to_update:
+        curve.update_curves(curves_to_update, children_by_curve=curve.get_curve_children_map())
+
+    # remove followers of curves the user deleted
+    dead_curve_names = set(name for name in known_curve_names if scene.objects.get(name) is None)
+    if dead_curve_names:
+        known_curve_names.difference_update(dead_curve_names)
+        orphans = [
+            obj for obj in curve.get_follower_objects()
+            if obj.get(Curve.PROP_CURVE_PARENT) in dead_curve_names
+        ]
+        if orphans:
+            bpy.data.batch_remove(orphans)
+
+    known_curve_names |= updated_curve_names
             
 
 class NMSAddonPreferences(bpy.types.AddonPreferences):
