@@ -20,6 +20,8 @@ class BaseType:
     BASE = "HomePlanetBase"
     FREIGHTER = "FreighterBase"
     EXTERNAL_BASE = "ExternalPlanetBase"
+    SPACESTATION_BASE = "PlayerSpaceStationBase"
+    SPACE_BASE = "PlayerSpaceBase"
     
 class BaseData:
     
@@ -148,44 +150,45 @@ def get_save_slots_list(account):
     pattern = re.compile(r"save(\d+)\.hg")
     # store list of all hg save files
     hg_files_list = get_hg_files_in_folder(account)
-    
+    hg_files_set = set(hg_files_list)
+
     # interate through each save file and record their pairs
     save_slots = []
     for save_2 in hg_files_list:
-        
-        # save type is "Main" for normal save and "Season" for expeditiion
-        try:
-            save_type = SaveFile(save_2).search_property(SaveTranslation.active_context)
-            if save_type is None:
-                continue
-        except:
-            continue
-        
-        # validate name of save file
+
+        # validate name of save file, save.hg has no number and is picked up as the pair of save2.hg
         match = pattern.fullmatch(save_2.name)
         if not match:
             continue
-        
+
         #extract number from name of save file
         file_number = int(match.group(1))
         if file_number %2 == 1:
             continue
-        
+
         #name of linked save file
         save_1_name = "save.hg" if file_number == 2 else f"save{file_number - 1}.hg"
-        save_1 = Path(save_2.parent / save_1_name )
+        save_1 = save_2.parent / save_1_name
         #check if linked save file exits in save folder or not
-        save_1_found = next((p for p in hg_files_list if p == save_1), None)
-        if not save_1_found:
+        if save_1 not in hg_files_set:
             continue
-        
+
+        # save type is "Main" for normal save and "Season" for expeditiion
+        # both properties sit near the top of the save, so only the first block is usually decompressed
+        try:
+            properties = SaveFile(save_2).search_properties([SaveTranslation.active_context, SaveTranslation.save_name])
+        except Exception:
+            continue
+        save_type = properties[SaveTranslation.active_context]
+        if save_type is None:
+            continue
+
         #slot number is always half of second save file's number
         save_slot_number = file_number//2
         #links to save files for this slot
         saves_links = [str(save_1), str(save_2)]
-        #extract save's name from save file data by partially loading it, and increasing efficiency
-        save_name = SaveFile(save_2).search_property(SaveTranslation.save_name) if save_type == "Main" else "Expedition"
-        
+        save_name = properties[SaveTranslation.save_name] if save_type == "Main" else "Expedition"
+
         save_slot = {
             "slot": save_slot_number,
             "saves": saves_links,
@@ -211,6 +214,9 @@ def extract_bases_list_from_save(save_slot):
     external = []
     freighter = None
     
+    space = []
+    space_station = []
+    
     total_parts_count = 0
     
     #record only what is necessary rather than entire data about base
@@ -231,6 +237,10 @@ def extract_bases_list_from_save(save_slot):
             case BaseType.EXTERNAL_BASE:
                 if base_data.parts_count > 0:
                     external.append(base_data)
+            case BaseType.SPACE_BASE:
+                space.append(base_data)
+            case BaseType.SPACESTATION_BASE:
+                space_station.append(base_data)
         
         if base_data.base_type != BaseType.EXTERNAL_BASE:
             total_parts_count += base_data.parts_count
@@ -244,6 +254,8 @@ def extract_bases_list_from_save(save_slot):
         "bases":bases,
         "external":external,
         "freighter": freighter,
+        "space":space + space_station,
+        "spacestation":space_station,
         "total_parts_count": total_parts_count,
     }
     
@@ -271,7 +283,7 @@ def get_save_file(save_slot):
 # impart a base from save file
 def import_paticular_base_from_save(base_identifier,  save_slot):
     save_file = get_save_file(save_slot)
-    data = save_file.load()
+    save_file.load()
     
     # fist see if base actially exists or not
     searched_base = save_file.search_base_with_identifier(base_identifier)
@@ -283,31 +295,38 @@ def import_paticular_base_from_save(base_identifier,  save_slot):
         return None
         
     #return bases after translating it to engish
-    return save_translation.translate_to_eng_data(searched_base)
+    searched_base = save_translation.translate_to_eng_data(searched_base)
+
+    return searched_base
     
 #save a base to save file
-def save_base_to_save_file(objects_data, base_identifier,  save_slot, new_base_name = None):
-    save_file = get_save_file(save_slot)
-    data = save_file.load()
-    
-    # look for base in save file to see it it exist or not
-    in_base = save_file.search_base_with_identifier(base_identifier)
-    if in_base is None:
-        return
-    
-    # here update objects list with list provided
-    in_base[SaveTranslation.objects] = save_translation.translate_to_obf_data(objects_data)
-    
-    
-    # update name of base if provided
-    if new_base_name is not None:
-        ship_ownsership = save_file.get_ship_ownership_pointer()
-        in_base[SaveTranslation.base_name] = new_base_name
-        ship_ownsership[base_identifier["user_data"]][SaveTranslation.base_name] = new_base_name
-    
-    # save the file and make backup after update it
-    save_file.make_backup()
-    save_file.save()
+def save_base_to_save_file(objects_data, base_identifier,  save_slot, base_name = None):
+    from .save_file import SaveFile
+    for slot in save_slot:
+        save_file = SaveFile(slot)
+        save_file.load()
+        
+        # look for base in save file to see it it exist or not
+        in_base = save_file.search_base_with_identifier(base_identifier)
+        if in_base is None:
+            return
+        
+        # here update objects list with list provided
+        in_base[SaveTranslation.objects] = save_translation.translate_to_obf_data(objects_data)
+        
+        # update name of base if provided
+        if base_name is not None:
+            # update name in PersistentPlayerBases
+            in_base[SaveTranslation.base_name] = base_name
+            
+            # update name in ship_ownsership
+            userdata = base_identifier["user_data"]
+            ship_ownsership_element = save_file.get_ship_ownsership_element(userdata)
+            ship_ownsership_element[SaveTranslation.base_name] = base_name
+        
+        # save the file and make backup after update it
+        save_file.make_backup()
+        save_file.save()
     return "Base/Corvette saved sucessfully"
 
 # a folder within save_directory , where backups will be stored
