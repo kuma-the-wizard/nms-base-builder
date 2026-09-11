@@ -10,7 +10,7 @@ from . import (blend_utils, collection_utils, curve_utils, material,
                mirror_utils)
 from . import python as python_utils
 
-BUILDER = builder.Builder()
+BUILDER = builder.BUILDER
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 NICE_JSON = os.path.join(FILE_PATH,"..","resources","nice_names.json")

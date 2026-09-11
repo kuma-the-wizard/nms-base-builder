@@ -38,7 +38,7 @@ USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
 PRESET_PATH = os.path.join(USER_PATH, "presets")
 ASSET_BROWSER_PATH = os.path.join(FILE_PATH, "asset_browser")
 
-BUILDER = builder.Builder()
+BUILDER = builder.BUILDER
 GHOSTED_JSON = os.path.join(FILE_PATH, "resources", "ghosted.json")
 ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
 GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
