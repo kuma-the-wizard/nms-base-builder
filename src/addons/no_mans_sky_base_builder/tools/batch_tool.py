@@ -4,7 +4,8 @@ import os
 import uuid
 from ..utils import blend_utils, curve, material
 from ..utils import python as python_utils
-from .. import builder, part
+from .. import part
+from ..builder import get_builder
 from ..utils.mirror_utils import ShowMessageBox
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -14,7 +15,6 @@ GHOSTED_JSON = os.path.join(FILE_PATH,"..", "resources", "ghosted.json")
 ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
 GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
 nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
-BUILDER = builder.BUILDER
 
 class BatchTool(bpy.types.PropertyGroup):
     
@@ -100,7 +100,7 @@ class BatchTool(bpy.types.PropertyGroup):
         else :
             # create a temp object if "ObjectID" is provided
             object_id = self.object_id
-            new_obj = BUILDER.add_part(object_id)
+            new_obj = get_builder().add_part(object_id)
             target_object = new_obj.object
         
         replaced_objects_list = []

@@ -5,12 +5,12 @@ import uuid
 
 import bpy
 
-from .. import builder, part
+from .. import part
+from ..builder import get_builder
 from . import (blend_utils, collection_utils, curve_utils, material,
                mirror_utils)
 from . import python as python_utils
 
-BUILDER = builder.BUILDER
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 NICE_JSON = os.path.join(FILE_PATH,"..","resources","nice_names.json")
@@ -95,7 +95,7 @@ def duplicate_along_curve( bpy_object, curve, number_of_duplicates=10, radius_mu
                     caller = inspect.stack()[1]
                     print("Called by:", caller.function)
                     print("bulding new object")
-                    new_item = BUILDER.add_part(object_id, user_data=user_data)
+                    new_item = get_builder().add_part(object_id, user_data=user_data)
                     new_obj = new_item.object
                 else:
                     new_obj = bpy_object.copy()

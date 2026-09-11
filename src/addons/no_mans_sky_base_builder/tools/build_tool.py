@@ -4,7 +4,8 @@ import os
 import uuid
 from ..utils import blend_utils, curve
 from ..utils import python as python_utils
-from .. import builder, part
+from .. import part
+from ..builder import get_builder
 from ..utils.mirror_utils import ShowMessageBox
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -14,7 +15,6 @@ GHOSTED_JSON = os.path.join(FILE_PATH,"..", "resources", "ghosted.json")
 ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
 GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
 nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
-BUILDER = builder.BUILDER
 
 from mathutils import Vector
 
@@ -108,7 +108,7 @@ class BuildTool(bpy.types.PropertyGroup):
                 # Build Item.
                 mirror_part_exist =  mirror_id in nice_name_dictionary.keys()
                 if mirror_part_exist:
-                    new_item = BUILDER.mirror_part(target)
+                    new_item = get_builder().mirror_part(target)
 
                 if not change_orientation:
                     mirrored_matrix_world = mirror_utils.mirror_matrix_world_universal(object_id, new_item.matrix_world, axis,center)
@@ -184,7 +184,7 @@ class BuildTool(bpy.types.PropertyGroup):
                 new_item = target
                 if mirror_id in nice_name_dictionary.keys():
                     # Build Item.
-                    new_item = BUILDER.flip_part(target)
+                    new_item = get_builder().flip_part(target)
                     new_items.append(new_item)
 
                 if hasattr(new_item, "object"):
@@ -291,19 +291,19 @@ class BuildTool(bpy.types.PropertyGroup):
             object_id = target["ObjectID"]
             user_data = target["UserData"]
             # Build Item.
-            new_item = BUILDER.add_part(object_id, user_data=user_data)
+            new_item = get_builder().add_part(object_id, user_data=user_data)
             new_item.select()
         if "PresetID" in target:
             preset_id = target["PresetID"]
             # Build Item.
-            new_item = BUILDER.add_preset(preset_id)
+            new_item = get_builder().add_preset(preset_id)
             new_item.select()
 
         # Build Rig if need to.
         if hasattr(new_item, "build_rig"):
             new_item.build_rig()
         # Snap.
-        target = BUILDER.get_builder_object_from_bpy_object(target)
+        target = get_builder().get_builder_object_from_bpy_object(target)
         new_item.snap_to(target)
         
     def snap(
@@ -343,8 +343,8 @@ class BuildTool(bpy.types.PropertyGroup):
             return {"FINISHED"}
 
         # Perform Snap
-        source = BUILDER.get_builder_object_from_bpy_object(source)
-        target = BUILDER.get_builder_object_from_bpy_object(target)
+        source = get_builder().get_builder_object_from_bpy_object(source)
+        target = get_builder().get_builder_object_from_bpy_object(target)
         if source and target:
             source.snap_to(
                 target,

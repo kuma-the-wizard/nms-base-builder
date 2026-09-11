@@ -68,9 +68,23 @@ for _class_ref, _part_list in OVERRIDE_CLASSES.items():
         _CLASS_BY_ID.setdefault(_object_id, _class_ref)
 
 
+# classes added by other addons, these win over the built in table
+_REGISTERED_BY_ID = {}
+
+
+def register_override(class_ref, object_ids):
+    for object_id in object_ids:
+        _REGISTERED_BY_ID[object_id.replace("^", "")] = class_ref
+
+
+def unregister_override(object_ids):
+    for object_id in object_ids:
+        _REGISTERED_BY_ID.pop(object_id.replace("^", ""), None)
+
+
 def get_override_class(object_id):
-    return _CLASS_BY_ID.get(object_id)
+    return _REGISTERED_BY_ID.get(object_id) or _CLASS_BY_ID.get(object_id)
 
 
 def get_part_class(object_id):
-    return _CLASS_BY_ID.get(object_id, Part)
+    return get_override_class(object_id) or Part

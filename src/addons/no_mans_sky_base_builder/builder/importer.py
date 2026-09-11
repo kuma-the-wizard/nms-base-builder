@@ -18,7 +18,7 @@ IMPORT_COLLECTION_NAME = "Collection"
 
 def import_objects(builder_object, objects_data, compensate_normal=True):
     unique_objects = {}
-    unique_meshes = {}
+    unique_materials = {}
 
     import_collection = collection_utils.get_collection(IMPORT_COLLECTION_NAME)
     set_collection_excluded(import_collection.name, True)
@@ -46,7 +46,7 @@ def import_objects(builder_object, objects_data, compensate_normal=True):
                 user_data,
                 import_collection,
                 unique_objects,
-                unique_meshes,
+                unique_materials,
             )
             if bpy_object is None:
                 continue
@@ -70,9 +70,9 @@ def set_collection_excluded(collection_name, excluded):
 # colour is a flat material on the mesh, so objects can only share a mesh
 # when their ObjectID AND UserData match
 def build_fbx_part(
-    builder_object, object_id, user_data, import_collection, unique_objects, unique_meshes
+    builder_object, object_id, user_data, import_collection, unique_objects, unique_materials
 ):
-    mesh_key = (object_id, user_data)
+    material_key = (object_id, user_data)
 
     # import object from disk when visiting that object_id for first time
     if object_id not in unique_objects:
@@ -85,18 +85,18 @@ def build_fbx_part(
         builder_object.add_to_part_cache(object_id, bpy_object)
 
         unique_objects[object_id] = bpy_object
-        unique_meshes[mesh_key] = bpy_object.data
+        unique_materials[material_key] = bpy_object.data
         return bpy_object
 
     bpy_object = unique_objects[object_id].copy()
     import_collection.objects.link(bpy_object)
 
-    if mesh_key in unique_meshes:
-        bpy_object.data = unique_meshes[mesh_key]
+    if material_key in unique_materials:
+        bpy_object.data = unique_materials[material_key]
     else:
         bpy_object.data = bpy_object.data.copy()
         material.restore_material(bpy_object, user_data)
-        unique_meshes[mesh_key] = bpy_object.data
+        unique_materials[material_key] = bpy_object.data
 
     return bpy_object
 
@@ -148,8 +148,11 @@ def restore_params(bpy_object, part_data, object_id):
     bpy_object[Part.PROP_TIMESTAMP] = time_stamp
     bpy_object[Part.PROP_BELONGS_TO_PRESET] = False
 
+    # copies carry the source's message, so clear it when this part has none
     if message:
         bpy_object[Part.PROP_MESSAGE] = message
+    else:
+        bpy_object.pop(Part.PROP_MESSAGE, None)
 
     return bpy_object
 

@@ -16,7 +16,8 @@ from bpy.props import (BoolProperty, EnumProperty, FloatProperty, IntProperty,
 from bpy.types import Panel, PropertyGroup
 from numpy import isin
 
-from . import builder, icons, part, preset
+from . import icons, part, preset
+from .builder import get_builder
 from .part_overrides import line
 from .save_editor import save_editor_operators, save_editor_utils
 from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel
@@ -38,7 +39,6 @@ USER_PATH = os.path.join(os.path.expanduser("~"), "NoMansSkyBaseBuilder")
 PRESET_PATH = os.path.join(USER_PATH, "presets")
 ASSET_BROWSER_PATH = os.path.join(FILE_PATH, "asset_browser")
 
-BUILDER = builder.BUILDER
 GHOSTED_JSON = os.path.join(FILE_PATH, "resources", "ghosted.json")
 ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
 GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
@@ -87,7 +87,7 @@ def get_line_type_from_enum(context):
 class NMSSettings(PropertyGroup):
     # Build Array of base part types. (Vanilla Parts - Mods - Presets)
     enum_items = []
-    for pack, _ in BUILDER.available_packs:
+    for pack, _ in get_builder().available_packs:
         enum_items.append((pack, pack, "View {0}...".format(pack)))
     enum_items.append(("PRESETS", "Prefabs", "View Prefabs..."))
 
@@ -426,7 +426,7 @@ class NMSSettings(PropertyGroup):
             "AutoPowerSetting": {"BaseAutoPowerSetting": self.auto_power_setting},
         }
         # Capture Individual Objects
-        objects_data = BUILDER.serialise(get_presets=get_presets)
+        objects_data = get_builder().serialise(get_presets=get_presets)
         if objects_only:
             return objects_data["Objects"]
 
@@ -454,7 +454,7 @@ class NMSSettings(PropertyGroup):
 
         # Start a new file
         self.deserialise_from_data(nms_import_data)
-        BUILDER.deserialise_from_data(nms_import_data)
+        get_builder().deserialise_from_data(nms_import_data)
 
     def export_nms_data(self, objects_only=False):
         """Generate data and place it into the user's clipboard.
@@ -496,7 +496,7 @@ class NMSSettings(PropertyGroup):
                 return
         # Build from Data
         self.deserialise_from_data(save_data)
-        BUILDER.deserialise_from_data(save_data)
+        get_builder().deserialise_from_data(save_data)
 
     def new_file(self):
         """Reset's the entire Blender scene to default.
@@ -507,7 +507,7 @@ class NMSSettings(PropertyGroup):
             * Removes all items with ObjectID, PresetID and NMS_LIGHT properties.
             * Resets the room visibility switch to default.
         """
-        BUILDER.clear_caches()
+        get_builder().clear_caches()
 
         # Remove basic blender default items.
         blend_utils.remove_object("Cube")
@@ -658,7 +658,7 @@ class NMSSettings(PropertyGroup):
             # Figure out default index.
             object_id = obj["ObjectID"]
             if object_id:
-                parent_folder = BUILDER.get_obj_parent_folder(object_id)
+                parent_folder = get_builder().get_obj_parent_folder(object_id)
                 if parent_folder:
                     if parent_folder == "alloy_structures":
                         index = 37
@@ -986,11 +986,11 @@ class NMS_UL_actions_list(bpy.types.UIList):
                 for part in all_parts:
                     operator = part_row.operator(
                         "object.list_build_operator",
-                        text=BUILDER.get_nice_name(part),
+                        text=get_builder().get_nice_name(part),
                     )
                     operator.part_id = part
                     operator.tooltip = (
-                        f"Name: {BUILDER.get_nice_name(part)}\nID: ({part})"
+                        f"Name: {get_builder().get_nice_name(part)}\nID: ({part})"
                     )
 
             # Draw Presets
@@ -1050,25 +1050,25 @@ def generate_ui_list_data(item_type="parts", pack=None):
     ui_list_data = []
     # Presets
     if "presets" in item_type:
-        preset_categories = BUILDER.get_preset_categories()
+        preset_categories = get_builder().get_preset_categories()
         for category in preset_categories:
-            presets = BUILDER.get_presets_from_category(category)
+            presets = get_builder().get_presets_from_category(category)
             if presets:
                 ui_list_data.append((category, ""))
                 for _preset in sorted(presets):
                     ui_list_data.append(("", _preset))
         # Uncategorized.
-        presets = BUILDER.get_uncategorized_presets()
+        presets = get_builder().get_uncategorized_presets()
         if presets:
             ui_list_data.append(("Uncategorized Prefabs", ""))
             for _preset in sorted(presets):
                 ui_list_data.append(("", _preset))
     else:
         # Packs/Parts
-        for category in BUILDER.get_categories(pack=pack):
+        for category in get_builder().get_categories(pack=pack):
             ui_list_data.append((category, ""))
-            category_parts = BUILDER.get_parts_from_category(category, pack=pack)
-            category_parts = sorted(category_parts, key=BUILDER.get_nice_name)
+            category_parts = get_builder().get_parts_from_category(category, pack=pack)
+            category_parts = sorted(category_parts, key=get_builder().get_nice_name)
             new_parts = create_sublists(category_parts)
             for part in new_parts:
                 joined_list = ",".join(part)
@@ -1205,7 +1205,7 @@ class SaveAsPreset(bpy.types.Operator):
 
     def execute(self, context):
         # Save Preset.
-        BUILDER.save_preset_to_file(self.preset_name)
+        get_builder().save_preset_to_file(self.preset_name)
         # Refresh Preset List.
         scene = context.scene
         nms_tool = scene.nms_base_tool
@@ -1376,9 +1376,9 @@ class ListBuildOperator(bpy.types.Operator):
 
         # Build item
         if self.part_id in preset.Preset.get_presets():
-            new_item = BUILDER.add_preset(self.part_id)
+            new_item = get_builder().add_preset(self.part_id)
         else:
-            new_item = BUILDER.add_part(self.part_id)
+            new_item = get_builder().add_part(self.part_id)
             if hasattr(new_item, "build_rig"):
                 new_item.build_rig()
 
@@ -1387,7 +1387,7 @@ class ListBuildOperator(bpy.types.Operator):
 
         # If there was a previous selection, snap the new item to it.
         if selection:
-            builder_selection = BUILDER.get_builder_object_from_bpy_object(selection)
+            builder_selection = get_builder().get_builder_object_from_bpy_object(selection)
             if builder_selection:
                 new_item.snap_to(builder_selection)
         return {"FINISHED"}
@@ -1407,13 +1407,13 @@ class ListEditOperator(bpy.types.Operator):
             nms_tool.new_file()
             preset.Preset(
                 preset_id=self.part_id,
-                builder_object=BUILDER,
+                builder_object=get_builder(),
                 create_control=False,
                 apply_shader=False,
                 build_rigs=True,
             )
-            BUILDER.build_rigs()
-            BUILDER.optimise_control_points()
+            get_builder().build_rigs()
+            get_builder().optimise_control_points()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -1498,13 +1498,13 @@ class Point(bpy.types.Operator):
             return {"CANCELLED"}
 
         # Create a new point at the cursor.
-        point = line.Line.create_point(BUILDER, name="ARBITRARY_POINT")
+        point = line.Line.create_point(get_builder(), name="ARBITRARY_POINT")
         point.location = context.scene.cursor.location
 
         # If another powerline was already selected, connect it
         if selection and "rig_item" in selection:
             line_object = selection.get("power_line", "U_POWERLINE").split(".")[0]
-            power_line = BUILDER.add_part(line_object, build_rigs=False)
+            power_line = get_builder().add_part(line_object, build_rigs=False)
             # Create controls.
             power_line.build_rig(start=selection, end=point)
 
@@ -1523,7 +1523,7 @@ class Connect(bpy.types.Operator):
     def execute(self, context):
         # Validate selection.
         selected_objects = [
-            BUILDER.get_builder_object_from_bpy_object(o)
+            get_builder().get_builder_object_from_bpy_object(o)
             for o in bpy.context.selected_objects
         ]
         selected_objects = [o for o in selected_objects if o.has_snap_point("POWER")]
@@ -1538,7 +1538,7 @@ class Connect(bpy.types.Operator):
             ShowMessageBox(message=message, title="Connect")
             return {"FINISHED"}
 
-        active_object = BUILDER.get_builder_object_from_bpy_object(
+        active_object = get_builder().get_builder_object_from_bpy_object(
             bpy.context.active_object
         )
         if not active_object.has_snap_point("POWER"):
@@ -1553,7 +1553,7 @@ class Connect(bpy.types.Operator):
                 continue
             # Build and perform connection.
             start_point, end_point = line.Line.generate_control_points(
-                active_object, selected_object, BUILDER
+                active_object, selected_object, get_builder()
             )
             if not start_point or not end_point:
                 # should have been tested by filtering selected_objects above
@@ -1568,7 +1568,7 @@ class Connect(bpy.types.Operator):
 
             # if "power_line" in start_point:
             #     line_object_id = start_point["power_line"].split(".")[0]
-            power_line = BUILDER.add_part(line_object_id, build_rigs=False)
+            power_line = get_builder().add_part(line_object_id, build_rigs=False)
             # Create controls.
             power_line.build_rig(start=start_point, end=end_point)
 
@@ -1601,7 +1601,7 @@ class Divide(bpy.types.Operator):
             return {"FINISHED"}
 
         # Perform split.
-        power_line = BUILDER.get_builder_object_from_bpy_object(target)
+        power_line = get_builder().get_builder_object_from_bpy_object(target)
         power_line.divide()
         return {"FINISHED"}
 
@@ -1631,7 +1631,7 @@ class Split(bpy.types.Operator):
             return {"FINISHED"}
 
         # Perform split.
-        power_line = BUILDER.get_builder_object_from_bpy_object(target)
+        power_line = get_builder().get_builder_object_from_bpy_object(target)
         power_line.split()
         return {"FINISHED"}
 
@@ -1645,7 +1645,7 @@ class SelectConnected(bpy.types.Operator):
 
     def execute(self, context):
         selected_objects = [
-            BUILDER.get_builder_object_from_bpy_object(o)
+            get_builder().get_builder_object_from_bpy_object(o)
             for o in bpy.context.selected_objects
         ]
 
@@ -1665,10 +1665,10 @@ class SelectFloating(bpy.types.Operator):
     bl_options = {"UNDO", "REGISTER"}
 
     def execute(self, context):
-        for part in BUILDER.get_all_parts(include_lines=True):
+        for part in get_builder().get_all_parts(include_lines=True):
             if not "SnapID" in part:
                 continue
-            part = BUILDER.get_builder_object_from_bpy_object(part)
+            part = get_builder().get_builder_object_from_bpy_object(part)
             if part.snap_id != "POWER_CONTROL":
                 continue
             is_connected_to_object = False
@@ -1699,10 +1699,10 @@ class LogicButton(bpy.types.Operator):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
         # Build button.
-        button = BUILDER.add_part("U_SWITCHBUTTON")
+        button = get_builder().add_part("U_SWITCHBUTTON")
         # Snap to selection.
         if selection:
-            selection = BUILDER.get_builder_object_from_bpy_object(selection)
+            selection = get_builder().get_builder_object_from_bpy_object(selection)
             button.snap_to(selection)
 
         # Select new item.
@@ -1720,10 +1720,10 @@ class LogicWallSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_SWITCHWALL")
+        button = get_builder().add_part("U_SWITCHWALL")
         # Snap to selection.
         if selection:
-            selection = BUILDER.get_builder_object_from_bpy_object(selection)
+            selection = get_builder().get_builder_object_from_bpy_object(selection)
             button.snap_to(selection)
         # Select new item.
         button.select()
@@ -1740,10 +1740,10 @@ class LogicProxSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_SWITCHPROX")
+        button = get_builder().add_part("U_SWITCHPROX")
         # Snap to selection.
         if selection:
-            selection = BUILDER.get_builder_object_from_bpy_object(selection)
+            selection = get_builder().get_builder_object_from_bpy_object(selection)
             button.snap_to(selection)
         # Select new item.
         button.select()
@@ -1760,10 +1760,10 @@ class LogicInvSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_TRANSISTOR1")
+        button = get_builder().add_part("U_TRANSISTOR1")
         # Snap to selection.
         if selection:
-            selection = BUILDER.get_builder_object_from_bpy_object(selection)
+            selection = get_builder().get_builder_object_from_bpy_object(selection)
             button.snap_to(selection)
         # Select new item.
         button.select()
@@ -1780,10 +1780,10 @@ class LogicAutoSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_TRANSISTOR2")
+        button = get_builder().add_part("U_TRANSISTOR2")
         # Snap to selection.
         if selection:
-            selection = BUILDER.get_builder_object_from_bpy_object(selection)
+            selection = get_builder().get_builder_object_from_bpy_object(selection)
             button.snap_to(selection)
         # Select new item.
         button.select()
@@ -1800,10 +1800,10 @@ class LogicFloorSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("U_SWITCHPRESS")
+        button = get_builder().add_part("U_SWITCHPRESS")
         # Snap to selection.
         if selection:
-            selection = BUILDER.get_builder_object_from_bpy_object(selection)
+            selection = get_builder().get_builder_object_from_bpy_object(selection)
             button.snap_to(selection)
         # Select new item.
         button.select()
@@ -1820,10 +1820,10 @@ class LogicBeatSwitch(bpy.types.Operator):
     def execute(self, context):
         # Get Selected item.
         selection = blend_utils.get_current_selection()
-        button = BUILDER.add_part("BYTEBEATSWITCH")
+        button = get_builder().add_part("BYTEBEATSWITCH")
         # Snap to selection.
         if selection:
-            selection = BUILDER.get_builder_object_from_bpy_object(selection)
+            selection = get_builder().get_builder_object_from_bpy_object(selection)
             button.snap_to(selection)
         # Select new item.
         button.select()
@@ -1857,7 +1857,7 @@ class SplitPreset(bpy.types.Operator):
             names.append(pid)
 
         # Clear builder caches
-        BUILDER.clear_caches()
+        get_builder().clear_caches()
         
         self.report({"INFO"}, f"Prefabs split: {len(names)}, parts: {total}")
         return {"FINISHED"}

@@ -4,7 +4,7 @@ import os
 import uuid
 from ..utils import blend_utils, curve
 from ..utils import python as python_utils
-from .. import builder, part
+from .. import part
 from ..utils.mirror_utils import ShowMessageBox
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -14,7 +14,6 @@ GHOSTED_JSON = os.path.join(FILE_PATH,"..", "resources", "ghosted.json")
 ghosted_reference = python_utils.load_dictionary(GHOSTED_JSON)
 GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
 nice_name_dictionary = python_utils.load_dictionary(NICE_JSON)
-BUILDER = builder.BUILDER
 
 class Properties(bpy.types.PropertyGroup):
     

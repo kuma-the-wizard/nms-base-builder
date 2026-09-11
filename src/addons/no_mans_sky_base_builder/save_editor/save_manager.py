@@ -1,10 +1,9 @@
 import bpy
-from .. import builder
+from ..builder import get_builder
 from . import save_editor_dependencies
 from . import save_editor_utils
 from .save_editor_utils import BaseType, BaseData
 
-BUILDER = builder.BUILDER
 
 #save data to persist within blend files.
 class SaveManager(bpy.types.PropertyGroup):
@@ -345,7 +344,7 @@ class SaveManager(bpy.types.PropertyGroup):
         # Import json into scene
         nms_tools = context.scene.nms_base_tool
         nms_tools.deserialise_from_data(nms_base_json)
-        BUILDER.deserialise_from_data(nms_base_json)
+        get_builder().deserialise_from_data(nms_base_json)
         #return a string for operators for status message
         return "Base/Corvette imported sucessfully"
     
