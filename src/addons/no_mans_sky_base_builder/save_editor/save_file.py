@@ -19,6 +19,25 @@ def decode_json_string(raw):
     except ValueError:
         return raw.decode("utf-8", errors="replace")
 
+# write a file so that it is either fully replaced or left untouched, never half written
+# data goes to a temporary file next to it first, which is then swapped in with a single rename
+def write_file_atomic(path, data):
+    path = Path(path)
+    temp_path = path.with_name(path.name + ".tmp")
+    try:
+        with open(temp_path, "wb") as f:
+            f.write(data)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temp_path, path)
+    except Exception:
+        # the original file is still intact, only the temporary file needs removing
+        try:
+            os.remove(temp_path)
+        except OSError:
+            pass
+        raise
+
 # this handles loading, saving and backup of a hg save file with provided path
 class SaveFile:
     
@@ -59,12 +78,11 @@ class SaveFile:
         self.json_data = json.loads(json_text)
         return self.json_data
     
-    # save data to save file
-    def save(self, output_path=None):
+    # compress loaded data into the bytes of a hg save file, without touching the disk
+    def pack(self):
         if self.json_data is None:
             raise ValueError("No JSON data loaded")
 
-        output_path = output_path or self.path
         json_bytes = json.dumps(
             self.json_data,
             separators=(",", ":"),
@@ -78,11 +96,14 @@ class SaveFile:
             compressed = lz4.block.compress( chunk, store_size=False)
             header = struct.pack("<IIII",MAGIC,len(compressed),len(chunk),0)
             blocks.append(header + compressed)
-        with open(output_path, "wb") as f:
-            for block in blocks:
-                f.write(block)
-             
+        return b"".join(blocks)
+
+    # save data to save file
+    def save(self, output_path=None):
+        write_file_atomic(Path(output_path or self.path), self.pack())
+
     # make backup of save file that is changed into a /blender_backup folder which is different from /nms_base_builder_backup folder
+    # returns path of the backup
     def make_backup(self, output_path = None):
         path  = self.path
         folder = os.path.dirname(path)
@@ -98,6 +119,7 @@ class SaveFile:
             f"{name}{ext}.blender.bak"
         )
         shutil.copy2(path, backup_file)
+        return backup_file
 
     # search string properties in save file, decompressing one block at a time and stopping as soon as all are found
     # returns {property: value}, value is None for properties that were not found

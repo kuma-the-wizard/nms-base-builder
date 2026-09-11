@@ -299,35 +299,109 @@ def import_paticular_base_from_save(base_identifier,  save_slot):
 
     return searched_base
     
+# error with its cause, for messages shown to the user
+# file errors drop their full paths, the message already names the file
+def describe_error(error):
+    if isinstance(error, OSError) and error.strerror:
+        return f"{type(error).__name__}: {error.strerror}"
+    return f"{type(error).__name__}: {error}"
+
 #save a base to save file
+# the newest save file is the one the game loads, so it must contain the base, the older one is updated too when it has it
+# both files are prepared and backed up before anything is written, and the older file is written first so the newest stays newest
+# returns (success, message)
 def save_base_to_save_file(objects_data, base_identifier,  save_slot, base_name = None):
-    from .save_file import SaveFile
-    for slot in save_slot:
-        save_file = SaveFile(slot)
-        save_file.load()
-        
-        # look for base in save file to see it it exist or not
-        in_base = save_file.search_base_with_identifier(base_identifier)
-        if in_base is None:
-            return
-        
-        # here update objects list with list provided
-        in_base[SaveTranslation.objects] = save_translation.translate_to_obf_data(objects_data)
-        
-        # update name of base if provided
-        if base_name is not None:
-            # update name in PersistentPlayerBases
-            in_base[SaveTranslation.base_name] = base_name
-            
-            # update name in ship_ownsership
-            userdata = base_identifier["user_data"]
-            ship_ownsership_element = save_file.get_ship_ownsership_element(userdata)
-            ship_ownsership_element[SaveTranslation.base_name] = base_name
-        
-        # save the file and make backup after update it
-        save_file.make_backup()
-        save_file.save()
-    return "Base/Corvette saved sucessfully"
+    from .save_file import SaveFile, write_file_atomic
+
+    newest = get_lastes_save_file_location(save_slot)
+    ordered_paths = [Path(p) for p in save_slot if Path(p) != newest] + [newest]
+    obf_objects = save_translation.translate_to_obf_data(objects_data)
+
+    # load, update and compress each file in memory, nothing is written yet
+    prepared = []
+    skipped = []
+    for path in ordered_paths:
+        is_newest = path == newest
+        try:
+            save_file = SaveFile(path)
+            save_file.load()
+
+            # look for base in save file to see it it exist or not
+            in_base = save_file.search_base_with_identifier(base_identifier)
+            if in_base is None:
+                if is_newest:
+                    return False, (
+                        f"Export failed: base not found in {path.name}, the newest save file. "
+                        "Nothing was written, repinning the base may resolve this issue"
+                    )
+                skipped.append(f"{path.name} (base not found)")
+                continue
+
+            # here update objects list with list provided
+            in_base[SaveTranslation.objects] = obf_objects
+
+            # update name of base if provided
+            if base_name is not None:
+                # update name in PersistentPlayerBases
+                in_base[SaveTranslation.base_name] = base_name
+
+                # update name in ship_ownsership
+                userdata = base_identifier["user_data"]
+                ship_ownsership_element = save_file.get_ship_ownsership_element(userdata)
+                ship_ownsership_element[SaveTranslation.base_name] = base_name
+
+            prepared.append((path, save_file.pack()))
+        except Exception as error:
+            if is_newest:
+                return False, f"Export failed preparing {path.name}: {describe_error(error)}. Nothing was written"
+            skipped.append(f"{path.name} ({describe_error(error)})")
+
+    # back up every file before the first write
+    backups = {}
+    for path, _ in prepared:
+        try:
+            backups[path] = SaveFile(path).make_backup()
+        except Exception as error:
+            return False, f"Export failed backing up {path.name}: {describe_error(error)}. Nothing was written"
+
+    # write, and put back files already written if a later one fails, so the slot is never left half exported
+    written = []
+    for path, data in prepared:
+        try:
+            write_file_atomic(path, data)
+        except Exception as error:
+            message = f"Export failed writing {path.name}: {describe_error(error)}. "
+            return False, message + restore_from_backups(written, backups)
+        written.append(path)
+
+    message = "Base/Corvette saved sucessfully to " + " and ".join(path.name for path, _ in reversed(prepared))
+    if skipped:
+        message += ", skipped " + ", ".join(skipped)
+    return True, message
+
+# put written save files back from their backups, keeping their original modified times so the newest file stays newest
+# returns a sentence describing what happened, for the export message
+def restore_from_backups(written, backups):
+    from .save_file import write_file_atomic
+
+    if not written:
+        return "Nothing was written"
+
+    failed = []
+    for path in written:
+        try:
+            backup = Path(backups[path])
+            write_file_atomic(path, backup.read_bytes())
+            shutil.copystat(backup, path)
+        except Exception as error:
+            failed.append(f"{path.name} ({describe_error(error)})")
+
+    if failed:
+        return (
+            "Restoring from backup also failed for " + ", ".join(failed)
+            + ", copy them back by hand from the blender_backup folder"
+        )
+    return ", ".join(path.name for path in written) + " restored from backup"
 
 # a folder within save_directory , where backups will be stored
 def get_backups_folder(save_links):

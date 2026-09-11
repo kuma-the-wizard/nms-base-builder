@@ -351,37 +351,41 @@ class SaveManager(bpy.types.PropertyGroup):
         return "Base/Corvette imported sucessfully"
     
     # called from operators/UI to export objects in scene to save file
+    # returns (success, message)
     def export_base_to_save_file(self,context):
-        
+
         # validate save slots
         current_slot_data = self.get_current_slot_data()
         if current_slot_data is None:
-            return "Error Exporting bases, slot data is None"
-        
+            return False, "Error Exporting bases, slot data is None"
+
         #collect base identifiers
         base_identifiers = self.get_current_base_identifiers()
         if base_identifiers is None:
-            return "Error Exporting bases, base identifiers are None"
-        
+            return False, "Error Exporting bases, base identifiers are None"
+
         # provide data to real export function
         return self.export_base(context, base_identifiers, current_slot_data["saves"])
-        
+
     # collect data from scene and export it to save file
+    # returns (success, message)
     def export_base(self,context,  base_identifiers, save_links):
         # convert scene to json representing base data
         nms_tools = context.scene.nms_base_tool
         serialised_base_objects_data  = nms_tools.serialise(objects_only = True)
-        new_base_name = nms_tools.string_base
+        prefs = context.scene.nms_base_tool
+        new_base_name = prefs.string_base
         if not new_base_name or len(new_base_name) > 0:
             new_base_name = None
         
-        # provide data to utils and return status string to calling function
-        result = save_editor_utils.save_base_to_save_file(serialised_base_objects_data, base_identifiers, save_links, base_name = new_base_name)
-        
-        # refresh UI
-        self.refresh_bases_list()
-        
-        return result 
+        # provide data to utils and return status to calling function
+        success, message = save_editor_utils.save_base_to_save_file(serialised_base_objects_data, base_identifiers, save_links, base_name = new_base_name)
+
+        # refresh UI, a pinned base can be exported while no save slot is selected
+        if success and self.get_current_slot_data() is not None:
+            self.refresh_bases_list()
+
+        return success, message
       
     # This functin collects data realated to base so that it can be identified in save file
     # since there is no unique property to identify a base, we prepare a fingerprint of that base with collection of properties
@@ -520,15 +524,14 @@ class SaveManager(bpy.types.PropertyGroup):
         self.import_base(context,base_identifiers, base_identifiers.save_slot)
     
     # called to save scene data to save file
+    # returns (success, message)
     def export_pinned_base(self, context):
         base_identifiers = self.get_pinned_base_identifiers()
-        
+
         if base_identifiers is None:
-            return "Pinned base identifiers are none"
-        
-        result = self.export_base(context, base_identifiers, base_identifiers.save_slot)
-            
-        return result
+            return False, "Pinned base identifiers are none"
+
+        return self.export_base(context, base_identifiers, base_identifiers.save_slot)
         
     # collect data of pinned base and return it
     def get_pinned_base_identifiers(self):

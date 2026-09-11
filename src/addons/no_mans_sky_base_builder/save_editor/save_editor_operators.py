@@ -67,9 +67,11 @@ class ExportBaseToSave(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         save_data = scene.nms_save_data
-        result = save_data.export_base_to_save_file(context)
-        if result is not None:
-            self.report({'INFO'}, result)
+        success, message = save_data.export_base_to_save_file(context)
+        if not success:
+            self.report({'ERROR'}, message)
+            return {"CANCELLED"}
+        self.report({'INFO'}, message)
         return {"FINISHED"}
     
 # Button to pin base to top of the editor
@@ -138,12 +140,11 @@ class ExoprtPinnedBase(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         save_data = scene.nms_save_data
-        result = save_data.export_pinned_base(context)
-        if result is not None:
-            self.report({'INFO'}, result)
-        else: 
-            self.report({'ERROR'}, "Update Failed, repinning the base may resolve this issue ")
-            print("result is none")
+        success, message = save_data.export_pinned_base(context)
+        if not success:
+            self.report({'ERROR'}, message)
+            return {"CANCELLED"}
+        self.report({'INFO'}, message)
         return {"FINISHED"}
     
 # a button to manually backup save files
