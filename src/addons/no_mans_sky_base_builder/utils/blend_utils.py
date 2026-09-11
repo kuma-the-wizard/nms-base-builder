@@ -32,9 +32,14 @@ def add_to_scene(item, collection_name="Collection"):
         bpy.context.scene.collection.children.link(collection)
 
     # Add the item to the collection.
-    object_set = bpy.data.collections[collection_name].objects
-    if item.name not in object_set:
-        object_set.link(item)
+    collection = bpy.data.collections[collection_name]
+    if item.name not in collection.objects:
+        collection.objects.link(item)
+
+    # operators like the fbx importer also link to the active collection
+    for other_collection in list(item.users_collection):
+        if other_collection != collection:
+            other_collection.objects.unlink(item)
 
 
 def get_item_by_name(item_name):
@@ -154,16 +159,10 @@ def get_distance_between(matrix1, matrix2):
 
 def delete(bpy_object):
     """Remove the item and everything below it."""
-    # Deselect all
-    bpy.ops.object.select_all(action="DESELECT")
-
-    # Parent items to control.
-    for part in bpy_object.children:
-        part.hide_select = False
-        part.select_set(True)
-
-    bpy_object.select_set(True)
-    bpy.ops.object.delete()
+    # removed at data level, selecting fails for objects outside the view layer
+    for part in list(bpy_object.children):
+        bpy.data.objects.remove(part, do_unlink=True)
+    bpy.data.objects.remove(bpy_object, do_unlink=True)
     
     
 def find_duplicates(decimals = 4):
