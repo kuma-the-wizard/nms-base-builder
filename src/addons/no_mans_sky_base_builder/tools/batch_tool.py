@@ -6,6 +6,7 @@ from ..utils import blend_utils, curve, material
 from ..utils import python as python_utils
 from .. import part
 from ..builder import get_builder
+from ..group import Group
 from ..utils.mirror_utils import ShowMessageBox
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -92,7 +93,7 @@ class BatchTool(bpy.types.PropertyGroup):
 
         if self.nms_batch_replace_type == "target":
             target_object = self.target_object
-            if "ObjectID" not in target_object:
+            if "ObjectID" not in target_object and Group.PROP_GROUP_ID not in target_object:
                 title="Batch Replace Objects"
                 message="Target Object is Invalid"
                 ShowMessageBox(message=message, title=title )
@@ -116,7 +117,7 @@ class BatchTool(bpy.types.PropertyGroup):
             if source_object is None:
                 continue
             
-            if "ObjectID" in source_object:
+            if "ObjectID" in source_object or Group.PROP_GROUP_ID in source_object:
                 # This create a linked duplicate
                 replaced_object = target_object.copy()
                 if replaced_object.data:
@@ -204,25 +205,13 @@ class BatchTool(bpy.types.PropertyGroup):
             )
             return 0
         
-        #Gather unique keys from selected obejcts
-        keys_to_find = []
-        for obj in selected_objects:
-            if "ObjectID" not in obj:
-                continue
-            
-            obj_id = obj["ObjectID"]
-            if obj_id not in keys_to_find:
-                keys_to_find.append(obj_id)
-        
-        #Iterate through all objects to collect matches with keys_to_find
-        found_matches = []
-        for obj in bpy.data.objects:
-            if "ObjectID" not in obj:
-                continue
-            
-            obj_id = obj["ObjectID"]
-            if obj_id in keys_to_find:
-                found_matches.append(obj)
+        # parts match by ObjectID, groups by GroupID
+        def get_key(obj):
+            return obj.get("ObjectID") or obj.get(Group.PROP_GROUP_ID)
+
+        keys_to_find = set(filter(None, (get_key(obj) for obj in selected_objects)))
+
+        found_matches = [obj for obj in bpy.data.objects if get_key(obj) in keys_to_find]
         
         if len(found_matches) > 0:
             blend_utils.select(found_matches)

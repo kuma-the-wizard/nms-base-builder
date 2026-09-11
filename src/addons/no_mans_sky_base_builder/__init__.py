@@ -18,6 +18,7 @@ from numpy import isin
 
 from . import icons, part, preset
 from .builder import get_builder
+from .group import Group
 from .part_overrides import line
 from .save_editor import save_editor_operators, save_editor_utils
 from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel
@@ -556,7 +557,8 @@ class NMSSettings(PropertyGroup):
             light_check = "NMS_LIGHT" in bpy_object
             rig_check = "rig_item" in bpy_object
             curve_check = curve.Curve.PROP_CURVE_ID in bpy_object
-            if any([id_check, preset_check, light_check, rig_check, curve_check]):
+            group_check = Group.PROP_GROUP_ID in bpy_object
+            if any([id_check, preset_check, light_check, rig_check, curve_check, group_check]):
                 blend_utils.remove_object(bpy_object.name)
 
         # Reset room vis
@@ -637,6 +639,8 @@ class NMSSettings(PropertyGroup):
                         _material.assign_material(child_obj, int(colour_index), int(maeterial_index))
                         obj["dup_UserData"] = child_obj["UserData"]
                         break
+            elif Group.PROP_GROUP_ID in obj:
+                Group.apply_colour(obj, int(colour_index), int(maeterial_index))
             # for any other object
             else :
                 _material.assign_material(obj, int(colour_index), int(maeterial_index))
@@ -656,8 +660,13 @@ class NMSSettings(PropertyGroup):
         # Apply Colour Material.
         for obj in selected_objects:
             index = 0
+            if Group.PROP_GROUP_ID in obj:
+                default_material = _material.assign_default_material(obj, index=index)
+                for slot_index in range(len(obj.data.materials)):
+                    obj.data.materials[slot_index] = default_material
+                continue
             # Figure out default index.
-            object_id = obj["ObjectID"]
+            object_id = obj.get("ObjectID")
             if object_id:
                 parent_folder = get_builder().get_obj_parent_folder(object_id)
                 if parent_folder:
@@ -1831,6 +1840,81 @@ class LogicBeatSwitch(bpy.types.Operator):
         return {"FINISHED"}
     
 
+class GroupObjects(bpy.types.Operator):
+    """Merge the selected parts into one group"""
+
+    bl_idname = "object.nms_group_objects"
+    bl_label = "Group Objects together"
+    bl_options = {"REGISTER", "UNDO"}
+
+    origin_type: EnumProperty(
+        name="Select Origin",
+        description="Choose the origin of the group",
+        items=[
+            ("median", "Median", "Use median of objects in viewport as origin of Group", "PIVOT_MEDIAN", 0),
+            ("active", "Active Object", "Use active object in viewport as origin of Group", "CON_PIVOT", 1),
+            ("cursor", "3D Cursor", "Use 3D cursor in viewport as origin of Group", "CURSOR", 2),
+        ],
+        default="active",
+    )
+
+    def invoke(self, context, event):
+        if len(context.selected_objects) < 2:
+            ShowMessageBox("Please select at least two objects", title="Group Objects", icon="ERROR")
+            return {"CANCELLED"}
+        return context.window_manager.invoke_props_dialog(self, title="Group Objects", confirm_text="Group")
+
+    def execute(self, context):
+        selected_objects = context.selected_objects
+        if len(selected_objects) < 2:
+            return {"CANCELLED"}
+
+        if self.origin_type == "active" and context.active_object:
+            target_matrix = context.active_object.matrix_world.copy()
+        elif self.origin_type == "cursor":
+            target_matrix = context.scene.cursor.matrix.copy()
+        else:
+            target_matrix = None
+
+        if any(Group.PROP_GROUP_ID in obj for obj in selected_objects):
+            self.report({"ERROR"}, "A group can't be grouped again, ungroup it first")
+            return {"CANCELLED"}
+
+        part_count = sum(1 for obj in selected_objects if "ObjectID" in obj)
+        merged_object = Group.group_objects(selected_objects, target_matrix)
+        if merged_object is None:
+            self.report({"ERROR"}, "Nothing to group, select at least one part")
+            return {"CANCELLED"}
+
+        self.report({"INFO"}, f"{part_count} parts merged into {merged_object.name}")
+        return {"FINISHED"}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Select Origin of Merged Object", icon="OUTLINER_OB_POINTCLOUD")
+        layout.row(align=True).prop(self, "origin_type", expand=True)
+        layout.label(text="This point will act as transformations pivot point")
+
+
+class UngroupObjects(bpy.types.Operator):
+    """Split the selected groups back into parts"""
+
+    bl_idname = "object.nms_ungroup_objects"
+    bl_label = "Ungroup Objects"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        restored_objects = []
+        for item in list(context.selected_objects):
+            if Group.PROP_GROUP_ID in item:
+                restored_objects += Group.ungroup_objects(get_builder(), item) or []
+
+        if restored_objects:
+            self.report({"INFO"}, f"Ungrouped into {len(restored_objects)} parts")
+            blend_utils.select(restored_objects)
+        return {"FINISHED"}
+
+
 class SplitPreset(bpy.types.Operator):
     """Split the selected prefab into individual parts"""
 
@@ -2051,7 +2135,9 @@ classes = (
     NMSAddonPreferences,
     
     SwitchWorkspace,
-    SplitPreset
+    SplitPreset,
+    GroupObjects,
+    UngroupObjects,
 )
 
 classes = classes  + save_editor_operators.classes + build_tool_operators.classes + batch_tool_operators.classes

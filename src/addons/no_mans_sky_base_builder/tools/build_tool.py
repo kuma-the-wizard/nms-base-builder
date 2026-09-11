@@ -6,6 +6,7 @@ from ..utils import blend_utils, curve
 from ..utils import python as python_utils
 from .. import part
 from ..builder import get_builder
+from ..group import Group
 from ..utils.mirror_utils import ShowMessageBox
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -94,7 +95,8 @@ class BuildTool(bpy.types.PropertyGroup):
 
         # Get Selected item.
         new_items = []
-        for target in selected_objects:
+        existing_groups = None
+        for target in list(selected_objects):
             # Part
             if "ObjectID" in target :
                 object_id = target["ObjectID"]
@@ -131,8 +133,20 @@ class BuildTool(bpy.types.PropertyGroup):
                 new_curve_obj = curve.mirror_curve(target, axis, center, should_auto_duplicate)
                 if new_curve_obj is not None:
                     new_items.append(new_curve_obj)
-                
-        blend_utils.select(new_items)
+
+            # mirror if object is a group, change orientation doesn't apply to groups
+            elif Group.PROP_GROUP_ID in target and not change_orientation:
+                if existing_groups is None:
+                    existing_groups = Group.get_all_groups()
+                mirrored_group = Group.mirror_group(
+                    get_builder(), target, axis, center, auto_duplicate, existing_groups
+                )
+                if mirrored_group is not None:
+                    existing_groups.append(mirrored_group)
+                    new_items.append(mirrored_group)
+
+        if new_items:
+            blend_utils.select(new_items)
         return {"FINISHED"}
     
     # called my Perform Mirror button in advanced mirroring options
@@ -283,6 +297,10 @@ class BuildTool(bpy.types.PropertyGroup):
 
         if curve.Curve.PROP_CURVE_ID in target:
             blend_utils.select(curve.duplicate_curve(target))
+            return
+
+        if Group.PROP_GROUP_ID in target:
+            blend_utils.select(blend_utils.duplicate_part(target))
             return
 
         if "ObjectID" not in target and "PresetID" not in target:

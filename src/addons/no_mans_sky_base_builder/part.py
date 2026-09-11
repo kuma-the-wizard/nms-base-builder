@@ -315,11 +315,15 @@ class Part(object):
             blend_utils.add_to_scene(item)
             return item
 
-        # Create cube, at data level if the active collection is excluded.
+        # Create cube, at data level if the active collection is excluded
+        # or the context has no active object (timers, other restricted contexts).
+        item = None
         try:
             bpy.ops.mesh.primitive_cube_add()
-            item = bpy.context.active_object
-        except RuntimeError:
+            item = bpy.context.view_layer.objects.active
+        except (RuntimeError, AttributeError):
+            pass
+        if item is None:
             mesh = bpy.data.meshes.new(object_id)
             item = bpy.data.objects.new(object_id, mesh)
 

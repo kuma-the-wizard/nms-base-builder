@@ -8,7 +8,7 @@ from collections import defaultdict
 import bpy
 from mathutils import Matrix
 
-from .. import part, preset
+from .. import group, part, preset
 from ..utils import blend_utils
 from . import importer, overrides, paths
 from .catalog import Catalog
@@ -121,6 +121,10 @@ class Builder(Catalog):
         """Get all Builder preset items in the scene."""
         return [item for item in bpy.context.scene.objects if "PresetID" in item]
 
+    def get_all_groups(self):
+        """Get all groups in the scene."""
+        return [item for item in bpy.context.scene.objects if group.Group.PROP_GROUP_ID in item]
+
     @staticmethod
     def by_order(bpy_object):
         """Sorting method to get objects by the order attribute.
@@ -140,7 +144,7 @@ class Builder(Catalog):
         use_class = self.get_part_class(object_id)
 
         # captured before the part exists so it lands on the previous selection
-        active_object = bpy.context.active_object
+        active_object = blend_utils.get_selected_active_object()
         item = use_class(
             object_id=object_id,
             builder_object=self,
@@ -217,12 +221,13 @@ class Builder(Catalog):
                 blend_utils.remove_object(control.name)
 
     # Serialising ---
-    def serialise(self, get_presets=False, add_timestamp=False, as_prefab=False):
+    def serialise(self, get_presets=False, add_timestamp=False, as_prefab=False, include_groups=True):
         """Return NMS compatible dictionary.
 
         Args:
             get_presets (bool): This will generate data for presets. And
                 exclude parts generated from presets.
+            include_groups (bool): Save the parts inside groups.
         Returns:
             dict: Dictionary of base information.
         """
@@ -231,6 +236,11 @@ class Builder(Catalog):
             use_class = self.get_part_class(item["ObjectID"])
             item_obj = use_class.deserialise_from_object(item, builder_object=self)
             object_list.append(item_obj.serialise())
+
+        # NMS has no groups, a group is saved as the parts in it
+        if include_groups:
+            for group_obj in self.get_all_groups():
+                object_list += group.Group.serialise(group_obj) or []
 
         key = "Prefab" if as_prefab else "Objects"
         data = {key: object_list}

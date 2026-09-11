@@ -6,8 +6,9 @@ import uuid
 import bpy
 
 from ..builder import get_builder
+from ..group import Group
 from ..part import Part
-from . import collection_utils, curve_utils, material
+from . import collection_utils, curve_utils, material, userdata
 
 
 class Curve:
@@ -30,6 +31,13 @@ class Curve:
     # the part duplicated along the curve
     PROP_DUP_OBJECT_ID = f"dup_{Part.PROP_OBJECT_ID}"
     PROP_DUP_USER_DATA = f"dup_{Part.PROP_USER_DATA}"
+
+    # the group duplicated along the curve
+    PROP_DUP_IS_GROUP = "is_group"
+    PROP_DUP_GROUP_ID = f"dup_{Group.PROP_GROUP_ID}"
+    PROP_GROUP_CHILD_CACHE = f"dup_{Group.PROP_CHILD_CACHE}"
+    PROP_ORIGIN_MATRIX = f"dupe_{Group.PROP_ORIGIN_MATRIX}"
+    GROUP_PROPS = (PROP_DUP_IS_GROUP, PROP_DUP_GROUP_ID, PROP_GROUP_CHILD_CACHE, PROP_ORIGIN_MATRIX)
 
     # properties from older versions of the curve tool
     LEGACY_PROPS = ("unique_id", "parent_col", "master_col")
@@ -236,8 +244,7 @@ def duplicate_along_curve(bpy_object, curve, number_of_duplicates=10, radius_mul
         curve[Curve.PROP_INITIAL_CURVE_SCALE] = curve.scale.x
 
     if bpy_object is not None:
-        curve[Curve.PROP_DUP_OBJECT_ID] = bpy_object[Part.PROP_OBJECT_ID]
-        curve[Curve.PROP_DUP_USER_DATA] = bpy_object[Part.PROP_USER_DATA]
+        store_duplicate_source(curve, bpy_object)
 
     # callers that already grouped followers by curve can pass them in and skip the scan
     if existing_objs is None:
@@ -252,6 +259,50 @@ def duplicate_along_curve(bpy_object, curve, number_of_duplicates=10, radius_mul
     update_curve_children(curve, radius_multiplier, existing_objs)
     curve[Curve.PROP_OBJECTS_COUNT] = len(existing_objs)
     return existing_objs
+
+
+# remember what the curve duplicates, a part or a group
+def store_duplicate_source(curve, source_obj):
+    if Group.PROP_GROUP_ID in source_obj:
+        curve[Curve.PROP_DUP_IS_GROUP] = True
+        curve[Curve.PROP_DUP_GROUP_ID] = source_obj[Group.PROP_GROUP_ID]
+        curve[Curve.PROP_GROUP_CHILD_CACHE] = source_obj[Group.PROP_CHILD_CACHE]
+        curve[Curve.PROP_ORIGIN_MATRIX] = source_obj.get(Group.PROP_ORIGIN_MATRIX, "")
+        curve.pop(Curve.PROP_DUP_OBJECT_ID, None)
+        if Part.PROP_USER_DATA in source_obj:
+            curve[Curve.PROP_DUP_USER_DATA] = source_obj[Part.PROP_USER_DATA]
+        else:
+            curve.pop(Curve.PROP_DUP_USER_DATA, None)
+    else:
+        for prop in Curve.GROUP_PROPS:
+            curve.pop(prop, None)
+        curve[Curve.PROP_DUP_IS_GROUP] = False
+        curve[Curve.PROP_DUP_OBJECT_ID] = source_obj[Part.PROP_OBJECT_ID]
+        curve[Curve.PROP_DUP_USER_DATA] = source_obj[Part.PROP_USER_DATA]
+
+
+def is_group_curve(curve):
+    return bool(curve.get(Curve.PROP_DUP_IS_GROUP, False)) and Curve.PROP_GROUP_CHILD_CACHE in curve
+
+
+# colour one follower, a group has one material slot per colour so every slot is painted
+def paint_follower(obj, user_data):
+    if Group.PROP_GROUP_ID not in obj:
+        material.restore_material(obj, user_data)
+        return
+    try:
+        user_data = int(user_data)
+    except (TypeError, ValueError):
+        return
+    Group.apply_colour(obj, userdata.get_colour(user_data), userdata.get_material(user_data))
+
+
+def build_group_follower(curve):
+    origin_matrix = Group.str_to_matrix(curve.get(Curve.PROP_ORIGIN_MATRIX)) or Group.get_default_origin_matrix()
+    new_obj = Group.deserialise_to_group(get_builder(), curve[Curve.PROP_GROUP_CHILD_CACHE], origin_matrix)
+    if new_obj is not None:
+        new_obj[Group.PROP_GROUP_ID] = curve.get(Curve.PROP_DUP_GROUP_ID, new_obj[Group.PROP_GROUP_ID])
+    return new_obj
 
 
 def remove_objects_from_curve(number_to_remove, existing_objs):
@@ -284,17 +335,22 @@ def add_objects_to_curve(number_to_add, curve, existing_objs, bpy_object=None):
             new_obj.data = bpy_object.data.copy()
             for constraint in list(new_obj.constraints):
                 new_obj.constraints.remove(constraint)
-        elif Curve.PROP_DUP_OBJECT_ID not in curve:
-            # group curves from other versions can only grow by copying a follower
-            return
-        else:
+        elif is_group_curve(curve):
+            new_obj = build_group_follower(curve)
+            if new_obj is None:
+                return
+        elif Curve.PROP_DUP_OBJECT_ID in curve:
             new_item = get_builder().add_part(
-                curve[Curve.PROP_DUP_OBJECT_ID], user_data=curve[Curve.PROP_DUP_USER_DATA]
+                curve[Curve.PROP_DUP_OBJECT_ID], user_data=curve.get(Curve.PROP_DUP_USER_DATA, 0)
             )
             new_obj = new_item.object
+        else:
+            return
 
         if Curve.PROP_DUP_USER_DATA in curve:
-            material.restore_material(new_obj, curve[Curve.PROP_DUP_USER_DATA])
+            paint_follower(new_obj, curve[Curve.PROP_DUP_USER_DATA])
+            if Group.PROP_GROUP_ID in new_obj:
+                new_obj[Part.PROP_USER_DATA] = curve[Curve.PROP_DUP_USER_DATA]
 
         constraint = new_obj.constraints.new(type='FOLLOW_PATH')
         constraint.target = curve
@@ -367,7 +423,7 @@ def apply_curve_transforms_and_detach(curve):
         Curve.PROP_RADIUS_MULTIPLIER,
         Curve.PROP_OBJECTS_COUNT,
         Curve.PROP_DENSITY_STEP,
-    ) + Curve.LEGACY_PROPS
+    ) + Curve.GROUP_PROPS + Curve.LEGACY_PROPS
 
     for prop in curve_props_to_delete:
         curve.pop(prop, None)
@@ -475,8 +531,7 @@ def replace_curve_object(curve_obj, source_obj):
     for collection in curve_obj.users_collection:
         collection.objects.link(new_curve_obj)
 
-    new_curve_obj[Curve.PROP_DUP_OBJECT_ID] = source_obj[Part.PROP_OBJECT_ID]
-    new_curve_obj[Curve.PROP_DUP_USER_DATA] = source_obj[Part.PROP_USER_DATA]
+    store_duplicate_source(new_curve_obj, source_obj)
 
     sync_curves(new_curve_obj, curve_obj, duping_object_source=source_obj)
 
@@ -524,11 +579,23 @@ def mirror_curve(curve_obj, axis="Z", center=None, auto_duplicate=False):
 
     curve_utils.mirror_curve(new_curve_obj, axis, center)
 
-    # switch to the mirror part when one exists
-    object_id = new_curve_obj.get(Curve.PROP_DUP_OBJECT_ID)
-    mirror_obj_id = Part.get_mirror_part_id(object_id) if object_id else None
-    if mirror_obj_id in get_builder().nice_name_dictionary:
-        new_curve_obj[Curve.PROP_DUP_OBJECT_ID] = mirror_obj_id
+    if is_group_curve(new_curve_obj):
+        # mirror the group's cache, followers are rebuilt from it
+        new_child_cache, new_origin_matrix = Group.mirror_cache_data(
+            new_curve_obj[Curve.PROP_GROUP_CHILD_CACHE],
+            Group.str_to_matrix(new_curve_obj.get(Curve.PROP_ORIGIN_MATRIX)),
+            axis,
+            center,
+        )
+        if new_child_cache is not None:
+            new_curve_obj[Curve.PROP_GROUP_CHILD_CACHE] = new_child_cache
+            new_curve_obj[Curve.PROP_ORIGIN_MATRIX] = Group.matrix_to_str(new_origin_matrix)
+    else:
+        # switch to the mirror part when one exists
+        object_id = new_curve_obj.get(Curve.PROP_DUP_OBJECT_ID)
+        mirror_obj_id = Part.get_mirror_part_id(object_id) if object_id else None
+        if mirror_obj_id in get_builder().nice_name_dictionary:
+            new_curve_obj[Curve.PROP_DUP_OBJECT_ID] = mirror_obj_id
 
     sync_curves(new_curve_obj, curve_obj, True, axis, from_mirror=True)
     return new_curve_obj
@@ -558,9 +625,10 @@ def sync_curves(target_curve, source_curve, do_mirror=False, axis=None, from_mir
         duping_object, target_curve, number_of_objects, radius_multiplier
     )
 
-    if target_dupe_objects:
+    target_is_group = is_group_curve(target_curve)
+    if target_dupe_objects and not target_is_group:
         target = target_dupe_objects[0]
-        material.restore_material(target, target[Part.PROP_USER_DATA])
+        material.restore_material(target, target.get(Part.PROP_USER_DATA, 0))
 
     if Curve.PROP_DUP_USER_DATA in source_curve:
         apply_color(target_curve, source_curve[Curve.PROP_DUP_USER_DATA])
@@ -575,6 +643,10 @@ def sync_curves(target_curve, source_curve, do_mirror=False, axis=None, from_mir
             target.location.x = -target.location.x
             target.rotation_euler.y = -target.rotation_euler.y
             target.rotation_euler.z = -target.rotation_euler.z
+
+            if axis == "Z" and target_is_group:
+                target.rotation_euler.x += math.pi
+                target.rotation_euler.z += math.pi
 
 
 # scale of a follower before the curve's radius and scale are applied
@@ -592,7 +664,13 @@ def apply_color(curve_obj, user_data):
 
     if Curve.PROP_HAS_LINKED_OBJECTS in curve_obj and is_bezier_or_nurbs_path(curve_obj):
         curve_obj[Curve.PROP_DUP_USER_DATA] = user_data
-        # followers share one mesh, so painting the first colours them all
-        for child_obj in get_all_curve_children(curve_obj, require_id=False):
-            material.restore_material(child_obj, user_data)
-            break
+        children = get_all_curve_children(curve_obj, require_id=False)
+        if not children:
+            return None
+
+        # followers share one mesh, so painting the first colours them all,
+        # but each one saves its own UserData
+        paint_follower(children[0], user_data)
+        painted_user_data = children[0].get(Part.PROP_USER_DATA, str(user_data))
+        for child_obj in children:
+            child_obj[Part.PROP_USER_DATA] = painted_user_data
