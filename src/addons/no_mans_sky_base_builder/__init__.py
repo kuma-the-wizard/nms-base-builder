@@ -293,6 +293,8 @@ class NMSSettings(PropertyGroup):
     is_workspace_cleaned: BoolProperty(
         name="Is Workspace Cleaned", description="Check if workspace has been cleaned by user", default=False
     )
+    # what simplifying changed, so restoring can put it back
+    workspace_state: StringProperty(name="Workspace State", default="")
 
     room_vis_switch: IntProperty(name="room_vis_switch", default=0)
     
@@ -769,7 +771,9 @@ class NMS_PT_hero_panel(Panel):
         workspace_column = workspace_box.column(align = True)
         workspace_column.label(text = "Workspace")
         workspace_column.operator("object.nms_launch_asset_browser", text = "Launch Asset Browser", icon = "DESKTOP")
-        if not nms_tool.is_workspace_cleaned:
+        if nms_tool.is_workspace_cleaned:
+            workspace_column.operator("object.nms_cleanup_workspace", text = "Restore Blender Workspace", icon = "LOOP_BACK")
+        else:
             workspace_column.operator("object.nms_cleanup_workspace", text = "Simplify Blender Workspace", icon = "WORKSPACE")
 
 
@@ -1189,15 +1193,19 @@ class ExportObjectsData(bpy.types.Operator):
     
     
 class SwitchWorkspace(bpy.types.Operator):
-    """Switch to a simpler workspace"""
+    """Switch to a simpler workspace, or back to how blender was before"""
     bl_idname = "object.nms_cleanup_workspace"
     bl_label = "Switch workspace"
 
     def execute(self, context):
-        scene = context.scene
-        nms_tool = scene.nms_base_tool
-        nms_tool.is_workspace_cleaned = True
-        workspace.cleanup_workspace(context)
+        nms_tool = context.scene.nms_base_tool
+        if nms_tool.is_workspace_cleaned:
+            workspace.restore_workspace(context, nms_tool.workspace_state)
+            nms_tool.workspace_state = ""
+            nms_tool.is_workspace_cleaned = False
+        else:
+            nms_tool.workspace_state = workspace.cleanup_workspace(context) or ""
+            nms_tool.is_workspace_cleaned = True
         return {"FINISHED"}
 
 class SaveAsPreset(bpy.types.Operator):
@@ -1972,6 +1980,12 @@ def reset_plugin_state(dummy):
         save_data = scene.nms_save_data
         save_data.check_plugin_enabled = False
 
+    # the toolbar trim isn't saved in the file, so apply it again for a simplified workspace
+    if bpy.context.scene.nms_base_tool.is_workspace_cleaned:
+        workspace.hide_viewport_tools()
+    else:
+        workspace.restore_viewport_tools()
+
 last_active = None
 # keep track of active object to display or hide additional options related to that object
 @persistent
@@ -2211,8 +2225,11 @@ def unregister():
         
     if curve_udpate_handler in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.remove(curve_udpate_handler)
-        
-        
+
+    # the toolbar is patched while the workspace is simplified
+    workspace.restore_viewport_tools()
+
+
 
 
 if __name__ == "__main__":
