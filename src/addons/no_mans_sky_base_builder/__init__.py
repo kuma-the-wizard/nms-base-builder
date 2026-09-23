@@ -63,6 +63,15 @@ def part_switch(self, context):
         refresh_ui_part_list(scene, part_list)
 
 
+def palette_variant_items(self, context):
+    return _material.PALETTE_VARIANTS_UI.get(self.palette_category, [])
+
+
+def palette_category_switch(self, context):
+    # the variant enum stores an index, point it at the new category's first variant
+    self.material_switch = palette_variant_items(self, context)[0][0]
+
+
 def get_line_type_from_enum(context):
     line_object = "U_POWERLINE"
     scene = context.scene
@@ -97,10 +106,18 @@ class NMSSettings(PropertyGroup):
         update=part_switch,
     )
 
+    palette_category: EnumProperty(
+        name="Palette",
+        description="Decide what type of material to apply",
+        items=_material.PALETTE_CATEGORIES_UI,
+        update=palette_category_switch,
+    )
+
+    # variants of the chosen palette_category, e.g. "0_Legacy - Concrete"
     material_switch: EnumProperty(
         name="Material Palette",
-        description="Decide what type of material to apply",
-        items=_material.BAKED_PALETTES_UI,
+        description="Decide which variant of the palette to apply",
+        items=palette_variant_items,
     )
 
     line_switch: EnumProperty(
@@ -846,8 +863,12 @@ class NMS_PT_colour_panel(Panel):
         colour_area = layout.box().column(align=False)
         material_row = colour_area.row(align = True)
         
-        material_row.prop(nms_tool, "material_switch",text = "Palette")
-        colour_area.separator()
+        material_row.prop(nms_tool, "palette_category", text = "Palette")
+        # single variant categories like Freighter have nothing to choose
+        if len(_material.PALETTE_VARIANTS_UI.get(nms_tool.palette_category, [])) > 1:
+            variant_row = colour_area.row(align = True)
+            variant_row.prop(nms_tool, "material_switch", expand = True)
+        #colour_area.separator()
         grid = colour_area.grid_flow(columns=12, even_columns=True, align = True)
         grid.scale_x = 0.6
         grid.scale_y = 1.0

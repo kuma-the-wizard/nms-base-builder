@@ -7,7 +7,6 @@ import re
 import bpy
 
 from ..utils import python as python_utils
-from ..utils import userdata
 
 # Get Colour Information.
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -45,6 +44,25 @@ BAKED_PALETTES = get_all_palettes()
 BAKED_PALETTES_UI = [
     (f"{value}_{key}", key, key) for key, value in BAKED_PALETTES.items()
 ]
+
+
+def get_palette_categories():
+    # "Legacy - Rust" is the Rust variant of Legacy, a name without " - " is its own category
+    # variant ids match BAKED_PALETTES_UI so the chosen value means the same thing as before
+    categories = {}
+    for key, value in BAKED_PALETTES.items():
+        category, _, variant = key.partition(" - ")
+        categories.setdefault(category, []).append(
+            (f"{value}_{key}", variant or category, key)
+        )
+    for variants in categories.values():
+        variants.sort(key=lambda item: int(item[0].split("_")[0]))
+    return categories
+
+
+# built once, Blender needs dynamic enum items to stay referenced
+PALETTE_VARIANTS_UI = get_palette_categories()
+PALETTE_CATEGORIES_UI = [(category, category, category) for category in PALETTE_VARIANTS_UI]
 
 BAKED_INDEX_COLOURS = {}
 
