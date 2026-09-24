@@ -562,18 +562,29 @@ class NMSSettings(PropertyGroup):
         self.auto_power_setting = "UseDefault"
 
         # Remove all no mans sky items from scene.
-        # Deselect all
-        bpy.ops.object.select_all(action="DESELECT")
-        # Select NMS Items
-        for bpy_object in bpy.data.objects:
-            id_check = "ObjectID" in bpy_object
-            preset_check = "PresetID" in bpy_object
-            light_check = "NMS_LIGHT" in bpy_object
-            rig_check = "rig_item" in bpy_object
-            curve_check = curve.Curve.PROP_CURVE_ID in bpy_object
-            group_check = Group.PROP_GROUP_ID in bpy_object
-            if any([id_check, preset_check, light_check, rig_check, curve_check, group_check]):
-                blend_utils.remove_object(bpy_object.name)
+        # collected first and removed in one batch, removing one at a time
+        # is slow on large bases and mutates bpy.data.objects mid-iteration
+        nms_props = (
+            "ObjectID",
+            "PresetID",
+            "NMS_LIGHT",
+            "rig_item",
+            curve.Curve.PROP_CURVE_ID,
+            Group.PROP_GROUP_ID,
+        )
+        doomed = [
+            bpy_object
+            for bpy_object in bpy.data.objects
+            if any(prop in bpy_object for prop in nms_props)
+        ]
+        if doomed:
+            meshes = {obj.data for obj in doomed if obj.type == "MESH" and obj.data}
+            bpy.data.batch_remove(doomed)
+
+            # meshes left unused would pile up in the file with every import
+            orphan_meshes = [mesh for mesh in meshes if mesh.users == 0]
+            if orphan_meshes:
+                bpy.data.batch_remove(orphan_meshes)
 
         # Reset room vis
         self.room_vis_switch = 0

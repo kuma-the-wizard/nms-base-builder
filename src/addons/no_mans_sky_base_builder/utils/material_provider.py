@@ -64,6 +64,10 @@ class MaterialProvider:
         if not hasattr(item.data, "materials"):
             return
 
+        # already coloured, skip so a shared mesh isn't copied for nothing
+        if item.data.materials and item.data.materials[0] == material:
+            return material
+
         # colour lives on the mesh, so a shared mesh would recolour every part using it
         if item.data.users > 1 and "curve_parent" not in item:
             item.data = item.data.copy()

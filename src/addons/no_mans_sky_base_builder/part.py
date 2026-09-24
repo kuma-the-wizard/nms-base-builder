@@ -39,6 +39,9 @@ class Part(object):
 
     SNAP_CACHE = {}
 
+    # False for parts that always get a fixed material, like lines
+    RESTORE_USERDATA_MATERIAL = True
+
     def __init__(
         self,
         object_id=None,
@@ -77,7 +80,10 @@ class Part(object):
             self.belongs_to_preset = self.DEFAULT_BELONGS_TO_PRESET
             self.order = len(bpy.data.objects)
             # Assign material.
-            material.restore_material(self.__object, user_data)
+            if self.RESTORE_USERDATA_MATERIAL:
+                material.restore_material(self.__object, user_data)
+            else:
+                self.user_data = user_data
             # Set to origin.
             self.reset_transforms()
 
@@ -234,12 +240,8 @@ class Part(object):
     def duplicate(self):
         """Duplicate the part and return it."""
         # Create new object as whole.
+        # the mesh stays shared, set_material copies it only when the colour differs
         new_object = self.__object.copy()
-        # Transfer a copy of the mesh and material.
-        new_object.data = self.__object.data.copy()
-
-        if self.__object.active_material:
-            new_object.active_material = self.__object.active_material.copy()
 
         # Clear Parent
         if new_object.parent:

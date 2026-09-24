@@ -24,7 +24,14 @@ class Line(part.Part):
             self.object.lock_rotation = [True, True, True]
             self.object.lock_scale = [True, True, True]
 
-            material.assign_power_material(self.object)
+            self.assign_line_material()
+
+    # lines are one flat colour, so their duplicates share a mesh
+    RESTORE_USERDATA_MATERIAL = False
+
+    def assign_line_material(self):
+        """Colour the line, subclasses override it for their own colour."""
+        material.assign_power_material(self.object)
 
     @property
     def start_control(self):
@@ -233,7 +240,9 @@ class Line(part.Part):
             name = "{}.{:0=3d}".format(base_name, n)
 
         point.name = name
-        point.data.name = name + "_SHAPE"
+        # controls share one mesh, renaming it for each would just churn the name
+        if point.data.users == 1:
+            point.data.name = name + "_SHAPE"
         builder.add_to_part_cache("POWER_CONTROL", point)
 
         return bpy.data.objects[point.name]

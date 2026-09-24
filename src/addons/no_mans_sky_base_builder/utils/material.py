@@ -86,19 +86,20 @@ def get_all_colours():
     return rows
 
 
+NICE_NAMES = {}
+
+
 def get_nice_name_from_indicies(colour_index, material_index):
-    with open(COLOURS_CSV, "r") as csv_file:
-        csv_reader = csv.reader((x.replace("\0", "") for x in csv_file), delimiter=",")
-        for idx, row in enumerate(csv_reader):
-            if idx == 0:
+    # built once from the baked rows, this runs for every coloured part on import
+    if not NICE_NAMES:
+        for row in BAKED_COLOURS:
+            try:
+                key = (int(row[3]), int(row[4]))
+                nice_name = f"{row[2]}: {row[5]}"
+            except (ValueError, IndexError):
                 continue
-            colour_id = row[3]
-            material_id = row[4]
-            if int(colour_index) == int(colour_id) and int(material_index) == int(
-                material_id
-            ):
-                return f"{row[2]}: {row[5]}"
-    return ""
+            NICE_NAMES.setdefault(key, nice_name)
+    return NICE_NAMES.get((int(colour_index), int(material_index)), "")
 
 
 BAKED_COLOURS = get_all_colours()

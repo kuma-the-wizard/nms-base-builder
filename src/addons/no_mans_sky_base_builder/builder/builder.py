@@ -185,9 +185,11 @@ class Builder(Catalog):
         """Get all items that require a rig and build them."""
         blend_utils.scene_refresh()
         for item in self.get_all_parts(exclude_presets=True):
+            # checked on the class, most parts have no rig and needn't be wrapped
+            if not hasattr(self.get_part_class(item["ObjectID"]), "build_rig"):
+                continue
             builder_object = self.get_builder_object_from_bpy_object(item)
-            if hasattr(builder_object, "build_rig"):
-                builder_object.build_rig()
+            builder_object.build_rig()
 
     def optimise_control_points(self):
         """Find all control points that share the same location and combine them."""
@@ -205,6 +207,8 @@ class Builder(Catalog):
             power_control_reference[key].append(power_control)
 
         # Swap any duplicate controls with the first instance.
+        # removed in one batch at the end, a remove() per control re-syncs the file each time
+        doomed = []
         for controls in power_control_reference.values():
             unique_control = controls[0]
             for control in controls[1:]:
@@ -218,7 +222,10 @@ class Builder(Catalog):
                 else:
                     power_line_obj.build_rig(prev_start_control, unique_control)
 
-                blend_utils.remove_object(control.name)
+                doomed.append(control)
+
+        if doomed:
+            bpy.data.batch_remove(doomed)
 
     # Serialising ---
     def serialise(self, get_presets=False, add_timestamp=False, as_prefab=False, include_groups=True):
