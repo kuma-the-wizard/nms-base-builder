@@ -26,13 +26,16 @@ from .part_overrides import line
 from .save_editor import save_editor_operators, save_editor_utils
 from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel
 from .save_editor.save_manager import SaveManager
-from .tools import batch_tool_operators, build_tool_operators
+from .tools import (batch_tool_operators, build_tool_operators,
+                    transformation_operators)
 from .tools.batch_tool import BatchTool
 from .tools.batch_tool_presentation import NMS_PT_batch_tools_panel
 from .tools.build_tool import BuildTool
 from .tools.build_tool_presentation import NMS_PT_tools_panel
 from .tools.properties import Properties
 from .tools.properties_presentation import NMS_PT_base_prop_panel
+from .tools.transformation import Transformation
+from .tools.transformation_presentation import NMS_PT_transformation_panel
 from .utils import blend_utils, collection_utils, curve, curve_utils
 from .utils import material as _material
 from .utils import python as python_utils
@@ -2160,12 +2163,14 @@ classes = (
     BuildTool,
     Properties,
     BatchTool,
+    Transformation,
     
     NMS_UL_actions_list,
     NMS_PT_hero_panel,
     NMS_PT_file_buttons_panel,
     NMS_PT_save_editor_panel,
     NMS_PT_base_prop_panel,
+    NMS_PT_transformation_panel,
     NMS_PT_colour_panel,
     NMS_PT_logic_panel,
     NMS_PT_tools_panel,
@@ -2181,7 +2186,7 @@ classes = (
     UngroupObjects,
 )
 
-classes = classes  + save_editor_operators.classes + build_tool_operators.classes + batch_tool_operators.classes
+classes = classes  + save_editor_operators.classes + build_tool_operators.classes + batch_tool_operators.classes + transformation_operators.classes
 
 
 
@@ -2222,6 +2227,7 @@ def register():
     bpy.types.Scene.nms_build_tool = bpy.props.PointerProperty(type=BuildTool)
     bpy.types.Scene.nms_properties = bpy.props.PointerProperty(type=Properties)
     bpy.types.Scene.nms_batch_tool = bpy.props.PointerProperty(type=BatchTool)
+    bpy.types.Scene.nms_transformation = bpy.props.PointerProperty(type=Transformation)
     
     if reset_plugin_state not in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.append(reset_plugin_state)
@@ -2252,6 +2258,7 @@ def unregister():
     del bpy.types.Scene.nms_build_tool
     del bpy.types.Scene.nms_properties
     del bpy.types.Scene.nms_batch_tool
+    del bpy.types.Scene.nms_transformation
     
     if reset_plugin_state in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(reset_plugin_state)
