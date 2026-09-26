@@ -190,10 +190,7 @@ class SaveManager(bpy.types.PropertyGroup):
         accounts_list = save_editor_utils.get_accounts_list(context)
         accounts_enum_list = []
         for account in accounts_list:
-            folder = account["folder"]
-            steam_persona = account["steam_persona"]
-            label = folder.name if steam_persona is None else f"{steam_persona} ( {folder.name[-3:]} )"
-            accounts_enum_list.append((str(folder), label, ""))
+            accounts_enum_list.append((str(account["folder"]), account["label"], ""))
         accounts_enum_list.insert(0, default_account_list_item)
         return accounts_enum_list
     
@@ -505,8 +502,10 @@ class SaveManager(bpy.types.PropertyGroup):
         self.pinned_galactic_address = str(identifiers.galactic_address)
         self.pinned_save_account = self.nms_account_selected
         self.pinned_save_slot_name = save_slot_name
-        self.pinned_base_save_1 = save_slot["saves"][0]
-        self.pinned_base_save_2 = save_slot["saves"][1]
+        # a Game Pass slot can have a single save
+        saves = save_slot["saves"]
+        self.pinned_base_save_1 = saves[0]
+        self.pinned_base_save_2 = saves[1] if len(saves) > 1 else "None"
       
     # called from operators to unpin a pinned base
     def unpin_base(self):
@@ -539,11 +538,10 @@ class SaveManager(bpy.types.PropertyGroup):
         if self.pinned_base_name == "None":
             return None
         
-        save_links = [ 
-            self.pinned_base_save_1, 
-            self.pinned_base_save_2 
-        ]
-        
+        save_links = self.get_pinned_save_links()
+        if not save_links:
+            return None
+
         base_data = BaseData()
         base_data.base_index = self.pinned_base_index
         base_data.base_name = self.pinned_base_name
@@ -562,10 +560,20 @@ class SaveManager(bpy.types.PropertyGroup):
         
     # for pinned backup button operator to call, will make backup of pinned base/corvette
     def backup_pinned_save_files(self):
-        save_1 = self.pinned_base_save_1
-        save_2 = self.pinned_base_save_2
-        save_links = [save_1,save_2]
-        save_editor_utils.backup_save_files(save_links)
+        save_links = self.get_pinned_save_links()
+        if save_links:
+            save_editor_utils.backup_save_files(save_links)
+
+    # save links of the pinned base, "None" marks an unused link
+    def get_pinned_save_links(self):
+        return [
+            link for link in (self.pinned_base_save_1, self.pinned_base_save_2)
+            if link and link != "None"
+        ]
+
+    # for the UI, the folder prompt isn't needed when Game Pass accounts were found
+    def has_accounts(self):
+        return len(SaveManager.enum_accounts_list) > 1
         
     # for backup button operator to call, will make backup of selected save slot
     def backup_save_files(self):

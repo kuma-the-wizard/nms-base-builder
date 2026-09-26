@@ -68,8 +68,11 @@ def draw_base_picker(container, save_data):
     sf_enable_row = sf_column.row(align=True)
     sf_enable_row.label(text="Select Save")
 
+    # Game Pass accounts are found on their own, so they can be used without a Steam save folder
+    is_save_folder_valid = save_data.validate_save_folder(save_folder_path)
+
     # This row will contain a field where location of save folder is displayed.
-    if save_data.check_plugin_enabled and save_data.validate_save_folder( save_folder_path ):
+    if save_data.check_plugin_enabled and (is_save_folder_valid or save_data.has_accounts()):
         # Button to choose path to save folder.
         sf_enable_row.operator(
             "object.nms_select_save_folder", text="", icon="FILE_FOLDER"
@@ -91,7 +94,7 @@ def draw_base_picker(container, save_data):
     if not save_data.check_plugin_enabled:
         return
 
-    if not save_data.validate_save_folder(save_folder_path):
+    if not is_save_folder_valid and not save_data.has_accounts():
         sf_column.separator()
         select_folder_info_col = sf_column.column(align=True)
         select_folder_info_col.scale_y = 0.8
