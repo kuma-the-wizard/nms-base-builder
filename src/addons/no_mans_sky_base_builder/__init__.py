@@ -328,9 +328,10 @@ class NMSSettings(PropertyGroup):
         update = lambda self, context: self.on_color_picked()
     )
 
-    def deserialise_from_data(self, nms_data):
-        # Start new file
-        self.new_file()
+    def deserialise_from_data(self, nms_data, start_new_file=True):
+        # pinning a base only reads its properties, the scene is kept
+        if start_new_file:
+            self.new_file()
 
         # Start bringing the data in.
         if "GalacticAddress" in nms_data:
@@ -2063,9 +2064,10 @@ def curve_udpate_handler(scene, depsgraph):
     for update in depsgraph.updates:
         if not isinstance(update.id, bpy.types.Object):
             continue
-        # the object can already be gone by the time we look it up
-        orig_obj = bpy.data.objects.get(update.id.name)
-        if orig_obj is None:
+        # by reference because a name lookup is O(n) per update
+        orig_obj = update.id.original
+        # linked objects can't take the property writes below
+        if orig_obj is None or orig_obj.library is not None:
             continue
         if orig_obj.type == 'CURVE' and Curve.PROP_CURVE_ID in orig_obj:
             updated_curve_names.add(orig_obj.name)
