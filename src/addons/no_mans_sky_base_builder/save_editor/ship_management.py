@@ -798,7 +798,7 @@ class BBE_OT_ship_management(bpy.types.Operator):
             SESSION=None;self.report({'ERROR'},str(exc));return {'CANCELLED'}
 
 
-CLASSES=(BBE_PG_ship_catalog_item,BBE_PG_ship_catalog,BBE_UL_ship_catalog,BBE_PG_ship_keep,BBE_PG_ship_copy,BBE_PG_ship_stat,BBE_OT_ship_class,BBE_OT_ship_stats,BBE_OT_ship_add,BBE_OT_ship_item,BBE_OT_ship_insert,BBE_OT_ship_save,BBE_OT_ship_duplicate,BBE_OT_ship_move_hyperslot,BBE_OT_ship_discard,BBE_OT_ship_lost,BBE_OT_ship_management_window,BBE_OT_ship_management)
+CLASSES=(BBE_PG_ship_catalog_item,BBE_PG_ship_catalog,BBE_UL_ship_catalog,BBE_PG_ship_keep,BBE_UL_ship_keep,BBE_PG_ship_copy,BBE_PG_ship_stat,BBE_OT_ship_class,BBE_OT_ship_stats,BBE_OT_ship_add,BBE_OT_ship_item,BBE_OT_ship_insert,BBE_OT_ship_save,BBE_OT_ship_duplicate,BBE_OT_ship_move_hyperslot,BBE_OT_ship_discard,BBE_OT_ship_lost,BBE_OT_ship_management_window,BBE_OT_ship_management)
 
 def register():
     for cls in CLASSES:bpy.utils.register_class(cls)

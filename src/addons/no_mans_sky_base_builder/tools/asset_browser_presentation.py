@@ -524,6 +524,13 @@ class NMS_PT_asset_browser_panel(bpy.types.Panel):
         layout.prop(browser, 'asset_browser_caterogies', text='Category')
         layout.prop(browser, 'asset_browser_sub_caterogies', text='Group')
         layout.label(text='Click an image to place; right-click for options')
+        # The thumbnails are drawn over this native row. Keeping the panel's
+        # content as tall as the visible picker lets Blender's own resize zone
+        # follow the sidebar's left edge beside the thumbnails as well.
+        scale = max(.75, context.preferences.system.ui_scale)
+        picker_space = layout.row()
+        picker_space.scale_y = max(1.0, (context.region.height - 180 * scale) / (20 * scale))
+        picker_space.label(text=' ')
 
 
 class NMS_PT_asset_browser_properties_panel(bpy.types.Panel):

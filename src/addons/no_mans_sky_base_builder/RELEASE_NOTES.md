@@ -1,3 +1,9 @@
+## 18.1.45 - Duplicate save checklist
+
+- Restore the ship and base checklist when creating a duplicate save.
+- Preserve the source save's universal ID and Steam metadata slot identifier when copying to a new slot.
+- Align the sidebar asset grid with its upper controls.
+
 ## 18.1.44 - Clickable sidebar thumbnails
 
 - Place parts by clicking their full-size images in the NMS Asset Browser sidebar, with the same variant and right-click actions as the separate browser.

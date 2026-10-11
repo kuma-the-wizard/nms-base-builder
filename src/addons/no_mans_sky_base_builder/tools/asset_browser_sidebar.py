@@ -21,6 +21,8 @@ _sessions = {}
 _resources = {}
 _enabled = False
 _CATEGORY = 'NMS Asset Browser'
+_PANEL_LEFT = 6
+_PANEL_RIGHT = 25
 
 
 def request_redraw():
@@ -98,7 +100,7 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
             self._area.tag_redraw()
 
     def _active(self, region):
-        return (region and region.type == 'UI' and region.width > 1 and
+        return (region and region.type == 'UI' and region.width > 64 and
                 region.active_panel_category == _CATEGORY)
 
     def modal(self, context, event):
@@ -123,7 +125,8 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
                 self._drag = False
                 return {'RUNNING_MODAL'}
             if self._drag or (inside and event.type == 'LEFTMOUSE' and
-                              event.value == 'PRESS' and x >= region.width - 12 * self._scale):
+                              event.value == 'PRESS' and x >= region.width -
+                              (_PANEL_RIGHT + 11) * self._scale):
                 self._drag = True
                 self._offset = self._max_offset * min(1, max(0, (self._view_height-y) / max(1, self._view_height)))
                 self._area.tag_redraw()
@@ -186,18 +189,25 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
         self._view_height = max(1, height - 170 * scale)
         key = (width, height, scale, self._size, self._columns, self._signature)
         if key != self._geometry_key:
-            self._titles, self._tiles, self._total = grid_geometry(
-                self._groups, width - 8 * scale, self._size, self._columns, scale)
+            panel_width = width - (_PANEL_LEFT + _PANEL_RIGHT) * scale
+            titles, tiles, self._total = grid_geometry(
+                self._groups, panel_width, self._size, self._columns, scale)
+            left = _PANEL_LEFT * scale
+            self._titles = [(x + left, top, title) for x, top, title in titles]
+            self._tiles = [(x + left, top, w, h, object_id, data)
+                           for x, top, w, h, object_id, data in tiles]
             self._max_offset = max(0, self._total - self._view_height)
             self._offset = min(self._offset, self._max_offset)
             self._geometry_key = key
         gpu.state.blend_set('ALPHA')
         try:
-            self.rectangle(0, 0, width, self._view_height, (.16, .16, .16, 1))
+            left = _PANEL_LEFT * scale
+            panel_width = width - (_PANEL_LEFT + _PANEL_RIGHT) * scale
+            self.rectangle(left, 0, panel_width, self._view_height, (.16, .16, .16, 1))
             for x, top, title in self._titles:
                 y = self._view_height - top + self._offset - 18 * scale
                 if 0 <= y <= self._view_height:
-                    self.label(x, y, title, width - 20 * scale)
+                    self.label(x, y, title, panel_width - 20 * scale)
             for x, top, w, h, object_id, data in self._tiles:
                 y = self._view_height - top - h + self._offset
                 if y + h < 0 or y + h > self._view_height or y < 0:
@@ -216,12 +226,12 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
                         self.rectangle(x+w-(16-line*6)*scale, y+h-18*scale,
                                        2*scale, 11*scale, (.85,.85,.85,1))
             if not self._tiles:
-                self.label(12*scale, self._view_height-25*scale,
-                           'No parts in this view.', width-24*scale)
+                self.label(left + 12*scale, self._view_height-25*scale,
+                           'No parts in this view.', panel_width-24*scale)
             if self._max_offset:
                 thumb = max(30*scale, self._view_height**2 / max(self._total, 1))
                 top = self._offset / self._max_offset * (self._view_height-thumb)
-                self.rectangle(width-7*scale, self._view_height-top-thumb,
+                self.rectangle(width-(_PANEL_RIGHT+7)*scale, self._view_height-top-thumb,
                                4*scale, thumb, (.45,.45,.45,1))
         finally:
             gpu.state.blend_set('NONE')
