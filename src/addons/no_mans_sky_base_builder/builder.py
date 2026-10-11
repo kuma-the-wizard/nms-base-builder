@@ -313,6 +313,14 @@ class Builder(object):
         We don't need to create a new class, we can act upon this one.
         """
 
+        from . import stages, progress_ui
+        with progress_ui.Activity('Importing models') as progress:
+            return self._deserialise_with_progress(data, stages, progress)
+
+    def _deserialise_with_progress(self, data, stages, progress):
+        progress.update(.02, 'Preparing scene')
+        stages.prepare_import(bpy.context.scene)
+
         base_version = data.get("BaseVersion", 8)
 
         compensate_normal = True
@@ -320,13 +328,19 @@ class Builder(object):
             compensate_normal = False
 
         # Reconstruct objects.
-        for part_data in data.get("Objects", []):
+        objects = data.get("Objects", [])
+        total = len(objects)
+        for index, part_data in enumerate(objects):
+            if index % 16 == 0:
+                progress.batch(index, total, .06, .87, 'Models')
             object_id = part_data.get("ObjectID").replace("^", "")
             use_class = self.get_part_class(object_id)
             use_class.deserialise_from_data(
                 part_data, self, compensate_normal=compensate_normal
             )
 
+        progress.batch(total, total, .06, .87, 'Models')
+        progress.update(.92, 'Building presets and connections')
         # Reconstruct presets.
         for preset_data in data.get("Presets", []):
             preset.Preset.deserialise_from_data(
@@ -337,6 +351,7 @@ class Builder(object):
         self.build_rigs()
         # Optimise control points.
         self.optimise_control_points()
+        progress.update(1.0, 'Import complete')
 
     @staticmethod
     def by_order(bpy_object):

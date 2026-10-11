@@ -31,6 +31,12 @@ class AssetBrowser(bpy.types.PropertyGroup):
 
     enum_categories = []
     enum_sub_categories = []
+    view_revision = 0
+
+    def invalidate_view(self):
+        AssetBrowser.view_revision += 1
+        from . import asset_browser_grid
+        asset_browser_grid.request_redraw()
 
     check_display_search_results: bpy.props.BoolProperty(
         name = "Display Search Results",
@@ -81,7 +87,8 @@ class AssetBrowser(bpy.types.PropertyGroup):
             ("recent", "recent", "recent"),
             ("preset", "preset", "preset")
         ],
-        default = "asset"
+        default = "asset",
+        update = lambda self, context: self.invalidate_view()
     )
 
     category_order_list: bpy.props.CollectionProperty(type=NMSCategoryOrderItem)
@@ -115,6 +122,8 @@ class AssetBrowser(bpy.types.PropertyGroup):
             search_text = self.asset_broser_search_query
             search_results = self.filter_objects_with_string(search_text)
             AssetBrowser.search_results = search_results
+
+        self.invalidate_view()
 
     def refresh_categories(self):
         """Rebuild the category enum, favourites first in their saved order.
@@ -166,11 +175,14 @@ class AssetBrowser(bpy.types.PropertyGroup):
         self.enum_asset_browser_what_to_display = "asset"
         AssetBrowser.enum_sub_categories = self.extract_enum_sub_categories()
         self.asset_browser_sub_caterogies = "All"
+        self.invalidate_view()
 
 
     def on_sub_category_selected(self):
         self.enum_asset_browser_what_to_display = "asset"
         AssetBrowser.enum_sub_categories = self.extract_enum_sub_categories()
+
+        self.invalidate_view()
 
     def get_enum_sub_categories(self):
         return self.extract_enum_sub_categories()
@@ -227,6 +239,8 @@ class AssetBrowser(bpy.types.PropertyGroup):
             self.enum_asset_browser_what_to_display = "asset"
             AssetBrowser.search_results = {}
 
+        self.invalidate_view()
+
     def filter_objects_with_string(self,search_filter):
         return asset_browser_utils.filter_objects(
             self.get_categories_data(), search_filter
@@ -278,6 +292,7 @@ class AssetBrowser(bpy.types.PropertyGroup):
         AssetBrowser.favourite_objects_data = asset_browser_utils.apply_favourites(
             self.get_categories_data(), new_favourite_objects
         )
+        self.invalidate_view()
 
 
     def get_favourite_objects_data(self):
@@ -293,6 +308,7 @@ class AssetBrowser(bpy.types.PropertyGroup):
                 self.get_categories_data(), new_recent_objects
             )
         )
+        self.invalidate_view()
 
     def get_recent_objects_data(self):
             return AssetBrowser.recent_objects_data

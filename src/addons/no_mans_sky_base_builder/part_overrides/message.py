@@ -4,6 +4,9 @@ from .. import part
 class MESSAGE(part.Part):
     """Capture extra "Message" attribute."""
 
+    # Song/projector payloads are metadata; they do not require the old mesh.
+    HIGH_RES_COMPATIBLE = True
+
     def __init__(self, *args, **kwargs):
         super(MESSAGE, self).__init__(*args, **kwargs)
         if "Message" not in self.object:

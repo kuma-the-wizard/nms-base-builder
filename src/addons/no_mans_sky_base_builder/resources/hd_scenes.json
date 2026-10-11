@@ -1,0 +1,49 @@
+{
+  "id": "hd-scenes-3-9e7403a98a17",
+  "content_sha256": "9e7403a98a17695ec2037eeaf96232fe05dbbfe00293c934c137a37dc6ce28c7",
+  "files": {
+    "display/OUTPOST.blend": {
+      "bytes": 5741351,
+      "sha256": "eccd7b85558dbf5b134cc4b41a846ba710be3b2c5b2184fe8248845f0458fab8"
+    },
+    "display/SET_CLASS_A.blend": {
+      "bytes": 100629,
+      "sha256": "2bf67daf7a54c0d7aa4689aa5b5012de2c491fd2ef14d85eca47bc56b7d017bc"
+    },
+    "display/SET_CLASS_B.blend": {
+      "bytes": 100540,
+      "sha256": "3b54a3ae789c9e587e90a493311ae686da5789269f4c2824dae5466f6fe252c9"
+    },
+    "display/SET_CLASS_S.blend": {
+      "bytes": 100912,
+      "sha256": "1d4809022a385569d1c10bfe9973a735e9ef7fc31c54f21cf063c9e23e559127"
+    },
+    "display/space.png": {
+      "bytes": 134475,
+      "sha256": "21df3ef51e4058cf8f64108bdbce34b6854529baa22bc60d38bc1477aec85fdf"
+    },
+    "display/STATION.blend": {
+      "bytes": 1742059,
+      "sha256": "9a53cd1f56983c064d47760ac598274960dfea2940acc0aeb195ecdec37cc28b"
+    },
+    "display_effects/B_LND_B.blend": {
+      "bytes": 130973,
+      "sha256": "3f24096caeb327a520ce5fc008f3ecea828555c5dd9f534f06ee51bb0b9937f1"
+    },
+    "display_effects/lights.json": {
+      "bytes": 431,
+      "sha256": "8928a9a7e470af3a285dfe3119f32d8e94bfc47ddb46282c41dc71f12bbb254f"
+    },
+    "lighting_profiles.json": {
+      "bytes": 59782,
+      "sha256": "5772294134a03f8eef5b736905507d9a83788cf748b372ac04446859823b16e7"
+    }
+  },
+  "download_bytes": 8003851,
+  "url": "https://github.com/slipperystickers/nms-base-builder/releases/download/v18.1.11/bbe-hd-scenes-3.zip",
+  "archives": {
+    "998d352ae485ed9f21195a1c48fe32517bce3a90a4f82b6719b1fd2bf9bc8ef5": {
+      "prefix": ""
+    }
+  }
+}

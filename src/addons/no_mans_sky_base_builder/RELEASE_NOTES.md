@@ -1,3 +1,159 @@
+## 18.1.42 - Ship Management scene isolation
+
+- Open Ship Management in an independent Blender main window so its empty preview scene cannot replace the ship-building scene or black out Scene Preview.
+- Restore the source scene when the manager closes, including OS-window close, and recover older orphaned preview scenes on add-on enable or file load.
+
+## 18.1.41 - Visible import progress from toolbar menus
+
+- Start Save Manager imports after the toolbar click returns, allowing Blender to close the I/O popover before the import progress appears. Cancel if the selected scene or save changes in the meantime.
+- Place the viewport progress panel near the bottom so the BBE and Lighting popovers cannot cover it during other long operations.
+
+## 18.1.37 - Browser responsiveness and calibrated preview beams
+
+- Restore class-marker beams to the established FF calibration: 31.1 local units, with placement scale applied once. Existing shortened preview meshes migrate without editing build records.
+- Refresh category/search/favourite views immediately. Reuse browser revisions instead of scanning every part on each timer event.
+- Bulk-copy thumbnail pixels and use compact RGBA8 GPU textures while retaining the bounded cache and existing image resolution.
+- Replace Heavy Landing Gear's placeholder with a transparent render of its bundled model. Move U_PARAGON to Uncategorised / No Build Menu Group.
+- Remove Base Files, Build Metadata and Clipboard sections from the I/O popover; retain Save Manager and the existing sidebar workflows.
+
+## 18.1.27 - Save Manager gating and unified backups
+
+- Remove the estimated technology auto-optimizer and DPS projection. Ship Management still displays saved base rolls and supports manual slot editing.
+- Restore a right-click menu in the inventory grid for item edits and moving an existing hyperslot.
+- Put Duplicate Save immediately below Backup Saves in the sidebar and I/O Save Manager; it no longer depends on an open Ship Management window.
+- Reset stale account/ship selection when a save changes. Start each selected save on Planet so Corvette controls require choosing the Corvette tab; import/export and Corvette optimization require a selected build, while Ship Management requires the Corvette tab.
+- Back up both save points and available metadata before every export or save edit. The Select Save gear configures backup location and retention per account/save slot. Only new, verified BBE backup generations roll over; previous-version backups are untouched.
+
+## 18.1.26 - Ship Management window and inventory safeguards
+
+- Open Ship Management in its own resizable window with square, paged grid cells and a confirmation before discarding edits. A closed window with an unsaved draft offers recovery.
+- Batch grid drawing and use an empty preview scene to keep ship-menu interaction responsive even with complex Blender builds in the main window.
+- Read the installed game's Chargeable and StackMultiplier fields: hide internal counts on nonchargeable technology, respect one-per-slot products, and distribute larger cargo quantities across available unlocked cells.
+- Make hyperslot text and double outline purple. Place Ship Management beneath Optimize & Export in the Corvette Save Manager.
+- Add a primary/secondary technology layout search that keeps modules, rolls and hyperslots intact. Show saved base rolls and relative layout scores; optionally record an observed in-game weapon DPS for a clearly marked projection. Exact game-calculated final stats remain an in-game measurement.
+
+## 18.1.12 - Projected decals and warm pill lighting
+
+- Standalone HD decals conform to receiving hull triangles and stop at gaps and edges; their placement boxes no longer display six copies of the artwork. Existing saved scenes refresh automatically.
+- Preserve decal IDs, transforms and export records through projection, saves and proxy changes.
+- Restore surrounding orange spill from embedded red/yellow pill lights; combine nearby colored stacks before applying the light budget. White accents, blue reactor/booster lights and self-lit markers remain.
+- Existing HD model and scene downloads are unchanged.
+
+## 18.1.10 - Marker alignment and balanced glow
+
+- Shortened all class-marker projections from 40 to 31.1 model units, matching the meeting point measured from FF's three emitters.
+- Enlarged the soft emitter halo around the complete marker and made hologram layers additive so stacked bodies do not cut dark silhouettes into the orb.
+- Increased reactor and landing-booster spill, reduced generic warm spill, and preserved shadow-free light budgets.
+- Evaluate transforms before creating lamps after load; changing part scale refreshes spill strength automatically.
+- Updated optional HD scenes/effects component; the main HD model library remains unchanged.
+
+## 18.1.9 - Optional HD scenes, object lighting and landing effects
+
+- Scene pads, space backdrop, hologram display meshes and effect data now install with the persistent HD library; HD icons and all simple proxies remain in the core add-on.
+- Existing HD users download only the 8 MB scenes/effects component. New installs download both components through the same Download & Enable confirmation. No model re-download on ordinary add-on updates.
+- Delete HD Pack removes both managed components after confirmation. Missing optional assets leave the core functional and show a download button in Lighting & Scenes.
+
+- Audited all 2,275 available HD assets; enabled local spill for emissive items throughout the library, including decorations and technology.
+- Added native lamp colour and unlit-material profiles for 573 mapped parts. Lighting retains a bounded 32/64 local-light budget.
+- Restored both native hover meshes on Mag-Field Landing Thrusters with animated emission and local light. Animation follows Blender timeline playback.
+- Renamed Ship Lights to Object Lights. Display effects follow part transforms and never export as buildable parts.
+- Added simple geometry fallbacks for four empty legacy FBX assets: Pipe, Freighter Face Wall, Industrial Room and Settlement Landing Pad.
+- Audit coverage is not full game-renderer parity: particles, gameplay-triggered effects and unmapped native scenes remain separately tracked in QA.
+
+## 18.1.8 - Marker projections and reactor lighting
+
+- Longer one-sided A/B/S hologram beams start at the visible emitter; particles no longer protrude behind it.
+- Soft additive emitter halos build up when markers overlap, matching the bright stacked-marker effect.
+- Ray Tracing is an independent on/off control beside Smooth/Photo quality settings. Existing preview files retain their prior ray tracing state.
+- Blue reactor and thruster emissives and local light spill, including Zenith, Medusa, Azimuth and Ceto reactors.
+- Display-only changes preserve object IDs, placement, export data and existing HD downloads. Holograms remain lightweight Blender approximations.
+
+# 18.1.7 - Ship glow, ray tracing and open space pad
+
+- Restores coloured ship light spill and emissive glow using original BBE code,
+  with the existing local NMS Preview viewer as the visual reference.
+- Smooth mode keeps 16 samples and up to 32 shadow-free part lamps. Ray Traced
+  mode enables Blender EEVEE ray tracing, 64 samples and up to 64 part lamps.
+  Both modes retain all emissive surfaces and only one shadow-casting rig light.
+- Uses the fast Bloom compositor rather than FFT Fog Glow.
+- Ship Lights, Light Spill and Glow controls; lights follow their parent parts.
+  Adding, removing or switching part proxies refreshes their display effects.
+- Removes the outpost gravity capsule and flat shield effect cards from scenery.
+  The actual platform is open to space, with the build surface at Z=0.
+- A/B/S markers now include a soft 10m projection beam, matched to the native
+  particle size range, plus electrical motes. These are Blender approximations.
+- Updates embedded marker/pad caches when opening older saved previews.
+- Display material overrides, compositor and render settings restore when the
+  preview is disabled. Original mesh assets, IDs and exported transforms stay intact.
+- Small core update; the existing HD proxy library needs no redownload.
+
+# 18.1.6 - Independent BBE scene preview
+
+- Replaces the Charon Forge lighting integration with an original BBE renderer setup.
+- Station Corvette Pad, Space Outpost Pad and Deep Space scenes; native standalone
+  pads meet Z=0. Space uses a single small static background image.
+- Smooth preview: 16 samples, three area lights, one shadow light, no ray tracing,
+  screen-space GI or volumetric effects. Photo mode increases viewport samples.
+- Grid, axes and light-guide overlays hide automatically, while selection outlines
+  and editing gizmos remain available. Previous viewport/world/render settings
+  return when Scene Preview is disabled.
+- Retires old BBE per-part lamps when opening older scenes; user lights are preserved.
+- Adds all three settlement class-marker HD meshes, transparent hologram lettering,
+  projection scan lines and a fixed budget of electrical motes/streaks. Scan lines
+  animate with timeline playback; effects are a Blender approximation of NMS.
+- Marker corrections are tiny core resources; existing HD packs need no redownload.
+- Scene objects never enter exported builds. Part transforms and IDs are unchanged.
+
+## 18.1.5 preview - compact removal button
+
+- Place an icon-only trash button to the right of Detailed Proxies. Keep its hover tooltip and deletion confirmation.
+
+## 18.1.4 preview - remove the optional HD pack
+
+- Add a compact Delete HD Pack button below Detailed Proxies, with confirmation and Cancel selected by default.
+- Switch all scenes in the current file to simple proxies before removal; keep the pack if any part cannot switch. Only delete the managed downloaded pack, never bundled models or icons.
+- Disable removal during downloads and when no downloaded pack is installed. Detailed Proxies offers the normal download again after removal.
+
+## 18.1.3 preview - first-install feedback
+
+- Offer Enable Online Access & Download directly in the HD confirmation, explaining that this changes Blender's global preference. Cancelling leaves the preference unchanged; an explicit offline launch remains respected.
+- Keep overall progress moving forward across download, checksum verification and installation. Show phase details and percentage in the viewport header and download panel; avoid a stale progress bar in Blender's cached menu popover.
+- Highlight the active Simple or Detailed proxy mode in the Builder menu.
+- Reuse the existing verified HD pack; models, textures and icons are unchanged.
+
+## 18.1.2 preview - simpler Detailed Proxies
+
+- Detailed Proxies automatically detects the installed model pack. If missing, one Download & Enable confirmation downloads, verifies, installs and enables it inside Blender.
+- Remove folder/ZIP management buttons from the normal prompt and remove the idle library sidebar panel. Show progress and cancellation only during downloads; retain offline ZIP installation in operator search.
+- Refresh manifest detection after an on-disk add-on update. Cancelling a download, switching to Simple Proxies or opening another file prevents a pending automatic quality switch.
+- Vesper in-game check confirmed by the user; no additional orientation changes in this version.
+
+## 18.1.1 preview - complete simple-model coverage
+
+- Bundle geometry-only fallbacks for 191 parts that previously depended on the optional HD library, including Stag Alloy Annexe and station parts. All HD icons remain bundled.
+- Use the same model resolver for browser placement, Save Manager, clipboard imports and proxy quality changes. Re-selecting a proxy quality refreshes older placeholders without changing placements.
+- Use the native game placement transforms for 24 Vesper Aerofoil/Cowling variants; correct the approximate upside-down offsets. The reported NE reversal still requires reproduction from the affected build: the NE asset itself matches the native placement.
+- Existing HD library installations are retained; this update does not require downloading HD assets again.
+- Regression: the FF Corvette imports all 525 records through both import paths, with and without the optional library; export preserves IDs, UserData, timestamps and placement vectors.
+
+# Base Builder Extended 18.1.0 — preview
+
+- Optional HD library installs through Builder > Detailed Proxies, with progress,
+  cancellation, checksum verification and an offline ZIP installer.
+- Persistent asset storage is shared between Blender versions and survives BBE
+  updates. Existing saved scenes can relink their old bundled texture paths.
+- Main installer includes Game Lighting & Scenes: game-data planet/space skies,
+  time of day, sun direction, scene presets and optional native part lamps.
+- Lighting adapted from Charon Forge 0.1.2 with credit; BBE adds independent
+  per-scene resources and restoration of previous viewport shading and worlds.
+- Lossless HD library cleanup preserves geometry, UVs, normals, materials and
+  textures. No mesh decimation or texture downsampling.
+- Simple/Detailed preference also applies to subsequent asset placement.
+- Existing mirror, pipe endpoint snapping and exported part IDs are preserved.
+
+Save and restart all Blender windows after installing this preview.
+The separate HD download becomes public with the corresponding release.
+
 # Base Builder Extended 18.0.18
 
 - Adding a pipe or bubble duct from the native asset browser now mates real

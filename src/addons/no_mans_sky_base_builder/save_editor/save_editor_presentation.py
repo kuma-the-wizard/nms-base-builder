@@ -6,14 +6,64 @@ into its popover, so the sidebar and the dropdown cannot drift apart.
 """
 
 import bpy
+import textwrap
 from bpy.types import Panel
 
 from .. import icons
 from .save_editor_utils import BaseType
-from .save_manager import SaveManager
-from . import station_reference
+from . import station_reference, corvette_optimizer, backup_policy
 
 ADDON_ID = __package__.rsplit(".", 1)[0]
+
+
+class BBE_OT_backup_settings(bpy.types.Operator):
+    bl_idname = 'bbe.backup_settings'
+    bl_label = 'Save Backup Settings'
+    bl_description = 'Choose where automatic backups go and how many generations to retain per save slot'
+    folder: bpy.props.StringProperty(name='Backup Folder', subtype='DIR_PATH',
+                                     description='Blank uses nms_base_builder_backup beside each save account')
+    retention: bpy.props.IntProperty(name='Backups per Save Slot', min=1, max=500, default=20)
+
+    def backup_location(self, context):
+        data = get_save_data(context)
+        slot = data.get_current_slot_data() if data and data.check_plugin_enabled else None
+        if slot:
+            return str(backup_policy.directory(slot['saves'], backup_root=self.folder.strip()))
+        from pathlib import Path
+        folder = self.folder.strip()
+        if folder:
+            return str(Path(bpy.path.abspath(folder)).expanduser().resolve())
+        save_folder = get_save_folder_path(context)
+        return str(Path(bpy.path.abspath(save_folder)).expanduser().resolve() / 'nms_base_builder_backup') if save_folder else 'Select a save folder to see the default path'
+
+    def invoke(self, context, event):
+        prefs = context.preferences.addons[ADDON_ID].preferences
+        self.folder = prefs.nms_backup_folder_path
+        self.retention = prefs.nms_backup_retention
+        return context.window_manager.invoke_props_dialog(self, width=520, confirm_text='Save Settings')
+
+    def draw(self, context):
+        self.layout.prop(self, 'folder')
+        self.layout.prop(self, 'retention')
+        self.layout.label(text='Current backup path:')
+        for line in textwrap.wrap(self.backup_location(context), width=62, break_long_words=True):
+            self.layout.label(text=line)
+        self.layout.label(text='For a selected slot, each backup is a dated subfolder at this path.')
+        self.layout.label(text='Retention counts complete backup generations per save slot.')
+        self.layout.label(text='Older backups made by previous versions are left alone.')
+
+    def execute(self, context):
+        from pathlib import Path
+        if self.folder:
+            path = Path(bpy.path.abspath(self.folder)).expanduser()
+            if path.exists() and not path.is_dir():
+                self.report({'ERROR'}, 'Backup folder points to a file')
+                return {'CANCELLED'}
+        prefs = context.preferences.addons[ADDON_ID].preferences
+        prefs.nms_backup_folder_path = self.folder.strip()
+        prefs.nms_backup_retention = self.retention
+        bpy.ops.wm.save_userpref()
+        return {'FINISHED'}
 
 
 def get_save_data(context):
@@ -57,21 +107,31 @@ def draw_pinned_base(container, save_data, base_props):
     pinned_buttons_col.operator(
         "object.nms_unpin_base", icon="UNPINNED", text=f"Unpin {pinned_base_type}"
     )
-    pinned_buttons_col.operator(
+    pinned_ready = (save_data.pinned_base_type != BaseType.CORVETTE or
+                    (save_data.get_current_slot_data() is not None and
+                     save_data.nms_base_type == BaseType.CORVETTE))
+    pinned_import = pinned_buttons_col.column(align=True)
+    pinned_import.enabled = pinned_ready
+    pinned_import.operator(
         "object.import_pinned_base", icon="IMPORT", text="Import from Save"
     )
 
     pinned_export_button_row = pinned_box.row(align=False)
+    pinned_export_button_row.enabled = pinned_ready
     pinned_export_button_row.operator(
         "object.export_pinned_base", icon="FILE_TICK", text="Export to Save"
     )
-    pinned_export_button_backup_row = pinned_export_button_row.row(align=True)
+    pinned_export_button_backup_row = pinned_box.row(align=True)
     pinned_export_button_backup_row.scale_x = 0.7
     pinned_export_button_backup_row.operator(
         "object.make_pinned_savefile_backup",
         icon="COLLECTION_NEW",
         text="Backup Save files",
     )
+    if save_data.pinned_base_type == BaseType.CORVETTE:
+        pinned_optimize = pinned_box.row()
+        pinned_optimize.enabled = pinned_ready
+        corvette_optimizer.draw_row(pinned_optimize, pinned=True)
     
 def draw_base_picker(container, save_data):
     
@@ -82,6 +142,8 @@ def draw_base_picker(container, save_data):
     sf_column = save_folder_box.column(align=True)
     sf_enable_row = sf_column.row(align=True)
     sf_enable_row.label(text="Select Save")
+    sf_enable_row.operator_context = 'INVOKE_DEFAULT'
+    sf_enable_row.operator('bbe.backup_settings', text='', icon='PREFERENCES')
 
     # This row will contain a field where location of save folder is displayed.
     if save_data.check_plugin_enabled and save_data.validate_save_folder( save_folder_path ):
@@ -143,6 +205,14 @@ def draw_base_picker(container, save_data):
     backup_row.operator(
         "object.open_backup_folder", icon="FOLDER_REDIRECT", text="Open Backup Folder"
     )
+    try:
+        path = backup_policy.directory(save_data.get_current_slot_data()['saves'])
+        sf_column.label(text=f'Backups: {path}', icon='FILE_FOLDER')
+    except (KeyError, TypeError, ValueError):
+        pass
+    duplicate_row = sf_column.row(align=True)
+    duplicate_row.operator_context = 'INVOKE_DEFAULT'
+    duplicate_row.operator('bbe.ship_duplicate', icon='DUPLICATE', text='Duplicate Save...')
 
     sf_column.separator()
     sf_column.label(text=f"\U0001F4E6 Total Parts : {save_data.get_total_parts_count()}")
@@ -158,20 +228,12 @@ def draw_base_picker(container, save_data):
 
     # Show the base list in red when no base/corvette is selected.
     base_index_row = se_column.row(align=True)
-    base_index_row.alert = not SaveManager.is_base_selected
-
-    if not SaveManager.is_base_selected:
-        # List of bases for selection.
-        base_index_row.prop(
-            save_data, "nms_base_index", text="", icon="GEOMETRY_SET"
-        )
-        return
-
-    # List of bases for selection.
-    base_index_row.prop(save_data, "nms_base_index", text="")
+    selected = save_data.has_selected_base()
+    base_index_row.alert = not selected
+    base_index_row.prop(save_data, "nms_base_index", text="", icon="GEOMETRY_SET")
 
     # Display buttons when a base is selected from the list.
-    if save_data.nms_base_type != BaseType.EXTERNAL_BASE:
+    if selected and save_data.nms_base_type != BaseType.EXTERNAL_BASE:
         # Pin a base without importing it to the scene, so that save data can
         # be updated to the location marked by it.
         base_index_pin_row = base_index_row.row(align=True)
@@ -182,6 +244,7 @@ def draw_base_picker(container, save_data):
 
     se_column.separator()
     import_export_row = se_column.row(align=True)
+    import_export_row.enabled = selected
     # Import button, this button will import the base to the scene.
     import_export_row.operator(
         "object.nms_import_base_from_save", icon="IMPORT", text="Import from Save"
@@ -194,6 +257,13 @@ def draw_base_picker(container, save_data):
 
     if save_data.nms_base_type == BaseType.STATION:
         station_reference.draw(se_column, bpy.context)
+    elif save_data.nms_base_type == BaseType.CORVETTE:
+        optimize_row = se_column.row()
+        optimize_row.enabled = selected
+        corvette_optimizer.draw_row(optimize_row)
+        management_row = se_column.row()
+        management_row.operator_context = 'INVOKE_DEFAULT'
+        management_row.operator('bbe.ship_management', icon='TOOL_SETTINGS', text='Ship Management (Beta)')
 
 
 def draw_save_manager(layout, context):

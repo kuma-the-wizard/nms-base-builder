@@ -3,6 +3,7 @@ import bpy
 
 from . import save_editor_utils
 ADDON_ID = __package__.rsplit(".", 1)[0]
+_pending_save_imports = {}
 
 # Operator for button to select save folder directory
 class SelectSaveFolder(bpy.types.Operator):
@@ -49,21 +50,94 @@ class ImportBaseFromSave(bpy.types.Operator):
     bl_label = "Import data from selected file"
     bl_description = "Import base from save file while also pinning it on top"
 
+    expected_scene: bpy.props.StringProperty(options={'HIDDEN'})
+    expected_account: bpy.props.StringProperty(options={'HIDDEN'})
+    expected_slot: bpy.props.StringProperty(options={'HIDDEN'})
+    expected_base_type: bpy.props.StringProperty(options={'HIDDEN'})
+    expected_base_index: bpy.props.StringProperty(options={'HIDDEN'})
+
+    @classmethod
+    def poll(cls, context):
+        data = getattr(context.scene, 'nms_save_data', None)
+        return bool(data and data.has_selected_base())
+
+    def invoke(self, context, event):
+        # Starting a large import before returning from this button leaves the
+        # header popover over the viewport progress display. Let Blender finish
+        # the click and dismiss the popover, then run the normal execute path.
+        window = context.window
+        scene = context.scene
+        save_data = scene.nms_save_data
+        window_id = window.as_pointer()
+        if window_id in _pending_save_imports:
+            self.report({'WARNING'}, 'An import is already starting in this window')
+            return {'CANCELLED'}
+        selection = {
+            'expected_scene': scene.name,
+            'expected_account': save_data.nms_account_selected,
+            'expected_slot': save_data.nms_save_slot,
+            'expected_base_type': save_data.nms_base_type,
+            'expected_base_index': save_data.nms_base_index,
+        }
+        def start_import():
+            try:
+                if not any(w.as_pointer() == window_id for w in bpy.context.window_manager.windows):
+                    return None
+                if bpy.data.scenes.get(selection['expected_scene']) != scene:
+                    return None
+                with bpy.context.temp_override(window=window, scene=scene):
+                    bpy.ops.object.nms_import_base_from_save('EXEC_DEFAULT', **selection)
+            except Exception as exc:
+                print(f'Could not start deferred save import: {exc}')
+            finally:
+                _pending_save_imports.pop(window_id, None)
+            return None
+
+        _pending_save_imports[window_id] = start_import
+        bpy.app.timers.register(start_import, first_interval=0.1)
+        return {'FINISHED'}
+
     def execute(self, context):
         scene = context.scene
         save_data = scene.nms_save_data
-        result = save_data.import_base_from_save_file(context)
-        if result is not None:
-            self.report({'INFO'}, result)
-        else:
-            report_error(self,{'ERROR'}, "Error importing base")
-        return {"FINISHED"}
+        if self.expected_scene and (
+            scene.name != self.expected_scene
+            or save_data.nms_account_selected != self.expected_account
+            or save_data.nms_save_slot != self.expected_slot
+            or save_data.nms_base_type != self.expected_base_type
+            or save_data.nms_base_index != self.expected_base_index
+        ):
+            report_error(self, {'ERROR'}, 'Save selection changed before import started; choose the base and try again')
+            return {'CANCELLED'}
+        if scene.name.startswith('BBE Ship Management Preview'):
+            source_name = scene.get('bbe_ship_management_source_scene')
+            source = bpy.data.scenes.get(source_name) if source_name else None
+            if source is None:
+                report_error(self, {'ERROR'}, 'Close Ship Management and import in your main Blender scene')
+                return {'CANCELLED'}
+            context.window.scene = source
+            self.report({'INFO'}, f'Importing into {source.name}')
+        try:
+            result = save_data.import_base_from_save_file(context)
+        except Exception as exc:
+            report_error(self, {'ERROR'}, f"Import failed: {exc}")
+            return {'CANCELLED'}
+        if not result or result.startswith(('Error', 'Could not')):
+            report_error(self, {'ERROR'}, result or 'Error importing base')
+            return {'CANCELLED'}
+        self.report({'INFO'}, result)
+        return {'FINISHED'}
 
 # Button to export base selected from list of bases in save editor section
 class ExportBaseToSave(bpy.types.Operator):
     bl_idname = "object.nms_export_base_to_save"
     bl_label = "Export data to save file"
     bl_description = "Export base to save_file"
+
+    @classmethod
+    def poll(cls, context):
+        data = getattr(context.scene, 'nms_save_data', None)
+        return bool(data and data.has_selected_base())
 
     def execute(self, context):
         scene = context.scene

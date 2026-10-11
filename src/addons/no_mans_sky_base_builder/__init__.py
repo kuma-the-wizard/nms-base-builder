@@ -20,7 +20,7 @@ from .base_properties import NMSBaseProperties
 from .addon_preferences import NMSAddonPreferences
 from .part_overrides import line
 from .save_editor import save_editor_operators, save_editor_utils, station_reference
-from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel
+from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel, BBE_OT_backup_settings
 from .save_editor.save_manager import SaveManager
 
 from .tools import batch_tool_operators, build_tool_operators, prooperties_operators, asset_browser_operators
@@ -267,12 +267,15 @@ class NMSMain(PropertyGroup):
             * Removes all items with ObjectID, PresetID and NMS_LIGHT properties.
             * Resets the room visibility switch to default.
         """
+        from . import stages
+        stages.prepare_import(bpy.context.scene)
+
         BUILDER.clear_caches()
 
         # Remove basic blender default items.
-        blend_utils.remove_object("Cube")
-        blend_utils.remove_object("Light")
-        blend_utils.remove_object("Camera")
+        for default_name in ("Cube", "Light", "Camera"):
+            if default_name in bpy.context.scene.objects:
+                blend_utils.remove_object(default_name)
 
         base_props = bpy.context.scene.nms_base_tool
         base_props.new_file()
@@ -281,7 +284,7 @@ class NMSMain(PropertyGroup):
         # Deselect all
         bpy.ops.object.select_all(action="DESELECT")
         # Select NMS Items
-        for bpy_object in bpy.data.objects:
+        for bpy_object in list(bpy.context.scene.objects):
             id_check = "ObjectID" in bpy_object
             preset_check = "PresetID" in bpy_object
             light_check = "NMS_LIGHT" in bpy_object
@@ -671,36 +674,44 @@ class NMS_PT_colour_panel(Panel):
         return True
 
     def draw(self, context):
-        layout = self.layout
-        scene = context.scene
-        nms_tool = scene.nms_main
-        colours = _material.get_colours_from_palette(nms_tool.material_switch)
-        pcoll = preview_collections["main"]
-        
+        draw_colour_palette(self.layout, context)
+
+
+def draw_colour_palette(layout, context, *, horizontal=False):
+    """Share the same palette controls between the sidebar and tool header."""
+    nms_tool = context.scene.nms_main
+    colours = _material.get_colours_from_palette(nms_tool.material_switch)
+    pcoll = preview_collections.get("main")
+    if horizontal:
+        colour_area = layout.row(align=True)
+        palette = colour_area.row(align=True)
+        palette.ui_units_x = 8
+        palette.prop(nms_tool, "material_switch", text="")
+        grid = colour_area.row(align=True)
+        grid.scale_x = 1.0
+    else:
         colour_area = layout.box().column(align=False)
-        material_row = colour_area.row(align = True)
-        
-        material_row.prop(nms_tool, "material_switch",text = "Palette")
+        colour_area.row(align=True).prop(nms_tool, "material_switch", text="Palette")
         colour_area.separator()
-        grid = colour_area.grid_flow(columns=12, even_columns=True, align = True)
+        grid = colour_area.grid_flow(columns=12, even_columns=True, align=True)
         grid.scale_x = 0.6
         grid.scale_y = 1.0
-        for row in colours:
-            index = row[3]
-            name = row[5]
-            colour = row[6]
-            thumb = row[9]
-            index, name, colour, thumb
-            colour_icon = pcoll.get(os.path.splitext(thumb)[0], None)
-            op = grid.operator(
-                "object.nms_apply_colour",
-                text="",
-                icon_value=colour_icon.icon_id if colour_icon else 0,
-            )
-            op.colour_index = int(index)
-            op.colour_name = name
-            
-        grid.prop(nms_tool,"color_picker", icon = "BLANK1", text = "")
+
+    if pcoll is None:
+        return
+    for row in colours:
+        index, name, thumb = row[3], row[5], row[9]
+        colour_icon = pcoll.get(os.path.splitext(thumb)[0])
+        op = grid.operator(
+            "object.nms_apply_colour", text="",
+            icon_value=colour_icon.icon_id if colour_icon else 0,
+        )
+        op.colour_index = int(index)
+        op.colour_name = name
+    picker = grid.row(align=True)
+    if horizontal:
+        picker.ui_units_x = 1.5
+    picker.prop(nms_tool, "color_picker", icon="BLANK1", text="")
 
 
 # Colour Panel ---
@@ -2049,8 +2060,8 @@ classes = (
     NMS_PT_file_buttons_panel,
     NMS_PT_station_transfer_reference,
     NMS_PT_save_editor_panel,
+    BBE_OT_backup_settings,
     NMS_PT_transformation_panel,
-    NMS_PT_colour_panel,
     NMS_PT_logic_panel,
     NMS_PT_tools_panel,
     NMS_PT_batch_tools_panel,
@@ -2110,10 +2121,21 @@ def register():
     bpy.types.Scene.nms_properties = bpy.props.PointerProperty(type=Properties)
     bpy.types.Scene.nms_batch_tool = bpy.props.PointerProperty(type=BatchTool)
     bpy.types.Scene.nms_asset_browser = bpy.props.PointerProperty(type=AssetBrowser)
+    from .tools import asset_browser_grid
+    asset_browser_grid.register()
 
     # Puts the "Base Builder" menu in the 3D viewport header. The menu classes
     # themselves are registered with everything else, above.
     base_builder_menu.register_menu()
+    from . import hd_library_ui, stages, decals, hab_windows
+    hd_library_ui.register()
+    stages.register()
+    decals.register()
+    hab_windows.register()
+    from .save_editor import corvette_optimizer
+    corvette_optimizer.register()
+    from .save_editor import ship_management
+    ship_management.register()
     
     if reset_plugin_state not in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.append(reset_plugin_state)
@@ -2124,8 +2146,19 @@ def register():
     bpy.app.timers.register(viewport_overlay.register_draw, first_interval=0.01)
 
 def unregister():
+    from .tools import asset_browser_grid
+    asset_browser_grid.unregister()
+    from .save_editor import ship_management
+    ship_management.unregister()
+    from .save_editor import corvette_optimizer
+    corvette_optimizer.unregister()
     from . import release_updates
     release_updates.unregister()
+    from . import hd_library_ui, stages, decals, hab_windows
+    hab_windows.unregister()
+    decals.unregister()
+    stages.unregister()
+    hd_library_ui.unregister()
     for pcoll in preview_collections.values():
         bpy.utils.previews.remove(pcoll)
     preview_collections.clear()
@@ -2138,6 +2171,7 @@ def unregister():
     # Taken out of the header before its classes go, so nothing is left drawing
     # a menu that no longer exists.
     base_builder_menu.unregister_menu()
+
 
     for _class in reversed(classes):
         bpy.utils.unregister_class(_class)

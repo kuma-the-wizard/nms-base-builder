@@ -112,6 +112,8 @@ class SaveManager(bpy.types.PropertyGroup):
     # this section stores parameters for pinned base which will persist within a blend file
     
     # A check to see if a base is pinned or not
+    pinned_save_context: bpy.props.StringProperty(default='')
+
     pinned_base_check:bpy.props.BoolProperty(
         name="base suer_data", default = False
     )
@@ -163,7 +165,11 @@ class SaveManager(bpy.types.PropertyGroup):
     
     #this is called after clicking enable save editor button
     def on_check_plugin_enabled(self,context):
+        if not self.check_plugin_enabled:
+            return
         save_editor_dependencies.installDependencies()
+        if self.nms_base_type != BaseType.CORVETTE:
+            self.nms_base_type = BaseType.CORVETTE
         SaveManager.enum_accounts_list = self.get_accounts_enum_list(context)
         
         # set value of accounts from values from last changes
@@ -212,6 +218,10 @@ class SaveManager(bpy.types.PropertyGroup):
     # Extraction of base list from save file happens here
     def on_save_slot_list_change(self):
         self.reset_base_list()
+        # Start each selected save on the Corvette tab, without selecting a
+        # Corvette from the list or enabling its import/export controls.
+        if self.nms_base_type != BaseType.CORVETTE:
+            self.nms_base_type = BaseType.CORVETTE
         current_slot_data = self.get_current_slot_data()
         
         if current_slot_data is not None:
@@ -267,62 +277,36 @@ class SaveManager(bpy.types.PropertyGroup):
             "No base selected"
         )
         
-        enum_bases = []
-        base_type_key = self.get_base_type_key(self.nms_base_type)
-        
-        bases_list = extracted_base_data[base_type_key]
-            
-        print(type(bases_list))
-        
-        # convert list of bases into list for UI
-        for index, base_data in enumerate(bases_list):
-            print(base_data)
-            base_data: BaseData
-            
-            list_entry = ""
-            base_name = base_data.base_name
-            user_data = str(base_data.user_data)
-            base_index = str(base_data.base_index)
-            parts_count = str(base_data.parts_count)
-            
-            m_base_type = str(base_data.base_type)
-            
-            if self.nms_base_type == BaseType.CORVETTE:
-                # if base is a corvette, add user_data in front of its name that represents its ingame slot number
-                list_entry = f"{user_data.rjust(2)}. {base_name}  [ {parts_count} parts ]"
-            elif self.nms_base_type == BaseType.SPACE_BASE:
-                if m_base_type == BaseType.SPACE_BASE:
-                    list_entry = f"{base_name}  [ {parts_count} parts ]"
-                elif m_base_type == BaseType.SPACESTATION_BASE:
-                    list_entry = f"(SpaceStation) {base_name}  [ {parts_count} parts ]"
-            else :
-                list_entry = f"{base_name}  [ {parts_count} parts ]"
-            # base index is stored here to make it easier to traverse save file, it is index of base within persistent player bases array
-            enum_bases.append((base_index, list_entry, " base desc"))
-        
-        #add a default value to top of the list
-        enum_bases.insert(0, default_base_list_item)
-        
-        if self.nms_base_type == BaseType.CORVETTE and extracted_base_data["freighter"] is not None:
-            base_data = extracted_base_data["freighter"]
-            
-            base_data: BaseData
-            base_name = base_data.base_name
-            parts_count = str(base_data.parts_count)
-            list_entry = f"{base_name} ( Freighter ) [ {parts_count} parts ] "
-            base_index = str(base_data.base_index)
-            enum_bases.append((base_index, list_entry, " base desc"))
-        
+        enum_bases = [default_base_list_item]
+        key = self.get_base_type_key(self.nms_base_type)
+        entries = list(extracted_base_data.get(key, []))
+        if self.nms_base_type == BaseType.CORVETTE:
+            entries.extend(extracted_base_data.get('freighters', []))
+        for ctx in ('Main', 'Season'):
+            selected = [b for b in entries if b.save_context == ctx]
+            if not selected:
+                continue
+            enum_bases.append(('', 'Main save' if ctx == 'Main' else 'Expedition', ''))
+            for base in selected:
+                prefix = f'{base.user_data}. ' if base.base_type == BaseType.CORVETTE else ''
+                kind = ' (Freighter)' if base.base_type == BaseType.FREIGHTER else ''
+                ident = str(base.base_index) if ctx == 'Main' else f'Season:{base.base_index}'
+                enum_bases.append((ident, f'{prefix}{base.base_name}{kind} [{base.parts_count} parts]',
+                                   'Main save' if ctx == 'Main' else 'Expedition save'))
+
         return enum_bases
     
     # this is called when a base is selected from UI
     # this updates state values accourding to which element of list is selected
     def on_base_selected(self):
         SaveManager.selected_base_type_tabs[self.nms_base_type] = self.nms_base_index
-        if self.nms_base_index != "Default":
-            SaveManager.is_base_selected = True
-        else :
-            SaveManager.is_base_selected = False
+        SaveManager.is_base_selected = self.has_selected_base()
+
+    def has_selected_base(self):
+        """Use this scene's current save and tab, never the shared last selection."""
+        return (self.is_base_data_loaded()
+                and self.nms_base_index not in ('', 'Default')
+                and self.get_current_base_identifiers() is not None)
     
     
     # called from a button to imprt selected bas into scene
@@ -330,8 +314,8 @@ class SaveManager(bpy.types.PropertyGroup):
         base_index = self.nms_base_index
         
         # validate base index
-        if not str(base_index).isdigit(): return 
-        if int(base_index) < 0: return
+        if not str(base_index).split(':')[-1].isdigit(): return 
+        if int(str(base_index).split(':')[-1]) < 0: return
         
         # validate save slots
         current_slot_data = self.get_current_slot_data()
@@ -363,6 +347,9 @@ class SaveManager(bpy.types.PropertyGroup):
             nms_base_json = json.loads(nms_import_data)
         except:
             return "Could not import base data, Incorrect json"
+        source_count = len(nms_base_json.get('Objects', []))
+        if not source_count:
+            return 'Error importing base: the selected save entry has no parts'
             
         # Import json into scene
         nms_tools = context.scene.nms_main
@@ -370,12 +357,16 @@ class SaveManager(bpy.types.PropertyGroup):
         #BUILDER.deserialise_from_data(nms_base_json)
         previous_objects = set(context.scene.objects)
         builder_v2.deserialise_from_data(nms_base_json)
+        imported = [o for o in context.scene.objects if o not in previous_objects and 'ObjectID' in o]
+        if source_count and not imported:
+            raise RuntimeError(f'The save contains {source_count} parts, but none appeared in the active scene ({context.scene.name}).')
         if nms_base_json.get("BaseType", {}).get("PersistentBaseTypes") == BaseType.STATION:
-            imported = [o for o in context.scene.objects if o not in previous_objects]
             station_reference.imported_station(context, nms_base_json, imported)
             return "Station parts and reference imported; choose the exterior with the Outliner eyes"
         #return a string for operators for status message
-        return "Base/Corvette imported sucessfully"
+        if len(imported) < source_count:
+            return f'Imported {len(imported)} of {source_count} parts (some source parts have no available model)'
+        return f'Imported {len(imported)} parts into {context.scene.name}'
     
     # called from operators/UI to export objects in scene to save file
     def export_base_to_save_file(self,context):
@@ -414,36 +405,27 @@ class SaveManager(bpy.types.PropertyGroup):
     # This functin collects data realated to base so that it can be identified in save file
     # since there is no unique property to identify a base, we prepare a fingerprint of that base with collection of properties
     def get_current_base_identifiers(self):
-        
-        #validate index of base, it is index of base in persistent player base array of save file
-        base_index = self.nms_base_index
-        if not str(base_index).isdigit():return None
-        if int(base_index) < 0:return None
-        
-        # base type key to access data
-        base_type_key = self.get_base_type_key(self.nms_base_type)
-        for base in SaveManager.extracted_base_data[base_type_key]:
-            base:BaseData
-            if base_index == str(base.base_index):
-                return base
-        
+        if self.get_current_slot_data() is None:
+            return None
+        value = self.nms_base_index
+        ctx = 'Season' if value.startswith('Season:') else 'Main'
+        raw_index = value.split(':')[-1]
+        if not raw_index.isdigit():
+            return None
+        entries = list(SaveManager.extracted_base_data.get(self.get_base_type_key(), []))
         if self.nms_base_type == BaseType.CORVETTE:
-            if SaveManager.extracted_base_data["freighter"] is None:
-                print("Freighter is None")
-                return None
-            base: BaseData = SaveManager.extracted_base_data["freighter"]
-            if str(base.base_index) == base_index:
-                return base
-        
-        return None
-        
+            entries.extend(SaveManager.extracted_base_data.get('freighters', []))
+        return next((b for b in entries if b.base_index == int(raw_index) and b.save_context == ctx), None)
+
     # Fucntion for UI to check if base list should be displayed or not
     def is_base_data_loaded(self):
-        return len(SaveManager.enum_base_list) > 0 and SaveManager.save_data_loaded
+        return (self.get_current_slot_data() is not None
+                and len(SaveManager.enum_base_list) > 0
+                and SaveManager.save_data_loaded)
       
     # called to get data related to save slot selected
     def get_current_slot_data(self):
-        if not self.nms_save_slot == "Default":
+        if self.nms_account_selected != 'Default' and self.nms_save_slot != 'Default':
             for slot in SaveManager.data_save_slot:
                 if str(slot["slot"]) == self.nms_save_slot:
                     return slot
@@ -459,7 +441,10 @@ class SaveManager(bpy.types.PropertyGroup):
 
     # called to reset values for base list
     def reset_base_list(self):
-        
+        SaveManager.is_base_selected = False
+        SaveManager.save_data_loaded = False
+        SaveManager.enum_base_list = []
+        SaveManager.extracted_base_data = {}
         SaveManager.selected_base_type_tabs = {
             BaseType.CORVETTE: "Default",
             BaseType.BASE: "Default",
@@ -526,6 +511,7 @@ class SaveManager(bpy.types.PropertyGroup):
         save_slot = self.get_current_slot_data()
         self.pinned_base_check = True
         self.pinned_base_name = identifiers.base_name
+        self.pinned_save_context = identifiers.save_context or ''
         self.pinned_base_index = identifiers.base_index
         self.pinned_base_user_data = identifiers.user_data
         self.pinned_base_type = identifiers.base_type
@@ -573,6 +559,7 @@ class SaveManager(bpy.types.PropertyGroup):
         ]
         
         base_data = BaseData()
+        base_data.save_context = self.pinned_save_context or None
         base_data.base_index = self.pinned_base_index
         base_data.base_name = self.pinned_base_name
         base_data.user_data = int(self.pinned_base_user_data)

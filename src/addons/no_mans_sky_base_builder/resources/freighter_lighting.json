@@ -1,0 +1,1828 @@
+{
+  "BRIDGECONNECTOR": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FREIGHTER_CORE": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_CORR_A": {
+    "colour": [
+      1.0,
+      0.9503924102564102,
+      0.9095384615384615
+    ],
+    "unlit": [
+      "InteriorLights_MAT",
+      "InteriorLights_mat",
+      "InteriorLights_mat1",
+      "InteriorLights_mat3"
+    ],
+    "native_lights": [
+      {
+        "position": [
+          0.0,
+          2.948944091796875,
+          2.543179988861084
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.6666629910469055,
+          -0.5658130049705505,
+          0.6666629910469055
+        ],
+        "colour": [
+          1.0,
+          0.758163,
+          0.559
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.6666629910469055,
+          -0.5658130049705505,
+          0.6666629910469055
+        ],
+        "colour": [
+          1.0,
+          0.758163,
+          0.559
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.6666629910469055,
+          2.495527982711792,
+          0.6666629910469055
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 4.0,
+        "radius": 6.324555
+      },
+      {
+        "position": [
+          0.0,
+          -0.5658130049705505,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          0.758163,
+          0.559
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.0,
+          -0.5658130049705505,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          0.758163,
+          0.559
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.0,
+          2.495527982711792,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 4.0,
+        "radius": 6.324555
+      },
+      {
+        "position": [
+          0.0,
+          -0.5658130049705505,
+          0.6666629910469055
+        ],
+        "colour": [
+          1.0,
+          0.758163,
+          0.559
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.0,
+          -0.5658130049705505,
+          0.6666629910469055
+        ],
+        "colour": [
+          1.0,
+          0.758163,
+          0.559
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.0,
+          2.6666500568389893,
+          1.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 4.0,
+        "radius": 6.324555
+      },
+      {
+        "position": [
+          0.0,
+          -0.5658130049705505,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          0.758163,
+          0.559
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.0,
+          -0.5658130049705505,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          0.758163,
+          0.559
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.0,
+          1.999987006187439,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 4.0,
+        "radius": 6.324555
+      },
+      {
+        "position": [
+          0.6666629910469055,
+          -0.5658130049705505,
+          0.6666629910469055
+        ],
+        "colour": [
+          1.0,
+          0.758163,
+          0.559
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.6666629910469055,
+          -0.5658130049705505,
+          0.6666629910469055
+        ],
+        "colour": [
+          1.0,
+          0.758163,
+          0.559
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.6666629910469055,
+          2.495527982711792,
+          0.6666629910469055
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 4.0,
+        "radius": 6.324555
+      },
+      {
+        "position": [
+          0.0,
+          -0.5658130049705505,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          0.758163,
+          0.559
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.0,
+          -0.5658130049705505,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          0.758163,
+          0.559
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.0,
+          2.495527982711792,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 4.0,
+        "radius": 6.324555
+      },
+      {
+        "position": [
+          0.0,
+          -0.5658130049705505,
+          0.6666629910469055
+        ],
+        "colour": [
+          1.0,
+          0.758163,
+          0.559
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.0,
+          -0.5658130049705505,
+          0.6666629910469055
+        ],
+        "colour": [
+          1.0,
+          0.758163,
+          0.559
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.0,
+          2.6666500568389893,
+          1.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 4.0,
+        "radius": 6.324555
+      },
+      {
+        "position": [
+          0.0,
+          -0.5658130049705505,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          0.758163,
+          0.559
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.0,
+          -0.5658130049705505,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          0.758163,
+          0.559
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.0,
+          1.999987006187439,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 4.0,
+        "radius": 6.324555
+      },
+      {
+        "position": [
+          0.0,
+          1.999987006187439,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 4.0,
+        "radius": 6.324555
+      },
+      {
+        "position": [
+          0.0,
+          1.999987006187439,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 4.0,
+        "radius": 6.324555
+      },
+      {
+        "position": [
+          0.0,
+          2.948944091796875,
+          2.543179988861084
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.0,
+          2.495527982711792,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 5.0,
+        "radius": 6.324555
+      },
+      {
+        "position": [
+          0.0,
+          2.495527982711792,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 5.0,
+        "radius": 6.324555
+      },
+      {
+        "position": [
+          0.0,
+          2.495527982711792,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 5.0,
+        "radius": 6.324555
+      },
+      {
+        "position": [
+          0.0,
+          2.495527982711792,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 5.0,
+        "radius": 6.324555
+      }
+    ]
+  },
+  "FRE_CORR_A_GLAS": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_CORR_A_L": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_CORR_A_STR": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_CORR_A_T": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_CORR_B": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_CORR_B_L": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_CORR_B_STR": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_CORR_B_T": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_CORR_GLA_L": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_CORR_GLA_ST": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_CORR_GLA_T": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_CORR_G_STA": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_CORR_STA": {
+    "colour": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "unlit": [
+      "InteriorLights_mat",
+      "TrailLight_mat"
+    ],
+    "native_lights": [
+      {
+        "position": [
+          -3.814697265625e-06,
+          4.0,
+          1.3691416711480997e-07
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 2.25,
+        "radius": 5.477226
+      }
+    ]
+  },
+  "FRE_CORR_STA_B": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_EXT_PLATFOR": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_EXT_WALKWAY": {
+    "colour": null,
+    "unlit": [
+      "InteriorLights_mat",
+      "TrailLight_mat10"
+    ],
+    "native_lights": []
+  },
+  "FRE_EXT_W_STA": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_FACE_DOOR_A": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_FACE_WALL": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_FACE_WINDOW": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_B": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_BIO": {
+    "colour": [
+      0.9753168539325843,
+      0.9944449438202247,
+      1.0
+    ],
+    "unlit": [
+      "InteriorLightsMAT",
+      "InteriorLights_MAT",
+      "InteriorLights_mat",
+      "InteriorLights_mat1",
+      "PlantRoomGlass_MAT"
+    ],
+    "native_lights": [
+      {
+        "position": [
+          0.0,
+          3.0,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 9.0,
+        "radius": 7.745967
+      },
+      {
+        "position": [
+          0.0,
+          -0.262378990650177,
+          0.9843969941139221
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 36.0,
+        "radius": 10.954451
+      },
+      {
+        "position": [
+          0.0,
+          3.0,
+          1.0
+        ],
+        "colour": [
+          0.7254,
+          0.9382,
+          1.0
+        ],
+        "intensity": 4.0,
+        "radius": 6.324555
+      },
+      {
+        "position": [
+          0.0,
+          -0.262378990650177,
+          0.9843969941139221
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 36.0,
+        "radius": 10.954451
+      },
+      {
+        "position": [
+          0.0,
+          3.0,
+          1.0
+        ],
+        "colour": [
+          0.7254,
+          0.9382,
+          1.0
+        ],
+        "intensity": 4.0,
+        "radius": 6.324555
+      }
+    ]
+  },
+  "FRE_ROOM_COOK": {
+    "colour": [
+      0.8964876850763807,
+      0.7857845769682726,
+      0.7117049341950646
+    ],
+    "unlit": [
+      "FirePlantGlowMAT",
+      "InteriorLightsMAT",
+      "InteriorLights_MAT",
+      "OrangeGlowFade_Mat",
+      "PlantRoomGlass_MAT",
+      "ThermalScroll"
+    ],
+    "native_lights": [
+      {
+        "position": [
+          0.0,
+          3.0,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 9.0,
+        "radius": 7.745967
+      },
+      {
+        "position": [
+          -0.04633500054478645,
+          1.0285389423370361,
+          0.8746790289878845
+        ],
+        "colour": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "intensity": 1.44,
+        "radius": 4.898979
+      },
+      {
+        "position": [
+          -0.04633500054478645,
+          1.0285389423370361,
+          0.8746790289878845
+        ],
+        "colour": [
+          0.0,
+          0.784,
+          0.581676
+        ],
+        "intensity": 1.44,
+        "radius": 4.337741
+      },
+      {
+        "position": [
+          0.0,
+          1.0098140239715576,
+          0.09796400368213654
+        ],
+        "colour": [
+          1.0,
+          0.440622,
+          0.192
+        ],
+        "intensity": 2.25,
+        "radius": 5.477226
+      },
+      {
+        "position": [
+          0.0,
+          0.0,
+          2.0
+        ],
+        "colour": [
+          0.895,
+          0.747064,
+          0.56743
+        ],
+        "intensity": 2.25,
+        "radius": 5.181699
+      },
+      {
+        "position": [
+          0.0,
+          0.0,
+          -2.0
+        ],
+        "colour": [
+          0.86636,
+          0.895,
+          0.885761
+        ],
+        "intensity": 0.64,
+        "radius": 3.784178
+      }
+    ]
+  },
+  "FRE_ROOM_DRESS": {
+    "colour": [
+      0.7789537695590327,
+      0.8327912882882883,
+      0.8629648335704125
+    ],
+    "unlit": [
+      "EntranceMarker_Mat1",
+      "GlassMat",
+      "HoloGlare_mat1",
+      "HoloWall_mat1",
+      "InteriorLights_MAT",
+      "InteriorLights_mat1",
+      "PulseLight_Mat",
+      "RedLight_mat2",
+      "TrailLight_mat1",
+      "green2"
+    ],
+    "native_lights": [
+      {
+        "position": [
+          2.0,
+          3.0,
+          2.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 2.25,
+        "radius": 5.477226
+      },
+      {
+        "position": [
+          -2.0,
+          3.0,
+          -2.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 2.25,
+        "radius": 5.477226
+      },
+      {
+        "position": [
+          -2.0,
+          3.0,
+          2.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 2.25,
+        "radius": 5.477226
+      },
+      {
+        "position": [
+          2.0,
+          3.0,
+          -2.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 2.25,
+        "radius": 5.477226
+      },
+      {
+        "position": [
+          0.0,
+          2.872431993484497,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 0.64,
+        "radius": 4.0
+      },
+      {
+        "position": [
+          0.8710240721702576,
+          1.0063060522079468,
+          -0.868969202041626
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 0.25,
+        "radius": 3.162278
+      },
+      {
+        "position": [
+          -2.1442391872406006,
+          2.474647045135498,
+          0.24325883388519287
+        ],
+        "colour": [
+          0.937,
+          0.895924,
+          0.780521
+        ],
+        "intensity": 2.89,
+        "radius": 5.644289
+      },
+      {
+        "position": [
+          -2.1442391872406006,
+          0.7238960266113281,
+          0.24325883388519287
+        ],
+        "colour": [
+          0.937,
+          0.826139,
+          0.660585
+        ],
+        "intensity": 1.69,
+        "radius": 4.935788
+      },
+      {
+        "position": [
+          0.5686730146408081,
+          2.136734962463379,
+          -1.1020874977111816
+        ],
+        "colour": [
+          0.646753,
+          0.75553,
+          0.961
+        ],
+        "intensity": 1.0,
+        "radius": 4.384062
+      },
+      {
+        "position": [
+          0.9295321702957153,
+          2.110013961791992,
+          0.24449989199638367
+        ],
+        "colour": [
+          0.4705,
+          0.644,
+          1.0
+        ],
+        "intensity": 1.21,
+        "radius": 4.690416
+      },
+      {
+        "position": [
+          -0.2000434398651123,
+          0.9506940245628357,
+          1.5615464448928833
+        ],
+        "colour": [
+          0.2337,
+          0.4883,
+          0.6274
+        ],
+        "intensity": 4.41,
+        "radius": 5.133303
+      }
+    ]
+  },
+  "FRE_ROOM_EXTR": {
+    "colour": [
+      1.0,
+      0.9755658823529413,
+      0.9647058823529412
+    ],
+    "unlit": [
+      "IntLightsNonTransp_mat",
+      "InteriorLights_MAT",
+      "InteriorLights_mat",
+      "InteriorLights_mat11",
+      "InteriorLights_mat6",
+      "ScanLine_Mat5",
+      "TranspGlassMat"
+    ],
+    "native_lights": [
+      {
+        "position": [
+          2.4469969272613525,
+          2.012502908706665,
+          0.0670270025730133
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          3.999999989900971e-06,
+          0.9680789709091187,
+          1.9860379695892334
+        ],
+        "colour": [
+          1.0,
+          0.3077,
+          0.0
+        ],
+        "intensity": 0.36,
+        "radius": 3.464102
+      },
+      {
+        "position": [
+          -2.5697460174560547,
+          2.012502908706665,
+          0.0670270025730133
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.0,
+          2.518502950668335,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 7.84,
+        "radius": 7.483315
+      }
+    ]
+  },
+  "FRE_ROOM_FLEET": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_IND": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_IND1": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_LADDER": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_NPCBUI": {
+    "colour": [
+      0.9259259259259259,
+      0.9759554444444445,
+      0.9814814814814815
+    ],
+    "unlit": [
+      "FlashingBP_mat",
+      "FlashingBP_mat1",
+      "GlassMat",
+      "GraphPanning_Mat",
+      "GraphPanning_Mat1",
+      "InteriorLights_MAT",
+      "InteriorLights_mat6",
+      "Lights_mat",
+      "ScanLine_Mat",
+      "ScanLine_Mat1",
+      "ScreenBits_mat",
+      "ScreenBits_mat1",
+      "ScreenButton_Mat",
+      "ScreenButton_Mat1",
+      "ScreenTransparent_Mat",
+      "ScreenTransparent_Mat1",
+      "SpinningBPrint_mat",
+      "SpinningBPrint_mat1",
+      "UIDull_Mat",
+      "UIDull_Mat1",
+      "UIMiscParts_Mat",
+      "UIMiscParts_Mat1"
+    ],
+    "native_lights": [
+      {
+        "position": [
+          -0.04361996054649353,
+          2.1329779624938965,
+          0.052553221583366394
+        ],
+        "colour": [
+          1.0,
+          0.821486,
+          0.0
+        ],
+        "intensity": 0.25,
+        "radius": 3.162278
+      },
+      {
+        "position": [
+          -0.09066024422645569,
+          1.307168960571289,
+          0.09959344565868378
+        ],
+        "colour": [
+          0.0,
+          0.720027,
+          1.0
+        ],
+        "intensity": 0.25,
+        "radius": 3.162278
+      },
+      {
+        "position": [
+          -0.2962869107723236,
+          2.6329989433288574,
+          -0.32057511806488037
+        ],
+        "colour": [
+          0.0,
+          0.720027,
+          1.0
+        ],
+        "intensity": 0.25,
+        "radius": 3.162278
+      },
+      {
+        "position": [
+          1.111891508102417,
+          2.112637996673584,
+          0.8414440155029297
+        ],
+        "colour": [
+          0.0,
+          0.720027,
+          1.0
+        ],
+        "intensity": 0.25,
+        "radius": 3.162278
+      },
+      {
+        "position": [
+          1.111891508102417,
+          2.9904890060424805,
+          0.8414440155029297
+        ],
+        "colour": [
+          0.0,
+          0.720027,
+          1.0
+        ],
+        "intensity": 0.25,
+        "radius": 3.162278
+      },
+      {
+        "position": [
+          0.0,
+          2.694267988204956,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 12.25,
+        "radius": 8.3666
+      }
+    ]
+  },
+  "FRE_ROOM_NPCFAR": {
+    "colour": [
+      0.978954356846473,
+      1.0,
+      0.992489161825726
+    ],
+    "unlit": [
+      "InteriorLights_MAT",
+      "PlantRoomGlass_MAT"
+    ],
+    "native_lights": [
+      {
+        "position": [
+          -1.0969619750976562,
+          1.1188019514083862,
+          0.8315460085868835
+        ],
+        "colour": [
+          0.683,
+          1.0,
+          0.886868
+        ],
+        "intensity": 0.64,
+        "radius": 4.0
+      },
+      {
+        "position": [
+          0.0,
+          3.0,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 9.0,
+        "radius": 7.745967
+      }
+    ]
+  },
+  "FRE_ROOM_NPCSCI": {
+    "colour": [
+      0.9892162162162161,
+      0.9982115675675676,
+      1.0
+    ],
+    "unlit": [
+      "GlassMat",
+      "GraphPanning_Mat2",
+      "InteriorLights_MAT",
+      "InteriorLights_mat6",
+      "Lights1_Mat2",
+      "Lights_mat3",
+      "Lights_mat4",
+      "LiquidScroll_matH2",
+      "ScanLine_Mat3",
+      "ScreenButton_Mat2",
+      "ScreenTransparent_Mat3",
+      "UIDull_Mat2",
+      "UIMiscParts_Mat2"
+    ],
+    "native_lights": [
+      {
+        "position": [
+          2.0,
+          3.202341079711914,
+          2.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 2.25,
+        "radius": 5.477226
+      },
+      {
+        "position": [
+          -2.0,
+          3.202341079711914,
+          -2.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 2.25,
+        "radius": 5.477226
+      },
+      {
+        "position": [
+          -2.0,
+          3.202341079711914,
+          2.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 2.25,
+        "radius": 5.477226
+      },
+      {
+        "position": [
+          2.0,
+          3.202341079711914,
+          -2.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 2.25,
+        "radius": 5.477226
+      },
+      {
+        "position": [
+          0.6895996928215027,
+          1.5878009796142578,
+          0.6115748286247253
+        ],
+        "colour": [
+          0.601,
+          0.933828,
+          1.0
+        ],
+        "intensity": 0.25,
+        "radius": 3.162278
+      }
+    ]
+  },
+  "FRE_ROOM_NPCVEH": {
+    "colour": [
+      0.9808575803981623,
+      0.9326191998468606,
+      0.9500306906584992
+    ],
+    "unlit": [
+      "GraphPanning_Mat1",
+      "InteriorLights_MAT",
+      "InteriorLights_mat6",
+      "Lights_mat3",
+      "ScanLine_Mat1",
+      "ScreenTransparent_Mat1",
+      "SpinningBuggy_mat",
+      "UIBrightSpin_Mat",
+      "UIDull_Mat1",
+      "UIMiscParts_Mat1"
+    ],
+    "native_lights": [
+      {
+        "position": [
+          0.740291953086853,
+          1.4479080438613892,
+          -0.539684534072876
+        ],
+        "colour": [
+          0.0,
+          0.720027,
+          1.0
+        ],
+        "intensity": 0.25,
+        "radius": 3.162278
+      },
+      {
+        "position": [
+          1.3977930545806885,
+          2.5829460620880127,
+          2.199007034301758
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 4.0,
+        "radius": 6.324555
+      },
+      {
+        "position": [
+          -1.778499960899353,
+          2.810570001602173,
+          -2.4588229656219482
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 4.0,
+        "radius": 6.324555
+      },
+      {
+        "position": [
+          0.0,
+          2.805561065673828,
+          0.0006990000256337225
+        ],
+        "colour": [
+          1.0,
+          0.0,
+          0.194322
+        ],
+        "intensity": 0.81,
+        "radius": 4.242641
+      },
+      {
+        "position": [
+          -1.5620629787445068,
+          1.2585999965667725,
+          2.0271239280700684
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 4.0,
+        "radius": 6.324555
+      }
+    ]
+  },
+  "FRE_ROOM_NPCWEA": {
+    "colour": [
+      0.9572050290135395,
+      0.9932308268858802,
+      0.9941489361702128
+    ],
+    "unlit": [
+      "Beam_mat",
+      "Beam_mat1",
+      "GunScreen_mat",
+      "InteriorLights_MAT",
+      "InteriorLights_mat6",
+      "InteriorLights_mat7",
+      "Light2_Mat",
+      "Lights_mat",
+      "MultiToolLED_Mat",
+      "ScanLine_Mat",
+      "ScreenTransparent_Mat",
+      "UIMiscParts_Mat"
+    ],
+    "native_lights": [
+      {
+        "position": [
+          -0.008245999924838543,
+          0.8373640179634094,
+          1.4591360092163086
+        ],
+        "colour": [
+          0.0,
+          0.720027,
+          1.0
+        ],
+        "intensity": 0.25,
+        "radius": 3.162278
+      },
+      {
+        "position": [
+          1.031026005744934,
+          0.6822869777679443,
+          0.8268489837646484
+        ],
+        "colour": [
+          0.23,
+          1.0,
+          0.758
+        ],
+        "intensity": 0.25,
+        "radius": 3.162278
+      },
+      {
+        "position": [
+          0.0670270025730133,
+          0.1617860049009323,
+          -2.4469969272613525
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.0670270025730133,
+          0.1617860049009323,
+          2.5697460174560547
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 1.0,
+        "radius": 4.472136
+      },
+      {
+        "position": [
+          0.0,
+          2.518502950668335,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 7.84,
+        "radius": 7.483315
+      }
+    ]
+  },
+  "FRE_ROOM_PLANT0": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_PLANT1": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_REFINE": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_ROCLOC": {
+    "colour": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "unlit": [
+      "GlassMat",
+      "InteriorLights_MAT",
+      "InteriorLights_mat6"
+    ],
+    "native_lights": [
+      {
+        "position": [
+          0.0,
+          2.694267988204956,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 12.25,
+        "radius": 8.3666
+      }
+    ]
+  },
+  "FRE_ROOM_SCAN": {
+    "colour": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "unlit": [
+      "GlassMat",
+      "HoloGrid_Mat2",
+      "InteriorLights_MAT",
+      "InteriorLights_mat6",
+      "ScanLines_Mat1",
+      "ScanLines_Mat2",
+      "TransBackgrond_Mat",
+      "TransBackgrond_Mat1",
+      "TransBackgrond_Mat2",
+      "phong41",
+      "phong43"
+    ],
+    "native_lights": [
+      {
+        "position": [
+          0.0,
+          2.694267988204956,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 12.25,
+        "radius": 8.3666
+      }
+    ]
+  },
+  "FRE_ROOM_SHOP": {
+    "colour": [
+      0.9483667017913593,
+      1.0,
+      0.9969398493150685
+    ],
+    "unlit": [
+      "Blac_Mat2",
+      "BlueStripMat",
+      "EyeGrad_Mat",
+      "FigherShips_mat1",
+      "GlassMat",
+      "InteriorLights_MAT",
+      "InteriorLights_mat8",
+      "ScanLine_Mat3",
+      "ScreenButton_Mat3",
+      "ScreenTransparent_Mat1",
+      "ScrollingGradients_mat1",
+      "UIDull_Mat3",
+      "UIMiscParts_Mat3",
+      "WallMonitorA_ScreenTransparent_Mat2"
+    ],
+    "native_lights": [
+      {
+        "position": [
+          0.0,
+          1.3457690477371216,
+          0.0
+        ],
+        "colour": [
+          0.0,
+          1.0,
+          0.940733
+        ],
+        "intensity": 0.49,
+        "radius": 3.741657
+      },
+      {
+        "position": [
+          2.0,
+          3.0,
+          -2.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 2.25,
+        "radius": 5.477226
+      },
+      {
+        "position": [
+          -2.0,
+          3.0,
+          2.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 2.25,
+        "radius": 5.477226
+      },
+      {
+        "position": [
+          -2.0,
+          3.0,
+          -2.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 2.25,
+        "radius": 5.477226
+      },
+      {
+        "position": [
+          2.0,
+          3.0,
+          2.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 2.25,
+        "radius": 5.477226
+      }
+    ]
+  },
+  "FRE_ROOM_STORE0": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_STORE1": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_STORE2": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_STORE3": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_STORE4": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_STORE5": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_STORE6": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_STORE7": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_STORE8": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_STORE9": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "FRE_ROOM_TECH": {
+    "colour": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "unlit": [
+      "GlassMat1",
+      "InteriorLightsMAT1",
+      "InteriorLightsMAT2",
+      "InteriorLights_MAT",
+      "InteriorLights_mat",
+      "InteriorLights_mat7",
+      "InteriorLights_mat8",
+      "InteriorLights_mat9",
+      "PlantRoomGlass_MAT"
+    ],
+    "native_lights": [
+      {
+        "position": [
+          0.0,
+          2.694267988204956,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 9.0,
+        "radius": 7.745967
+      }
+    ]
+  },
+  "FRE_ROOM_TELEPO": {
+    "colour": [
+      0.8832011535688535,
+      0.9954196164383561,
+      0.9910481860129776
+    ],
+    "unlit": [
+      "GlassMat",
+      "InteriorLights_MAT",
+      "InteriorLights_mat2",
+      "InteriorLights_mat6",
+      "PortalScroll_Mat",
+      "PowerIndicator_Mat",
+      "PulseLight_Mat",
+      "TrailLight_mat",
+      "Unlit_Mat1",
+      "green2"
+    ],
+    "native_lights": [
+      {
+        "position": [
+          -0.9292783737182617,
+          1.4385290145874023,
+          0.9292783141136169
+        ],
+        "colour": [
+          0.0,
+          0.960784,
+          0.923357
+        ],
+        "intensity": 0.81,
+        "radius": 4.15862
+      },
+      {
+        "position": [
+          -0.6711356043815613,
+          1.6895190477371216,
+          0.671135663986206
+        ],
+        "colour": [
+          0.0,
+          0.960784,
+          0.923357
+        ],
+        "intensity": 0.81,
+        "radius": 4.15862
+      },
+      {
+        "position": [
+          0.0,
+          2.694267988204956,
+          0.0
+        ],
+        "colour": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "intensity": 12.25,
+        "radius": 8.3666
+      }
+    ]
+  },
+  "FRE_ROOM_VEHICL": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  },
+  "STATION_CORE": {
+    "colour": null,
+    "unlit": [],
+    "native_lights": []
+  }
+}

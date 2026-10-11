@@ -9,11 +9,35 @@ ADDON_ID = __package__
 class NMSAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = ADDON_ID
 
+    bbe_toolbar_order: StringProperty(
+        name="Toolbar Order", default="",
+        description="Order of the Base Builder toolbar menus",
+    )
+    bbe_toolbar_hidden: StringProperty(
+        name="Hidden Toolbar Menus", default="",
+        description="Base Builder menus hidden from the second toolbar row",
+    )
+
     nms_save_folder_path: StringProperty(
         name="Save Directory",
         description="Folder where save files are stored",
         subtype='DIR_PATH',
         default = str(save_editor_utils.get_default_save_folder())
+    )
+
+    nms_backup_folder_path: StringProperty(
+        name='Backup Folder',
+        description='Leave blank to store backups beside each account in nms_base_builder_backup',
+        subtype='DIR_PATH',
+        default='',
+    )
+
+    nms_backup_retention: IntProperty(
+        name='Backups per Save Slot',
+        description='Number of automatic and manual backup generations to keep per account and save slot',
+        default=20,
+        min=1,
+        max=500,
     )
     
     nms_check_show_properties : BoolProperty(
@@ -140,6 +164,12 @@ class NMSAddonPreferences(bpy.types.AddonPreferences):
         layout = self.layout
         layout.label(text="No Man's Sky Base Builder")
         layout.label(text="Original creator: DjMonkey")
+        layout.prop(self, 'nms_save_folder_path')
+        layout.prop(self, 'nms_backup_folder_path')
+        layout.prop(self, 'nms_backup_retention')
+        layout.separator()
+        from .tools_menu.base_builder_menu import draw_toolbar_settings
+        draw_toolbar_settings(layout, context)
         layout.separator()
         credits = layout.box()
         credits.label(text="Contributors")

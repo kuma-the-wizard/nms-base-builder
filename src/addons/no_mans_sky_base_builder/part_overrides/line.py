@@ -6,7 +6,7 @@ import bpy
 import mathutils
 
 from .. import part
-from ..utils import blend_utils, constraints, material
+from ..utils import blend_utils, constraints, material, materials_v2
 
 
 class Line(part.Part):
@@ -25,7 +25,8 @@ class Line(part.Part):
             self.object.lock_rotation = [True, True, True]
             self.object.lock_scale = [True, True, True]
 
-            material.assign_power_material(self.object)
+            if not materials_v2.is_high_res(self.object):
+                material.assign_power_material(self.object)
 
     @property
     def start_control(self):

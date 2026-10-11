@@ -3,7 +3,7 @@ import os
 import time
 import mathutils
 import math
-from . import builder, preset
+from . import builder, preset, hd_library, simple_library
 from .part import Part
 from .utils import blend_utils, material, materials_v2, collection_utils
 from .utils import variant_map
@@ -53,9 +53,24 @@ MESH_REVISIONS = dict.fromkeys(
     ("B_HAB_A", "B_HAB_B", "B_HAB_C", "B_HAB1_A", "B_HAB1_B", "B_HAB1_C", "B_ALK_C"),
     "18.0.9",
 )
+MESH_REVISIONS.update(dict.fromkeys(
+    ("B_STR_M_Y_" + side + suffix
+     for side in ("NE", "NW", "N", "E", "S", "W")
+     for suffix in (("", "1", "2", "3") if side in ("NE", "NW") else ("",))),
+    "18.1.1",
+))
+
+MESH_REVISIONS.update(dict.fromkeys(('SET_CLASS_A', 'SET_CLASS_B', 'SET_CLASS_S'), '18.1.11'))
+MESH_REVISIONS.update(dict.fromkeys(('PIPE','FRE_FACE_WALL','FRE_ROOM_IND1','SET_LZ'), '18.1.9'))
+
+# The downloaded pack confused Builders cables with Bazaar fabric hangings.
+CABLE_CORRECTIONS = ('B_WALLHANGING1', 'B_WALLHANGING2', 'B_WALLHANGING3')
+MESH_REVISIONS.update(dict.fromkeys(CABLE_CORRECTIONS, '18.1.20'))
+BYTEBEAT_PARTS = {'BYTEBEAT', 'BYTEBEATSWITCH', 'HOLO_DISCO_0', 'U_BYTEBEATLINE'}
 
 # Set once per session by get_asset_index().
 _asset_index = None
+_asset_root = None
 
 
 # An optimised way to import objects,
@@ -73,6 +88,17 @@ def deserialise_from_data(data):
 
     if data is None:
         return
+
+    from . import progress_ui
+    with progress_ui.Activity('Importing models') as progress:
+        return _deserialise_from_data(data, progress)
+
+
+def _deserialise_from_data(data, progress):
+    progress.update(.02, 'Preparing scene')
+
+    from . import stages
+    stages.prepare_import(bpy.context.scene)
 
     # High res meshes, keyed by object id. Shared by every placement.
     unique_meshes = {}
@@ -101,7 +127,10 @@ def deserialise_from_data(data):
         new_object = bpy.data.objects.new
 
         objects_data = data.get("Objects", [])
+        total = len(objects_data)
         for order, part_data in enumerate(objects_data):
+            if order % 16 == 0:
+                progress.batch(order, total, .06, .87, 'Models')
             raw_object_id = part_data.get(Part.PROP_OBJECT_ID, None)
             if raw_object_id is None:
                 continue
@@ -147,6 +176,8 @@ def deserialise_from_data(data):
             # provide order
             bpy_object[Part.PROP_ORDER] = order
 
+        progress.batch(total, total, .06, .87, 'Models')
+        progress.update(.89, 'Applying materials')
         # colour every high res part in one pass, so each distinct UserData is
         materials_v2.apply_many(to_colour)
         materials_v2.dedupe_appended_data()
@@ -160,6 +191,7 @@ def deserialise_from_data(data):
         bpy.context.view_layer.update()
 
     # Reconstruct presets.
+    progress.update(.94, 'Building presets and connections')
     for preset_data in data.get("Presets", []):
         preset.Preset.deserialise_from_data(
             preset_data, BUILDER, compensate_normal=True
@@ -169,6 +201,7 @@ def deserialise_from_data(data):
     BUILDER.build_rigs()
     # Optimise control points.
     BUILDER.optimise_control_points()
+    progress.update(1.0, 'Import complete')
 
 
 def add_part(
@@ -268,24 +301,27 @@ def add_part(
 
 # build the {object_id: blend file} lookup for the high res library, once
 def get_asset_index(rebuild=False):
-    global _asset_index
+    global _asset_index, _asset_root
+    root = hd_library.library_root()
+    high_res_path = str(root / "assets") if root else ""
 
-    if _asset_index is not None and not rebuild:
+    if _asset_index is not None and not rebuild and (high_res_path, str(hd_library.scenes_root())) == _asset_root:
         return _asset_index
 
     _asset_index = {}
-    if not os.path.isdir(HIGH_RES_PATH):
+    _asset_root = (high_res_path, str(hd_library.scenes_root()))
+    if not os.path.isdir(high_res_path):
         return _asset_index
 
     # collect every candidate first, then resolve the styled ones, so the
     # answer doesn't depend on the order the folder happens to list in
     candidates = {}
-    for filename in os.listdir(HIGH_RES_PATH):
+    for filename in os.listdir(high_res_path):
         if not filename.endswith(".blend"):
             continue
         object_id, separator, style = filename[:-6].partition("__")
         candidates.setdefault(object_id, []).append(
-            (style if separator else None, os.path.join(HIGH_RES_PATH, filename))
+            (style if separator else None, os.path.join(high_res_path, filename))
         )
 
     for object_id, styles in candidates.items():
@@ -302,6 +338,16 @@ def get_asset_index(rebuild=False):
             if object_id in _asset_index:
                 break
 
+    # Small native replacements are available only with the HD library.
+    # Keep the distinct S_WALLHANGING fabric parts mapped to their own assets.
+    for cable in CABLE_CORRECTIONS:
+        _asset_index[cable] = os.path.join(FILE_PATH, 'resources', 'hd_corrections', cable + '.blend')
+
+    # Core corrections do not replace or invalidate the persistent HD pack.
+    scenes = hd_library.scenes_root()
+    if scenes:
+        for marker in ('SET_CLASS_A', 'SET_CLASS_B', 'SET_CLASS_S'):
+            _asset_index[marker] = str(scenes / 'display' / (marker + '.blend'))
     return _asset_index
 
 
@@ -334,8 +380,124 @@ def new_high_res_object(object_id, asset_index=None):
     return bpy_object
 
 
+def refresh_bytebeat_proxies(scene):
+    """Repair old HD scenes whose specialized importers kept simple meshes."""
+    if not getattr(scene, 'bbe_detailed_proxies', True):
+        return 0
+    to_colour = []
+    for obj in scene.objects:
+        pid = obj.get('ObjectID')
+        if obj.type != 'MESH' or pid not in BYTEBEAT_PARTS:
+            continue
+        if materials_v2.is_high_res(obj):
+            correct_hd_display(obj.data, pid)
+            continue
+        mesh = load_high_res_mesh(pid)
+        if mesh is not None:
+            obj.data = mesh
+            to_colour.append((obj, obj.get('UserData', Part.DEFAULT_USER_DATA)))
+    if to_colour:
+        materials_v2.apply_many(to_colour)
+        materials_v2.dedupe_appended_data()
+        materials_v2.ensure_finish_nodes()
+    return len(to_colour)
+
+
 # get the shared mesh datablock for an object id, appending it on first use
+def correct_hd_display(mesh, object_id):
+    """Upgrade HD display data only; placement and export records stay intact."""
+    if object_id == 'U_BYTEBEATLINE' and not mesh.get('bbe_beat_glow_revision'):
+        # Native crossed ribbons already span local Z=0..1. Feather their
+        # width in local coordinates so cable length and endpoints stay exact.
+        mat = bpy.data.materials.new('BBE ByteBeat Pink Glow')
+        mat.use_nodes = True
+        mat.diffuse_color = (1, .04, .3, 1)
+        mat.surface_render_method = 'BLENDED'
+        mat.use_transparent_shadow = True
+        tree = mat.node_tree; tree.nodes.clear()
+        def math_node(operation, a, b):
+            node = tree.nodes.new('ShaderNodeMath'); node.operation = operation
+            for socket, value in zip(node.inputs, (a, b)):
+                if isinstance(value, (int, float)): socket.default_value = value
+                else: tree.links.new(value, socket)
+            return node.outputs[0]
+        coord = tree.nodes.new('ShaderNodeTexCoord')
+        axes = tree.nodes.new('ShaderNodeSeparateXYZ')
+        tree.links.new(coord.outputs['Object'], axes.inputs[0])
+        radius = max(max(abs(v.co.x), abs(v.co.y)) for v in mesh.vertices)
+        x2 = math_node('MULTIPLY', axes.outputs['X'], axes.outputs['X'])
+        y2 = math_node('MULTIPLY', axes.outputs['Y'], axes.outputs['Y'])
+        radial = math_node('POWER', math_node('ADD', x2, y2), .5)
+        fade = math_node('MAXIMUM', math_node('SUBTRACT', 1, math_node('DIVIDE', radial, radius)), 0)
+        fade = math_node('MULTIPLY', math_node('POWER', fade, 2), .65)
+        transparent = tree.nodes.new('ShaderNodeBsdfTransparent')
+        emission = tree.nodes.new('ShaderNodeEmission')
+        emission.inputs['Color'].default_value = (1, .04, .3, 1)
+        emission.inputs['Strength'].default_value = 3
+        mix = tree.nodes.new('ShaderNodeMixShader')
+        tree.links.new(fade, mix.inputs[0]); tree.links.new(transparent.outputs[0], mix.inputs[1])
+        tree.links.new(emission.outputs[0], mix.inputs[2])
+        output = tree.nodes.new('ShaderNodeOutputMaterial')
+        tree.links.new(mix.outputs[0], output.inputs['Surface'])
+        mesh.materials.clear(); mesh.materials.append(mat)
+        for polygon in mesh.polygons: polygon.material_index = 0
+        mesh['bbe_beat_glow_revision'] = 1
+    if mesh.get('bbe_display_revision') == '18.1.39':
+        return
+    if object_id in {'SET_CLASS_A', 'SET_CLASS_B', 'SET_CLASS_S'}:
+        # Marker scale determines world beam length. FF confirms 31.1 local
+        # units for S; the A/B calibration of 16.5 local units keeps the
+        # smaller-class emitters inside Vespera's glass housings. The object
+        # transform supplies the scale exactly once; no placement-dependent
+        # length correction is applied.
+        slots = {i for i,m in enumerate(mesh.materials) if m and
+                 ('long projection beam' in m.name or 'electrical particles' in m.name)}
+        vertices = {v for p in mesh.polygons if p.material_index in slots for v in p.vertices}
+        start = 2.0431294441223145
+        target_length = 31.1 if object_id == 'SET_CLASS_S' else 16.5
+        # Migrate saved previews from the older global lengths and from the
+        # placement-specific 18.1.38 copies without changing saved parts.
+        previous_length = mesh.get('bbe_marker_beam_length',
+                                   7.5 if mesh.get('bbe_display_revision') == '18.1.17'
+                                   else 16.5 if mesh.get('bbe_display_revision') == '18.1.18' else 31.1)
+        for index in vertices:
+            vertex = mesh.vertices[index]
+            vertex.co.y = start + (vertex.co.y-start) * (target_length/previous_length)
+        mesh['bbe_marker_beam_length'] = target_length
+        mesh.update()
+    for mat in mesh.materials:
+        if (not mat or not mat.use_nodes or mat.get('bbe_glass_revision') == 1
+                or mat.get('nms_class') != 'Translucent'
+                or 'glass' not in mat.get('nms_material_path', '').lower()):
+            continue
+        tree = mat.node_tree
+        output = next((n for n in tree.nodes if n.type == 'OUTPUT_MATERIAL' and n.is_active_output), None)
+        if output is None or not output.inputs['Surface'].is_linked:
+            continue
+        source = output.inputs['Surface'].links[0].from_socket
+        # A transparent surface works without enabling costly refraction.
+        # Keep a modest reflective/tinted edge while looking through the pane.
+        transparent = tree.nodes.new('ShaderNodeBsdfTransparent')
+        fresnel = tree.nodes.new('ShaderNodeFresnel')
+        fresnel.inputs['IOR'].default_value = 1.45
+        fade = tree.nodes.new('ShaderNodeMapRange')
+        fade.inputs['To Min'].default_value = .08
+        fade.inputs['To Max'].default_value = .30
+        mix = tree.nodes.new('ShaderNodeMixShader'); mix.name = 'BBE Clear Glass'
+        tree.links.new(fresnel.outputs[0], fade.inputs['Value'])
+        tree.links.new(fade.outputs[0], mix.inputs[0])
+        tree.links.new(transparent.outputs[0], mix.inputs[1])
+        tree.links.new(source, mix.inputs[2])
+        tree.links.new(mix.outputs[0], output.inputs['Surface'])
+        mat.surface_render_method = 'BLENDED'
+        mat.use_transparent_shadow = True
+        mat['bbe_glass_revision'] = 1
+    mesh['bbe_display_revision'] = '18.1.39'
+
+
 def load_high_res_mesh(object_id, asset_index=None):
+    if not getattr(bpy.context.scene, "bbe_detailed_proxies", True):
+        return None
     asset_index = asset_index if asset_index is not None else get_asset_index()
 
     # the cache lives in bpy.data rather than in a module level dict, so it
@@ -343,8 +505,11 @@ def load_high_res_mesh(object_id, asset_index=None):
     mesh_name = MESH_PREFIX + object_id
     cached = bpy.data.meshes.get(mesh_name)
     revision = MESH_REVISIONS.get(object_id)
+    if object_id in {'SET_CLASS_A', 'SET_CLASS_B', 'SET_CLASS_S'} and hd_library.scenes_root() is None:
+        revision += '-base'
     if cached is not None and cached.get(MESH_TAG) == object_id:
         if revision is None or cached.get(MESH_REVISION_TAG) == revision:
+            correct_hd_display(cached, object_id)
             return cached
         cached.name = mesh_name + "_legacy"
 
@@ -388,6 +553,7 @@ def load_high_res_mesh(object_id, asset_index=None):
     # going to call the collapse itself, so tell it there is now something to
     # collapse - see materials_v2.note_appended_data.
     materials_v2.note_appended_data()
+    correct_hd_display(mesh, object_id)
     return mesh
 
 
@@ -441,6 +607,8 @@ def rebuild_variant_mesh(object_id, asset_index=None):
     mesh = transformed_copy(root_mesh, matrix)
     mesh.name = MESH_PREFIX + object_id
     mesh[MESH_TAG] = object_id
+    if object_id in MESH_REVISIONS:
+        mesh[MESH_REVISION_TAG] = MESH_REVISIONS[object_id]
     return mesh
 
 
@@ -504,7 +672,10 @@ def load_proxy_mesh(object_id):
     mesh_name = PROXY_MESH_PREFIX + object_id
     cached = bpy.data.meshes.get(mesh_name)
     if cached is not None and cached.get(PROXY_MESH_TAG) == object_id:
-        return cached
+        revision = MESH_REVISIONS.get(object_id)
+        if revision is None or cached.get(MESH_REVISION_TAG) == revision:
+            return cached
+        cached.name = mesh_name + "_legacy"
 
     # Same rebuild the high res side does, and for the same reason - the fbx
     # library has the wrong mesh under a lot of the corvette variant ids. The
@@ -515,6 +686,14 @@ def load_proxy_mesh(object_id):
         if mesh is not None:
             return mesh
 
+    # Bundled repairs also cover legacy FBX files that exist but are empty.
+    mesh = simple_library.load_mesh(object_id)
+    if mesh is not None:
+        mesh.name = mesh_name
+        mesh[PROXY_MESH_TAG] = object_id
+        if object_id in MESH_REVISIONS:
+            mesh[MESH_REVISION_TAG] = MESH_REVISIONS[object_id]
+        return mesh
     fbx_path = BUILDER.get_obj_path(object_id)
     if not fbx_path or not os.path.isfile(fbx_path):
         return None
@@ -538,6 +717,8 @@ def load_proxy_mesh(object_id):
 
     mesh.name = mesh_name
     mesh[PROXY_MESH_TAG] = object_id
+    if object_id in MESH_REVISIONS:
+        mesh[MESH_REVISION_TAG] = MESH_REVISIONS[object_id]
     return mesh
 
 
@@ -571,6 +752,8 @@ def rebuild_variant_proxy_mesh(object_id):
     mesh = transformed_copy(root_mesh, matrix)
     mesh.name = PROXY_MESH_PREFIX + object_id
     mesh[PROXY_MESH_TAG] = object_id
+    if object_id in MESH_REVISIONS:
+        mesh[MESH_REVISION_TAG] = MESH_REVISIONS[object_id]
     return mesh
 
 
@@ -599,6 +782,10 @@ def _find_proxy_placement_mesh(key):
     """
     mesh = bpy.data.meshes.get("%s_%s" % key)
     if mesh is not None and mesh.get(PROXY_PLACEMENT_TAG) == "%s/%s" % key:
+        revision = MESH_REVISIONS.get(key[0])
+        if revision is not None and mesh.get(MESH_REVISION_TAG) != revision:
+            mesh.name += "_legacy"
+            return None
         return mesh
     return None
 
@@ -794,6 +981,12 @@ def build_fbx_part(
 
 
 def improt_fbx_from_disk(object_id):
+    # Both formats use the same geometry resolver. Missing legacy FBX files
+    # must not turn supported station/Corvette parts into tiny cubes.
+    native = simple_library.new_object(object_id)
+    if native is not None:
+        blend_utils.add_to_scene(native)
+        return native
     fbx_path = BUILDER.get_obj_path(object_id)
 
     objects_before = set(bpy.data.objects)

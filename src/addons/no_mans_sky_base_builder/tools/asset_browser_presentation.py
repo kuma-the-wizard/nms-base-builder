@@ -10,6 +10,36 @@ OP_OBJECT_SELECTED = "object.nms_asset_browser_object_selected"
 OP_MORE_OPTIONS = "object.nms_asset_browser_more_options"
 
 
+def _preview_icon(asset_icon_value):
+    if asset_icon_value is not None:
+        return asset_icon_value
+    return bpy.types.UILayout.bl_rna.functions['label'].parameters['icon'].enum_items["MONKEY"].value
+
+
+def _place_button(layout, object_id, is_preset, icon_value=None, *, text="", emboss=False):
+    kwargs = {"text": text, "emboss": emboss}
+    if icon_value is not None:
+        kwargs["icon_value"] = _preview_icon(icon_value)
+    button = layout.operator(OP_OBJECT_SELECTED, **kwargs)
+    button.object_id = object_id
+    button.is_preset = is_preset
+    button.has_variants = False
+    return button
+
+
+def _variant_button(layout, object_id, variants):
+    button = layout.operator(OP_OBJECT_SELECTED, text="", icon="PAUSE", emboss=False)
+    button.object_id = object_id
+    button.has_variants = True
+    button.variants = json.dumps([object_id, *variants])
+
+
+def _more_options_button(layout, object_id, is_fav):
+    button = layout.operator(OP_MORE_OPTIONS, text="", icon="COLLAPSEMENU", emboss=False)
+    button.object_id = object_id
+    button.is_fav = is_fav
+
+
 def draw_sub_category(pcoll , container, label, elements_list, number_of_columns, icon_size, grid_type = "Grid", show_title = True ):
             
     sub_category_column = container.column(align = True)
@@ -50,7 +80,7 @@ def draw_grid_element(
     asset_name = part_data["name"]
     variants = part_data.get("variants",None)
     
-    has_variants = variants is not None
+    has_variants = bool(variants)
     is_fav = part_data.get("is_fav",False)
     is_preset = part_data.get("is_preset",False)
     
@@ -58,39 +88,26 @@ def draw_grid_element(
         return
     
     asset_column = grid.box().column(align=True)
-    asset_icon_row = asset_column.row(align = True)
-    asset_icon_col = asset_icon_row.column(align = True)
-    asset_icon_col.scale_x = 2.0
-    try:
-        asset_icon_col.template_icon( icon_value = asset_icon_value, scale = grid_icon_size)
-    except:
-        enum_items = bpy.types.UILayout.bl_rna.functions['label'].parameters['icon'].enum_items["MONKEY"].value
-        asset_icon_col.template_icon( icon_value = enum_items,scale= grid_icon_size)
-        
-    action_butons_column = asset_icon_row.column(align = False)
-    add_button = action_butons_column.operator( OP_OBJECT_SELECTED,  text = "",  emboss = True,  icon ="ADD" )
-    add_button.object_id = object_id
-    add_button.is_preset = is_preset
-    
+    controls = asset_column.split(factor=0.5, align=True)
+    left = controls.row(align=True)
+    left.alignment = 'LEFT'
     if not is_preset:
-        more_options_button = action_butons_column.operator( OP_MORE_OPTIONS, text = "",  emboss = False,  icon = "COLLAPSEMENU" )
-        more_options_button.object_id = object_id
-        more_options_button.is_fav = is_fav
-        
-    if has_variants:
-        variants_copy = variants.copy()
-        variants_copy.insert(0,object_id)
+        _more_options_button(left, object_id, is_fav)
     else:
-        variants_copy = None
-    
-    asset_column_text_row = asset_column.row(align = False)
-    button = asset_column_text_row.operator(OP_OBJECT_SELECTED, text = asset_name, emboss = False)
-    button.object_id = object_id
-    button.has_variants = has_variants
-    add_button.is_preset = is_preset
+        left.label(text='')
+    right = controls.row(align=True)
+    right.alignment = 'RIGHT'
     if has_variants:
-        variants_json = json.dumps(variants_copy)
-        button.variants = variants_json
+        _variant_button(right, object_id, variants)
+    else:
+        right.label(text='')
+    image = asset_column.row(align=True)
+    image.alignment = 'CENTER'
+    image.template_icon(icon_value=_preview_icon(asset_icon_value), scale=grid_icon_size)
+
+    # Keep the name as an operator, including Blender's right-click menu for
+    # Quick Favorites. The separate pause button opens variants.
+    _place_button(asset_column.row(align=True), object_id, is_preset, text=asset_name)
     
     
 def draw_list_element( 
@@ -105,39 +122,18 @@ def draw_list_element(
     asset_name = part_data["name"]
     variants = part_data.get("variants",None)
     
-    has_variants = variants is not None
+    has_variants = bool(variants)
     is_fav = part_data.get("is_fav",False)
     is_preset = part_data.get("is_preset",False)
     
-    element_row = grid.box().row(align = True)
-    element_icon_row = element_row.row(align = True)
-    element_icon_row.scale_x = 1.8
-    try:
-        element_icon_row.template_icon( icon_value = asset_icon_value, scale = grid_icon_size)
-    except:
-        enum_items = bpy.types.UILayout.bl_rna.functions['label'].parameters['icon'].enum_items["MONKEY"].value
-        element_icon_row.template_icon( icon_value = enum_items,scale= grid_icon_size)
-    
-    if grid_icon_size == 1:
-        element_row_right = element_row.row(align = True)
-        element_row_right.label(text = asset_name)
-        add_button_row = element_row_right.row(align = True)
-        add_button_2 = add_button_row.operator(OP_OBJECT_SELECTED, text = "", emboss = True, icon = "COLOR" if has_variants else "ADD")
-        
-    else:
-        element_row_right = element_row.column(align = True)
-        element_row_right.label(text = asset_name)
-        for _ in range(grid_icon_size-2):
-            element_row_right.label(text = "")
-        add_button_row = element_row_right.row(align = True)
-        add_button_row.label(text = "")
-        add_button_2 = add_button_row.operator(OP_OBJECT_SELECTED, text = "", emboss = True, icon = "ADD")
-        
-    add_button_2.object_id = object_id
-    add_button_2.has_variants = has_variants
+    element_row = grid.box().row(align=True)
+    if not is_preset:
+        _more_options_button(element_row, object_id, is_fav)
+    image = element_row.column(align=True)
+    image.template_icon(icon_value=_preview_icon(asset_icon_value), scale=grid_icon_size)
+    _place_button(element_row.row(align=True), object_id, is_preset, text=asset_name)
     if has_variants:
-        variants_json = json.dumps(variants)
-        add_button_2.variants = variants_json
+        _variant_button(element_row, object_id, variants)
     
 
 

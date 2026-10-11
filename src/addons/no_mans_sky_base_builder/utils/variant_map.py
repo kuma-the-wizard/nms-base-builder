@@ -106,6 +106,14 @@ def _build_table():
 
         table[object_id] = (root_id, matrix)
 
+    # Native placement locators take precedence over historical mesh fits.
+    # These Vesper transforms were audited against the installed game's
+    # placement entities and part-style mapping (including NE/NW swaps).
+    native_path = os.path.join(RESOURCES_DIR, "native_variant_transforms.json")
+    if os.path.isfile(native_path):
+        with open(native_path, "r") as handle:
+            for object_id, entry in json.load(handle).items():
+                table[object_id] = (entry["root"], mathutils.Matrix(entry["matrix"]))
     return table
 
 

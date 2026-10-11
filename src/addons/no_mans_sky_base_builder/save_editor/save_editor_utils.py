@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 from datetime import datetime
 
-from . import save_translation
+from . import save_translation, backup_policy
 from .save_translation import SaveTranslation
 
 system = platform.system()
@@ -33,6 +33,7 @@ class BaseData:
     base_type: int
     parts_count: int
     save_slot = []
+    save_context = None
     
     
     def __init__(self, index = None ,base = None, ship_ownership = None):
@@ -48,7 +49,7 @@ class BaseData:
         if len(base_name.strip()) == 0:
             base_name = "unknow_name"
             
-        ship_ownership_entry = ship_ownership[user_data] if in_base_type == BaseType.CORVETTE else None
+        ship_ownership_entry = ship_ownership[user_data] if in_base_type == BaseType.CORVETTE and 0 <= user_data < len(ship_ownership) else None
         if ship_ownership_entry is not None and in_base_type == BaseType.CORVETTE and base_name == "Default":
             base_name = ship_ownership_entry[SaveTranslation.base_name]
         
@@ -151,43 +152,36 @@ def get_save_slots_list(account):
     pattern = re.compile(r"save(\d+)\.hg")
     # store list of all hg save files
     hg_files_list = get_hg_files_in_folder(account)
+    hg_files = set(hg_files_list)
     
     # interate through each save file and record their pairs
     save_slots = []
     for save_2 in hg_files_list:
+        match = pattern.fullmatch(save_2.name)
+        if not match or int(match.group(1)) % 2:
+            continue
+        file_number = int(match.group(1))
+        save_1_name = "save.hg" if file_number == 2 else f"save{file_number - 1}.hg"
+        save_1 = save_2.parent / save_1_name
+        if save_1 not in hg_files:
+            continue
+        save_reader = SaveFile(save_2)
         
         # save type is "Main" for normal save and "Season" for expeditiion
         try:
-            save_type = SaveFile(save_2).search_property(SaveTranslation.active_context)
+            save_type = save_reader.search_property(SaveTranslation.active_context)
             if save_type is None:
                 continue
         except:
             continue
         
-        # validate name of save file
-        match = pattern.fullmatch(save_2.name)
-        if not match:
-            continue
-        
-        #extract number from name of save file
-        file_number = int(match.group(1))
-        if file_number %2 == 1:
-            continue
-        
-        #name of linked save file
-        save_1_name = "save.hg" if file_number == 2 else f"save{file_number - 1}.hg"
-        save_1 = Path(save_2.parent / save_1_name )
-        #check if linked save file exits in save folder or not
-        save_1_found = next((p for p in hg_files_list if p == save_1), None)
-        if not save_1_found:
-            continue
         
         #slot number is always half of second save file's number
         save_slot_number = file_number//2
         #links to save files for this slot
         saves_links = [str(save_1), str(save_2)]
         #extract save's name from save file data by partially loading it, and increasing efficiency
-        save_name = SaveFile(save_2).search_property(SaveTranslation.save_name) if save_type == "Main" else "Expedition"
+        save_name = save_reader.search_property(SaveTranslation.save_name) if save_type == "Main" else "Expedition"
         
         save_slot = {
             "slot": save_slot_number,
@@ -201,9 +195,11 @@ def get_save_slots_list(account):
     return save_slots  
 
 # returns list of data related to bses present in a save slot
-def extract_bases_list_from_save(save_slot):
-    save_file = get_save_file(save_slot)
-    data = save_file.load()
+def _extract_context_bases(save_slot, save_context, save_file=None):
+    save_file = save_file or get_save_file(save_slot)
+    if save_file.json_data is None:
+        save_file.load()
+    save_file.context = save_context
     
     obfuscated_persistent_base_data = save_file.get_bases_list_pointer()
     ship_ownsership = save_file.get_ship_ownership_pointer()
@@ -224,6 +220,7 @@ def extract_bases_list_from_save(save_slot):
         
         base_data = BaseData(index, base, ship_ownsership)
         base_data.save_slot = save_slot
+        base_data.save_context = save_context
         
         #store list of corvettes and bases in their respective list
         match base_data.base_type :
@@ -261,6 +258,26 @@ def extract_bases_list_from_save(save_slot):
     }
     
     
+def extract_bases_list_from_save(save_slot):
+    sf = get_save_file(save_slot)
+    sf.load()
+    result = {'corvettes': [], 'bases': [], 'external': [], 'space': [], 'spacestation': [], 'freighters': [], 'freighter': None, 'total_parts_count': 0}
+    for context, key in (('Main', SaveTranslation.base_context), ('Season', SaveTranslation.expedition_context)):
+        player = sf.json_data.get(key, {}).get(SaveTranslation.player_state_data, {})
+        if not player.get(SaveTranslation.persistent_player_bases):
+            continue
+        data = _extract_context_bases(save_slot, context, sf)
+        for name in ('corvettes','bases','external','space','spacestation'):
+            result[name].extend(data[name])
+        if data['freighter'] is not None:
+            result['freighters'].append(data['freighter'])
+            if result['freighter'] is None:
+                result['freighter'] = data['freighter']
+        result['total_parts_count'] += data['total_parts_count']
+    result['stations'] = result['spacestation']
+    return result
+
+
 # active save is most recently modified save file
 def get_lastes_save_file_location(save_slot):
     save_1 = Path(save_slot[0])
@@ -303,6 +320,7 @@ def import_paticular_base_from_save(base_identifier,  save_slot):
 #save a base to save file
 def save_base_to_save_file(objects_data, base_identifier,  save_slot, base_name = None):
     from .save_file import SaveFile
+    pending = []
     for slot in save_slot:
         save_file = SaveFile(slot)
         save_file.load()
@@ -326,45 +344,25 @@ def save_base_to_save_file(objects_data, base_identifier,  save_slot, base_name 
                 ship_ownsership_element = save_file.get_ship_ownsership_element(userdata)
                 ship_ownsership_element[SaveTranslation.base_name] = base_name
         
-        # save the file and make backup after update it
-        save_file.make_backup()
+        pending.append(save_file)
+    # Capture both save points and their metadata before changing either file.
+    generation, _ = backup_policy.snapshot(save_slot, 'export')
+    for save_file in pending:
         save_file.save()
+    backup_policy.finish(generation)
     return "Base/Corvette saved sucessfully"
 
 # a folder within save_directory , where backups will be stored
 def get_backups_folder(save_links):
-    folder = os.path.dirname(save_links[0])
-    backup_folder = os.path.join(
-        folder,"nms_base_builder_backup",
-    )
-    #create backup folder if it doesnt exist
-    os.makedirs(backup_folder, exist_ok=True)
-    return backup_folder
+    backup_folder = backup_policy.directory(save_links)
+    backup_folder.mkdir(parents=True, exist_ok=True)
+    return str(backup_folder)
 
 # make backup of both save files linked to a save slot
 def backup_save_files(save_links):
-    backup_folder = get_backups_folder(save_links)
-    # add date and time in bakcup file's name to make make manual searching easier
-    dat_and_time = datetime.now().strftime("d-%Y-%m-%d_t-%H-%M-%S-%f")[:-3]
-    
-    
-    save_1 = save_links[0]
-    save_2 = save_links[1]
-    s1_name, s1_ext = os.path.splitext(os.path.basename(save_1))
-    s2_name, s2_ext = os.path.splitext(os.path.basename(save_2))
-    
-    save_1_backup = os.path.join(
-        backup_folder,
-        f"{s1_name}{s1_ext}.{dat_and_time}.blender.bak"
-    )
-    save_2_backup = os.path.join(
-        backup_folder,
-        f"{s2_name}{s2_ext}.{dat_and_time}.blender.bak"
-    )
-    
-    #make exact copies of those sace files and just change names
-    shutil.copy2(save_1, save_1_backup)
-    shutil.copy2(save_2, save_2_backup)
+    generation, copies = backup_policy.snapshot(save_links, 'manual')
+    backup_policy.finish(generation)
+    return copies
     
 # Open backup for each OS type
 def open_backup_folder_in_explorer(save_links):

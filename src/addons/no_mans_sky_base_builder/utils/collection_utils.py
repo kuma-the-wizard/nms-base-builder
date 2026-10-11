@@ -9,10 +9,21 @@ UNLINKED_CURVE_OBJ_COL = "Unlinked Curve Objects"
 
 # returns collection or creates a new collection
 def get_collection(collection_name):
+    scene = bpy.context.scene
+    # Collection names are global in Blender, while import targets are scenes.
+    # A second scene (such as the ship-manager preview) must not silently link
+    # imported objects into another scene's Collection.
+    pending = list(scene.collection.children)
+    while pending:
+        collection = pending.pop()
+        if collection.name == collection_name or collection.get('_nms_collection_name') == collection_name:
+            return collection
+        pending.extend(collection.children)
     collection = bpy.data.collections.get(collection_name)
-    if collection is None:
+    if collection is None or collection.users > 0:
         collection = bpy.data.collections.new(collection_name)
-        bpy.context.scene.collection.children.link(collection)
+    collection['_nms_collection_name'] = collection_name
+    scene.collection.children.link(collection)
     return collection
 
 def rename_to_unliked(collection):

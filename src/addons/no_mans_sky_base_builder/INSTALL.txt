@@ -1,4 +1,4 @@
-BASE BUILDER EXTENDED 18.0.18
+BASE BUILDER EXTENDED 18.1.42
 Base Builder by DjMonkey; Extended by Furiousfurby.
 Based on Kuma's 18.0.0 release.
 
@@ -6,8 +6,9 @@ REQUIREMENTS
 64-bit Windows, Blender 5.1 or 5.2 (tested with 5.1.2 and 5.2.2 LTS).
 The station reference library was saved with Blender 5.1. This combined build
 does not claim the Blender 4.2 compatibility of Kuma's original ZIP.
-Models, textures, settlement icons and Python dependency wheels are included.
-No separate model download, NMSDK, external Python or pip command is required.
+Simple proxies, icons, game lighting and Python dependency wheels are included.
+Detailed proxies use a separate, optional HD library, installed once from inside
+BBE. No additional plug-in, NMSDK, external Python or pip command is required.
 
 HIDDEN VANILLA STATION PARTS
 The Asset Browser includes a separate Vanilla Hidden Station Parts category.
@@ -21,7 +22,7 @@ INSTALL / UPDATE
 2. Edit > Preferences > Get Extensions > top-right menu > Install from Disk.
 3. Select the ZIP and enable Base Builder Extended.
 4. Restart all Blender windows after upgrading.
-For existing low-resolution curved bubble ducts, use Builder > High-res Proxies.
+For existing low-resolution curved bubble ducts, use Builder > Detailed Proxies.
 New pipes and bubble ducts added from the Asset Browser automatically join an
 endpoint of the selected pipe or bubble duct. Use Snap controls to cycle ends.
 For habs or the Thunderbird bay already placed in an older saved scene, select
@@ -64,11 +65,33 @@ With no active object selected, adding a part uses its normal origin, rotation
 and scale. With an active object selected, the part inherits that transform.
 This applies to both the native Asset Browser and legacy/proxy add paths.
 
+DETAILED PROXIES
+Use Builder > Detailed Proxies. Installed models are detected automatically.
+If they are missing, confirm Download & Enable. Blender downloads, verifies and
+installs the complete pack, then turns Detailed Proxies on automatically. No
+manual ZIP extraction or restart is needed. Progress and Cancel Download appear
+in the Builder menu and temporarily in the sidebar. All models install together;
+individual parts never trigger downloads or game-file conversion.
+The installed pack is shared across Blender versions and survives normal BBE
+updates. HD browser icons are always included with the main add-on.
+For offline installation only, use F3 > Install Detailed Proxies from ZIP
+(Offline). This also installs and enables a verified pack automatically.
+
+GAME LIGHTING & SCENES
+Open Game Lighting & Scenes in the Base Builder sidebar. Turn on Game Lighting,
+choose Planet or Space, then choose a sky. Planet offers biome/weather and time
+of day; Space offers nebula, galaxy, starfield and deep-space styles. Use Advanced
+for exposure, sunlight, sky brightness and lamp strength. Lamps creates Blender
+lights from supported parts' game data; Refresh Lamps after adding/removing parts.
+Lighting presets are stored in ~/NoMansSkyBaseBuilder/lighting_presets.
+Turning lighting off restores the previous world, colour management and viewport
+shading. The settings and generated lamps are scene-specific and are not exported
+to No Man's Sky. They approximate the game's renderer, not an exact simulation.
+
 SHARING
-Send this complete ZIP. Recipients use their own saves. Personal saves, test
-scenes, appearance profiles and research tools are not included. The download
-retains Kuma's full high-resolution library, so it is roughly 2 GB even though
-the station reference itself is about 55 MB.
+Send the main ZIP; the optional bbe-hd-library-1.zip can also be shared for offline
+installation. Recipients use their own saves. Personal saves, test scenes,
+appearance profiles and research tools are not included.
 
 CREDITS
 DjMonkey's name, artwork and support links are unchanged. Additional contributor

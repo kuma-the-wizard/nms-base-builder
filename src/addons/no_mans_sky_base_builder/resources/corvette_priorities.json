@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "delete_identical": false,
+  "groups": [
+    {
+      "name": "Rockhopper Wing",
+      "parts": [
+        "B_WNG_O_0",
+        "B_WNG_O_0_R",
+        "B_WNG_O_1",
+        "B_WNG_O_1_R"
+      ]
+    },
+    {
+      "name": "Generators",
+      "parts": [
+        "B_GEN_1",
+        "B_GEN_0",
+        "B_GEN_2"
+      ]
+    },
+    {
+      "name": "Thrusters",
+      "parts": [
+        "B_TRU_C",
+        "B_WNG_A",
+        "B_WNG_A_R",
+        "B_WNG_C",
+        "B_WNG_C_R",
+        "B_WNG_D",
+        "B_WNG_D_R",
+        "B_WNG_N",
+        "B_WNG_N_R",
+        "B_WNG_P",
+        "B_WNG_P_B",
+        "B_WNG_P_R",
+        "B_WNG_P_T",
+        "B_TRU_A",
+        "B_TRU_B",
+        "B_TRU_D",
+        "B_TRU_E",
+        "B_TRU_F",
+        "B_TRU_G",
+        "B_TRU_H",
+        "B_WNG_F",
+        "B_WNG_F_R",
+        "B_WNG_H",
+        "B_WNG_H_R",
+        "B_WNG_L",
+        "B_WNG_L_R"
+      ]
+    },
+    {
+      "name": "Weapon Turrets",
+      "parts": [
+        "B_TUR_A",
+        "B_TUR_B",
+        "B_TUR_C",
+        "B_TUR_D",
+        "B_TUR_E",
+        "B_DECO_I"
+      ]
+    },
+    {
+      "name": "Shield Units",
+      "parts": [
+        "B_SHL_D",
+        "B_GEN_3",
+        "B_SHL_A",
+        "B_SHL_B",
+        "B_SHL_C",
+        "B_SHL_E"
+      ]
+    },
+    {
+      "name": "Landing Gear",
+      "parts": [
+        "B_LND_A",
+        "B_LND_B",
+        "B_LND_C",
+        "B_WNG_B",
+        "B_WNG_B_R"
+      ]
+    },
+    {
+      "name": "Landing Bay",
+      "parts": [
+        "B_ALK_A",
+        "B_ALK_B",
+        "B_ALK_C",
+        "B_ALK_D",
+        "B_ALK_Z_A",
+        "B_ALK_Z_B",
+        "B_ALK_Z_C",
+        "B_ALK_Z_D"
+      ]
+    },
+    {
+      "name": "Cockpit",
+      "parts": [
+        "B_COK_A",
+        "B_COK_B",
+        "B_COK_D"
+      ]
+    }
+  ]
+}

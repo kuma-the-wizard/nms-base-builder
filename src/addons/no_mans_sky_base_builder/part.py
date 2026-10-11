@@ -290,6 +290,14 @@ class Part(object):
         - If it doesn't exist in the cache, find the obj path.
         - If the obj path doesn't exist, just create a cube.
         """
+        # Resolve bundled geometry before the old object cache, which may
+        # contain a placeholder from a previous add-on version.
+        from . import simple_library
+        resolved = simple_library.new_object(object_id)
+        if resolved is not None:
+            blend_utils.add_to_scene(resolved)
+            return resolved
+
         # Duplicate existing.
         existing_object = self.builder.find_object_by_id(object_id)
 

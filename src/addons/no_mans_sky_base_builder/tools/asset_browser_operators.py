@@ -256,6 +256,18 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
                 for collection in list(dummy_obj.users_collection):
                     collection.objects.unlink(dummy_obj)
                 dummy_obj.use_fake_user = True
+
+                # Keep the native category controls on the left; the right
+                # surface owns its image hit areas and corner controls.
+                right_area.type = 'IMAGE_EDITOR'
+                right_area.spaces.active.show_region_ui = False
+                right_area.spaces.active.show_region_toolbar = False
+                right_area.spaces.active.show_region_header = False
+                right_area.spaces.active.show_region_tool_header = False
+                right_area.spaces.active.show_region_hud = False
+                region = next(r for r in right_area.regions if r.type == 'WINDOW')
+                with bpy.context.temp_override(window=new_window, area=right_area, region=region):
+                    bpy.ops.bbe.asset_grid('INVOKE_DEFAULT')
                     
                 return None
             except (ReferenceError, RuntimeError, TypeError, AttributeError):
@@ -345,7 +357,7 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
 class AssetBrowserObjectSelected(bpy.types.Operator):
     bl_idname = "object.nms_asset_browser_object_selected"
     bl_label = "Add Object"
-    bl_description = "Click to add this obejct to scene"
+    bl_description = "Click to add this object to the scene"
     bl_options = {'REGISTER', 'UNDO'}
 
     object_id: bpy.props.StringProperty()
@@ -355,7 +367,9 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
     
     @classmethod
     def description(cls, context, properties):
-        return f"ObjectID : {properties.object_id}"
+        if properties.has_variants:
+            return f"Choose a variant of {properties.object_id}"
+        return f"Place {properties.object_id} in the scene"
     
     
     def execute(self, context):
@@ -423,15 +437,15 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
     
 class AssetBrowserObjectMoreOptions(bpy.types.Operator):
     bl_idname = "object.nms_asset_browser_more_options"
-    bl_label = "Add Object"
-    bl_description = "Click to add this obejct to scene"
+    bl_label = "Part Options"
+    bl_description = "Open favourites and replace options for this part"
 
     object_id: bpy.props.StringProperty()
     is_fav : bpy.props.BoolProperty(default = False)
     
     @classmethod
     def description(cls, context, properties):
-        return f"Show more optiosn for {properties.object_id}"
+        return f"Show more options for {properties.object_id}"
     
     
     def execute(self, context):

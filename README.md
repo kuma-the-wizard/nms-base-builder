@@ -1,14 +1,14 @@
 # Base Builder Extended
 
-Current standalone release: **18.0.18**. Windows x64, verified with Blender
+Current standalone release: **18.1.42**. Windows x64, verified with Blender
 5.1.2 and 5.2.2 LTS. Models, textures and dependencies are included.
 
-[Download the installer and read the release notes](https://github.com/slipperystickers/nms-base-builder/releases/tag/v18.0.18).
+[Download the installer and read the release notes](https://github.com/slipperystickers/nms-base-builder/releases/tag/v18.1.42).
 Install the attached plugin ZIP through Blender's **Install from Disk**, then
-restart all Blender windows. This release improves mirroring at arbitrary
-angles, connects browser-added pipes and bubble ducts at their endpoints, and
-adds the textured HD curved bubble duct. Existing low-resolution curved bubble
-ducts can be refreshed with **Builder > High-res Proxies**.
+restart all Blender windows. This release adds Save Manager backups, Corvette
+optimization and beta Ship Management; improves the Asset Browser and top
+toolbar; and adds an optional HD scenes/effects component for Scene Preview.
+Keep the previous installer ZIP for rollback.
 
 **Base Builder by DjMonkey. Extended by Furiousfurby.** Based on Kuma's 18.0.0
 build; the original guides, Patreon, Discord and Steam Games links are preserved.

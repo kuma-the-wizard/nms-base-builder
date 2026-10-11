@@ -1,9 +1,7 @@
-import os
 import json
 import struct
 import lz4.block
 from pathlib import Path
-import shutil
 
 from .save_translation import SaveTranslation
 from .save_editor_utils import BaseData, BaseType, ShowMessageBox
@@ -17,6 +15,7 @@ class SaveFile:
     def __init__(self, path):
         self.path = Path(path)
         self.json_data = None
+        self.context = None
 
     # load hg save file
     def load(self):
@@ -76,20 +75,10 @@ class SaveFile:
              
     # make backup of save file that is changed into a /blender_backup folder which is different from /nms_base_builder_backup folder
     def make_backup(self, output_path = None):
-        path  = self.path
-        folder = os.path.dirname(path)
-        name, ext = os.path.splitext(os.path.basename(path))
-        
-        backup_folder = os.path.join(
-            folder,"blender_backup"
-        )
-        os.makedirs(backup_folder, exist_ok=True)
-        
-        backup_file = os.path.join(
-            backup_folder,
-            f"{name}{ext}.blender.bak"
-        )
-        shutil.copy2(path, backup_file)
+        from . import backup_policy
+        generation, copies = backup_policy.snapshot([output_path or self.path], 'manual')
+        backup_policy.finish(generation)
+        return copies
 
     # seach a paticular property in save file and stop as soon as you find it
     def search_property(self, property):
@@ -124,14 +113,14 @@ class SaveFile:
     # Return pointer to PersistentPlayerBases List in save data
     def get_bases_list_pointer(self):
         data = self.json_data
-        save_type = data[SaveTranslation.active_context]
+        save_type = self.context or data[SaveTranslation.active_context]
         key_base_list = SaveTranslation.base_context if save_type == "Main" else SaveTranslation.expedition_context
         return data[key_base_list][SaveTranslation.player_state_data][SaveTranslation.persistent_player_bases]
 
     # Return pointer to ShipOwnership List in save data
     def get_ship_ownership_pointer(self):
         data = self.json_data
-        save_type = data[SaveTranslation.active_context]
+        save_type = self.context or data[SaveTranslation.active_context]
         key_base_list = SaveTranslation.base_context if save_type == "Main" else SaveTranslation.expedition_context
         return data[key_base_list][SaveTranslation.player_state_data][SaveTranslation.ship_ownership]
     
@@ -146,13 +135,13 @@ class SaveFile:
     # Return pointer to PlayerFreighterName in save data
     def get_freighter_name(self):
         data = self.json_data
-        save_type = data[SaveTranslation.active_context]
+        save_type = self.context or data[SaveTranslation.active_context]
         key_base_list = SaveTranslation.base_context if save_type == "Main" else SaveTranslation.expedition_context
         return data[key_base_list][SaveTranslation.player_state_data][SaveTranslation.freighter_name]
     
     def get_name_from_ship_owsership(self, user_data):
         data = self.json_data
-        save_type = data[SaveTranslation.active_context]
+        save_type = self.context or data[SaveTranslation.active_context]
         key_base_list = SaveTranslation.base_context if save_type == "Main" else SaveTranslation.expedition_context
         ship_ownsership = data[key_base_list][SaveTranslation.player_state_data][SaveTranslation.ship_ownership]
         return ship_ownsership[user_data][SaveTranslation.base_name]
@@ -171,6 +160,7 @@ class SaveFile:
     # first check if base exist at an index, if not check for in in bases list
     def search_base_with_identifier(self, base_identifier: BaseData):
         
+        self.context = getattr(base_identifier, 'save_context', None)
         base_list = self.get_bases_list_pointer()
         
         #try looking for base in bases list

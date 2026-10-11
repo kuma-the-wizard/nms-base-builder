@@ -69,7 +69,7 @@ def _preserve_selection(context):
             pass
 
 
-def _switch_scene_parts(context, target_high_res, proxy_cache):
+def _switch_scene_parts(context, target_high_res, proxy_cache, progress=None):
     """Point every ungrouped part in the scene at the other library's mesh.
 
     Nothing is rebuilt. Which library a part belongs to is entirely a property
@@ -101,7 +101,11 @@ def _switch_scene_parts(context, target_high_res, proxy_cache):
 
     # A snapshot, because importing a proxy the scene has not used yet links
     # the imported objects in before taking them out again.
-    for source_object in list(context.scene.objects):
+    objects = list(context.scene.objects)
+    total = len(objects)
+    for index, source_object in enumerate(objects):
+        if progress and index % 16 == 0:
+            progress.batch(index, total, .06, .83, 'Models')
         if Part.PROP_OBJECT_ID not in source_object:
             continue
         if Group.PROP_GROUP_ID in source_object:
@@ -111,8 +115,8 @@ def _switch_scene_parts(context, target_high_res, proxy_cache):
         # is an error rather than a switch.
         if source_object.type != "MESH":
             continue
-        if materials_v2.is_high_res(source_object) == target_high_res:
-            continue
+        # Resolve even when already in this quality: an older scene can carry
+        # an obsolete mesh or a cube that represented a formerly missing part.
 
         object_id = source_object[Part.PROP_OBJECT_ID]
         user_data = source_object.get(Part.PROP_USER_DATA, Part.DEFAULT_USER_DATA)
@@ -138,6 +142,9 @@ def _switch_scene_parts(context, target_high_res, proxy_cache):
 
         switched += 1
 
+    if progress:
+        progress.batch(total, total, .06, .83, 'Models')
+        progress.update(.86, 'Applying colours and groups')
     if to_colour:
         # One pass over the lot, so each distinct UserData is decoded once
         materials_v2.apply_many(to_colour)
@@ -166,6 +173,13 @@ def _switch_scene_proxies(context, target_high_res):
     # paints the fbx behind it once for the pair rather than once each. Across
     # calls the meshes themselves are found again by tag, so switching back and
     # forth does not cut a fresh set every time - see builder_v2.apply_proxy_mesh.
+    from .. import progress_ui
+    title = 'Loading detailed models' if target_high_res else 'Loading simple proxies'
+    with progress_ui.Activity(title) as progress:
+        return _switch_scene_proxies_with_progress(context, target_high_res, progress)
+
+
+def _switch_scene_proxies_with_progress(context, target_high_res, progress):
     proxy_cache = {}
 
     with _suspend_scene_updates(), _preserve_selection(context):
@@ -174,7 +188,7 @@ def _switch_scene_proxies(context, target_high_res):
         # materials_v2.defer_shared_data.
         with materials_v2.defer_shared_data():
             parts, missing = _switch_scene_parts(
-                context, target_high_res, proxy_cache
+                context, target_high_res, proxy_cache, progress
             )
             groups, failed = Group.switch_scene_proxy_quality(
                 context, builder_v2.BUILDER, target_high_res,
@@ -187,6 +201,7 @@ def _switch_scene_proxies(context, target_high_res):
             # switched is one flat grey mass until its textures load.
             materials_v2.use_object_colour_in_viewport()
 
+    progress.update(1.0, 'Models ready')
     return parts, groups, missing + failed
 
 
@@ -222,6 +237,9 @@ class NMS_OT_switch_proxies_to_low(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        from .. import hd_library_ui
+        hd_library_ui.cancel_activation()
+        context.scene.bbe_detailed_proxies = False
         parts, groups, skipped = _switch_scene_proxies(context, target_high_res=False)
         _report_switch(self, parts, groups, skipped, "low-res")
         return {"FINISHED"}
@@ -236,8 +254,18 @@ class NMS_OT_switch_proxies_to_high(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        from .. import hd_library
+        if not hd_library.ready():
+            if not bpy.app.background:
+                bpy.ops.bbe.hd_library("INVOKE_DEFAULT")
+            self.report({"INFO"}, "Install the HD library to enable Detailed Proxies.")
+            return {"CANCELLED"}
+        context.scene.bbe_detailed_proxies = True
         parts, groups, skipped = _switch_scene_proxies(context, target_high_res=True)
         _report_switch(self, parts, groups, skipped, "high-res")
+        if context.scene.bbe_stage.enabled:
+            from .. import stages
+            stages.apply(context.scene)
         return {"FINISHED"}
 
 
