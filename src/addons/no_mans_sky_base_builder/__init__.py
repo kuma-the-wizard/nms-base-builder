@@ -2121,8 +2121,9 @@ def register():
     bpy.types.Scene.nms_properties = bpy.props.PointerProperty(type=Properties)
     bpy.types.Scene.nms_batch_tool = bpy.props.PointerProperty(type=BatchTool)
     bpy.types.Scene.nms_asset_browser = bpy.props.PointerProperty(type=AssetBrowser)
-    from .tools import asset_browser_grid
+    from .tools import asset_browser_grid, asset_browser_sidebar
     asset_browser_grid.register()
+    asset_browser_sidebar.register()
 
     # Puts the "Base Builder" menu in the 3D viewport header. The menu classes
     # themselves are registered with everything else, above.
@@ -2146,7 +2147,8 @@ def register():
     bpy.app.timers.register(viewport_overlay.register_draw, first_interval=0.01)
 
 def unregister():
-    from .tools import asset_browser_grid
+    from .tools import asset_browser_grid, asset_browser_sidebar
+    asset_browser_sidebar.unregister()
     asset_browser_grid.unregister()
     from .save_editor import ship_management
     ship_management.unregister()

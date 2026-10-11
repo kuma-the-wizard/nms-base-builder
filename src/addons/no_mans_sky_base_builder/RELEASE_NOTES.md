@@ -1,3 +1,8 @@
+## 18.1.44 - Clickable sidebar thumbnails
+
+- Place parts by clicking their full-size images in the NMS Asset Browser sidebar, with the same variant and right-click actions as the separate browser.
+- Restore Presets beside Favorites and Recent in the sidebar and keep category, group, and search controls available above the grid.
+
 ## 18.1.43 - Detailed proxies and saved Asset Browser recovery
 
 - Allow Detailed Proxies to use the installed model pack while the separate HD scenes/effects component is missing or downloading.

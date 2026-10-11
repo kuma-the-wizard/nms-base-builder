@@ -505,9 +505,25 @@ class NMS_PT_asset_browser_panel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout     
         scene = context.scene
-        layout.operator('object.nms_launch_asset_browser_window',
-                        text='Open Click-to-Place Browser', icon='ASSET_MANAGER')
-        draw_asset_browser(context,layout, scene)
+        browser = scene.nms_asset_browser
+        row = layout.row(align=True)
+        row.prop(browser, 'asset_broser_search_query', text='', icon='VIEWZOOM')
+        settings = row.operator('object.nms_asset_browser_list_settings', text='', icon='SETTINGS')
+        settings.grid_type = 'Grid'
+        row.operator('object.nms_launch_asset_browser_window', text='', icon='WINDOW')
+
+        mode = browser.enum_asset_browser_what_to_display
+        row = layout.row(align=True)
+        for operator, label, icon, value in (
+            ('object.nms_asset_browser_show_fav_items', 'Favorites', 'HEART', 'fav'),
+            ('object.nms_asset_browser_show_recent_items', 'Recent', 'RECOVER_LAST', 'recent'),
+            ('object.nms_asset_browser_show_presets', 'Presets', 'ASSET_MANAGER', 'preset'),
+        ):
+            row.operator(operator, text=label, icon=icon, depress=mode == value)
+
+        layout.prop(browser, 'asset_browser_caterogies', text='Category')
+        layout.prop(browser, 'asset_browser_sub_caterogies', text='Group')
+        layout.label(text='Click an image to place; right-click for options')
 
 
 class NMS_PT_asset_browser_properties_panel(bpy.types.Panel):

@@ -35,8 +35,9 @@ class AssetBrowser(bpy.types.PropertyGroup):
 
     def invalidate_view(self):
         AssetBrowser.view_revision += 1
-        from . import asset_browser_grid
+        from . import asset_browser_grid, asset_browser_sidebar
         asset_browser_grid.request_redraw()
+        asset_browser_sidebar.request_redraw()
 
     check_display_search_results: bpy.props.BoolProperty(
         name = "Display Search Results",
