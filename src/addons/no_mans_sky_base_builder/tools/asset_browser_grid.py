@@ -19,7 +19,19 @@ from ..utils.asset_browser_utils import get_grid_settings, resolve_sub_categorie
 
 _sessions = {}
 _resources = {}
+_pending_windows = set()
 _enabled = False
+
+
+def mark_window_pending(window):
+    _pending_windows.add(window.as_pointer())
+
+
+def unmark_window_pending(window):
+    try:
+        _pending_windows.discard(window.as_pointer())
+    except ReferenceError:
+        pass
 
 
 def request_redraw():
@@ -340,6 +352,43 @@ class BBE_OT_asset_grid(bpy.types.Operator):
 def _close_all(_dummy=None):
     for key in tuple(_resources):
         _release_session(key, bpy.context.window_manager)
+    _pending_windows.clear()
+
+
+def _saved_browser_target(window):
+    areas = sorted(window.screen.areas, key=lambda area: area.x)
+    if len(areas) < 2 or areas[0].type != 'PROPERTIES':
+        return None
+    pinned = areas[0].spaces.active.pin_id
+    if getattr(pinned, 'name', None) != 'Asset Browser Window':
+        return None
+    right = areas[1]
+    return right if right.type in {'PROPERTIES', 'IMAGE_EDITOR'} else None
+
+
+def _restore_saved_windows(window_manager):
+    """A saved Blender layout restores areas, but not their modal grid operator."""
+    for window in tuple(window_manager.windows):
+        if window.as_pointer() in _pending_windows:
+            continue
+        right = _saved_browser_target(window)
+        if right is None:
+            continue
+        if right.as_pointer() in _sessions:
+            continue
+        if right.type == 'PROPERTIES':
+            right.type = 'IMAGE_EDITOR'
+        space = right.spaces.active
+        space.show_region_ui = False
+        space.show_region_toolbar = False
+        space.show_region_header = False
+        space.show_region_tool_header = False
+        space.show_region_hud = False
+        region = next((region for region in right.regions if region.type == 'WINDOW'), None)
+        if region is None:
+            continue  # The editor's region is created on the next UI update.
+        with bpy.context.temp_override(window=window, area=right, region=region):
+            bpy.ops.bbe.asset_grid('INVOKE_DEFAULT')
 
 
 def _cleanup_closed():
@@ -350,6 +399,10 @@ def _cleanup_closed():
     for key in tuple(_resources):
         if key not in live_areas:
             _release_session(key, bpy.context.window_manager)
+    try:
+        _restore_saved_windows(bpy.context.window_manager)
+    except (ReferenceError, RuntimeError, TypeError, AttributeError) as exc:
+        print(f'BBE Asset Browser: grid restore will retry: {exc}')
     return 1.0
 
 

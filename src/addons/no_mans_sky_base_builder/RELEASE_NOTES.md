@@ -1,3 +1,10 @@
+## 18.1.43 - Detailed proxies and saved Asset Browser recovery
+
+- Allow Detailed Proxies to use the installed model pack while the separate HD scenes/effects component is missing or downloading.
+- Repair image paths embedded in newly appended HD models so textures resolve from the installed library instead of the original build machine.
+- Point the HD scenes/effects updater to the verified archive on the public release.
+- Restore the clickable thumbnail grid when a saved Asset Browser window opens with Blender, and give the sidebar a direct button to open that browser.
+
 ## 18.1.42 - Ship Management scene isolation
 
 - Open Ship Management in an independent Blender main window so its empty preview scene cannot replace the ship-building scene or black out Scene Preview.

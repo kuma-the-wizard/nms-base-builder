@@ -228,27 +228,8 @@ def draw_status(self, context):
 
 
 def relink_legacy_textures():
-    """Saved scenes may still refer to the old add-on's bundled texture folder."""
-    root = hd_library.installed_root()
-    if root is None:
-        return 0
-    changed = 0
-    for image in bpy.data.images:
-        if image.source != 'FILE' or image.packed_file:
-            continue
-        path = image.filepath.replace('\\', '/')
-        marker = 'models-high-res/textures/'
-        if marker not in path:
-            continue
-        relative = 'textures/' + path.split(marker, 1)[1]
-        if relative not in hd_library.specification()['files']:
-            continue
-        target = root / relative
-        if target.is_file():
-            image.filepath = str(target)
-            image.reload()
-            changed += 1
-    return changed
+    """Repair texture paths in loaded scenes and appended HD parts."""
+    return hd_library.relink_texture_images()
 
 
 @persistent
@@ -292,16 +273,17 @@ def finish_download():
         return
     scene = _pending_scene
     _pending_scene = None
-    if state.get('result') != 'installed' or hd_library.CANCEL.is_set():
+    if state.get('result') not in {'installed', 'partial'} or hd_library.CANCEL.is_set():
         return
     try:
-        if scene.name not in bpy.data.scenes or not hd_library.ready():
+        if scene.name not in bpy.data.scenes or not hd_library.available():
             return
         with bpy.context.temp_override(scene=scene, view_layer=scene.view_layers[0]):
             relink_legacy_textures()
             result = bpy.ops.object.nms_switch_proxies_to_high()
         if result == {'FINISHED'}:
-            state['message'] = 'Detailed Proxies enabled.'
+            state['message'] = ('Detailed Proxies enabled.' if hd_library.ready() else
+                                'Detailed Proxies enabled; HD scenes/effects need a retry.')
         else:
             state['error'] = 'Models are installed. Click Detailed Proxies to enable them.'
     except ReferenceError:

@@ -881,6 +881,7 @@ def _splice_finish_tint(node_tree, socket):
 # immediately, and leaving the block runs each of them once.
 _defer_depth = 0
 _defer_pending = False
+_relink_pending = False
 
 
 @contextlib.contextmanager
@@ -931,6 +932,8 @@ def note_appended_data():
     run the passes themselves, and running them here as well would put the per
     asset cost back that deferring exists to remove.
     """
+    global _relink_pending
+    _relink_pending = True
     _defer()
 
 
@@ -1054,6 +1057,11 @@ def dedupe_node_groups():
 
 def _plan_image_dedupe():
     """Build {duplicate image: canonical image} for images sharing a file."""
+    global _relink_pending
+    if _relink_pending:
+        from .. import hd_library
+        hd_library.relink_texture_images()
+        _relink_pending = False
     canonical_by_path = {}
     duplicates = {}
 

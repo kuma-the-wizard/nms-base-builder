@@ -505,6 +505,8 @@ class NMS_PT_asset_browser_panel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout     
         scene = context.scene
+        layout.operator('object.nms_launch_asset_browser_window',
+                        text='Open Click-to-Place Browser', icon='ASSET_MANAGER')
         draw_asset_browser(context,layout, scene)
 
 

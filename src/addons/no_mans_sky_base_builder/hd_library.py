@@ -66,6 +66,38 @@ def available():
     return library_root() is not None
 
 
+def relink_texture_images(images=None):
+    """Point images embedded in HD asset .blends at the installed textures.
+
+    The source assets contain absolute paths from the machine that built the
+    library. Blender does not automatically rebase those paths on append.
+    """
+    root = installed_root()
+    if root is None:
+        return 0
+    if images is None:
+        import bpy
+        images = bpy.data.images
+    known = specification()['files']
+    changed = 0
+    marker = 'models-high-res/textures/'
+    for image in images:
+        if image.source != 'FILE' or image.packed_file:
+            continue
+        path = image.filepath.replace('\\', '/')
+        if marker not in path:
+            continue
+        relative = 'textures/' + path.split(marker, 1)[1]
+        if relative not in known:
+            continue
+        target = root / relative
+        if target.is_file() and image.filepath != str(target):
+            image.filepath = str(target)
+            image.reload()
+            changed += 1
+    return changed
+
+
 def scenes_specification():
     path = ADDON / 'resources/hd_scenes.json'
     info = path.stat()
@@ -300,7 +332,10 @@ def start(archive=None):
         except InterruptedError:
             STATE.update(message="Download cancelled.", error="", result="cancelled")
         except Exception as exc:
-            STATE.update(message="Detailed models were not installed.", error=str(exc), result="failed")
+            models_installed = available()
+            STATE.update(message="Detailed models installed; HD scenes/effects need a retry."
+                         if models_installed else "Detailed models were not installed.",
+                         error=str(exc), result="partial" if models_installed else "failed")
         finally:
             _PROGRESS.segment = (0.0, 1.0)
             STATE["busy"] = False

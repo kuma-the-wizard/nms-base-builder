@@ -208,13 +208,17 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
         if not wm.windows:
             return {'CANCELLED'}
         new_window = wm.windows[-1]
+        from . import asset_browser_grid
+        asset_browser_grid.mark_window_pending(new_window)
         try:
             areas = new_window.screen.areas
             if not areas:
+                asset_browser_grid.unmark_window_pending(new_window)
                 return {'CANCELLED'}
             target_area = areas[0]
             target_area.type = 'PROPERTIES'
         except (ReferenceError, RuntimeError, TypeError):
+            asset_browser_grid.unmark_window_pending(new_window)
             return {'CANCELLED'}
         
         attempts_count = 0
@@ -222,14 +226,16 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
         def get_timeout():
             nonlocal attempts_count
             attempts_count +=1
-            if attempts_count >= 20:
+            if attempts_count >= 200:
+                asset_browser_grid.unmark_window_pending(new_window)
                 return None
-            return 0.02
+            return 0.05
         
         def configure_areas():
             try:
                 window_exists = any(w == new_window for w in wm.windows)
                 if not window_exists:
+                    asset_browser_grid.unmark_window_pending(new_window)
                     return None
                 if len(new_window.screen.areas) < 2:
                     return get_timeout()
@@ -268,7 +274,7 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
                 region = next(r for r in right_area.regions if r.type == 'WINDOW')
                 with bpy.context.temp_override(window=new_window, area=right_area, region=region):
                     bpy.ops.bbe.asset_grid('INVOKE_DEFAULT')
-                    
+                asset_browser_grid.unmark_window_pending(new_window)
                 return None
             except (ReferenceError, RuntimeError, TypeError, AttributeError):
                 return get_timeout()
