@@ -1,3 +1,11 @@
+## 18.1.63 - First-run update consent
+
+- Ask once whether to enable automatic update checks. Yes enables and saves Blender Online Access and the startup-update setting, then checks for updates.
+- No or dismissal keeps automatic checks off and remembers the choice across restarts and upgrades. An existing disabled setting is respected.
+- The prompt explains that Blender's global internet access also applies to other add-ons. Forced offline mode stays offline; background sessions do not prompt or start automatic checks.
+- Updates & Support can enable checks later using the same Yes/No prompt. Installation of downloaded updates remains user-controlled.
+- Includes the complete Colour & Materials sidebar restored in 18.1.62.
+
 ## 18.1.62 - Restore the sidebar Colour & Materials section
 
 - Restore the complete Colour & Materials section in the Base Builder sidebar, including the material palette selector, colour swatches, and colour picker.

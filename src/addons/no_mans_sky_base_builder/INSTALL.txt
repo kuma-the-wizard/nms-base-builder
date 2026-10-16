@@ -1,4 +1,4 @@
-BASE BUILDER EXTENDED 18.1.62
+BASE BUILDER EXTENDED 18.1.63
 Base Builder by DjMonkey; Extended by Furiousfurby.
 Based on Kuma's 18.0.0 release.
 
@@ -105,3 +105,9 @@ CREDITS
 DjMonkey's name, artwork and support links are unchanged. Additional contributor
 credits for Kuma The Wizard of Cosmos and FuriousFurby appear in extension
 Preferences and CONTRIBUTORS.txt.
+
+AUTOMATIC UPDATE CHECKS
+On first use, choose Yes in Enable auto updates? to allow Blender internet
+access and automatic update checks. No or dismissing the prompt keeps checks
+off and remembers your choice. Change it later in Updates & Support.
+Updates are installed when you choose; downloads remain verified installer ZIPs.

@@ -1,13 +1,14 @@
 # Base Builder Extended
 
-Current standalone release: **18.1.62**. Windows x64, verified with Blender
+Current standalone release: **18.1.63**. Windows x64, verified with Blender
 5.1.2 and 5.2.2 LTS.
 
-[Download the installer and read the release notes](https://github.com/slipperystickers/nms-base-builder/releases/tag/v18.1.62).
+[Download the installer and read the release notes](https://github.com/slipperystickers/nms-base-builder/releases/tag/v18.1.63).
 Install the attached plugin ZIP through Blender's **Install from Disk**, then
-restart Blender. This release restores the complete **Colour & Materials**
-sidebar section, including all material palettes, swatches, and the colour picker.
-The top-toolbar Color menu remains available, and all 18.1.61 fixes are retained.
+restart Blender. On first use, **Enable auto updates?** offers one Yes/No choice.
+Yes saves Blender internet access and automatic update checks; No keeps checks
+off and remembers your choice. The complete **Colour & Materials** sidebar
+section is restored, and all 18.1.61 fixes are retained.
 Keep the previous installer ZIP for rollback.
 
 **Base Builder by DjMonkey. Extended by Furiousfurby.** Based on Kuma's 18.0.0

@@ -113,8 +113,9 @@ def download_release(result, destination, cancel=None, progress=None, opener=url
         temporary.unlink(missing_ok=True)
 
 class UpdateClient:
-    def __init__(self, product, installed, state=None):
+    def __init__(self, product, installed, state=None, require_consent=False):
         self.product, self.installed = product, installed
+        self.require_consent = require_consent
         root = Path(state) if state else Path(os.environ.get('LOCALAPPDATA', Path.home())) / 'Furby/App Updates'
         self.settings_file = root / (product + '.json')
         try:
@@ -123,6 +124,12 @@ class UpdateClient:
             self.settings = {}
         if not isinstance(self.settings, dict): self.settings = {}
         self.settings.setdefault('auto_check', True)
+        if require_consent:
+            # Honor an already disabled checkbox; ask default-on installs first.
+            self.settings.setdefault('auto_update_consent',
+                'declined' if self.settings['auto_check'] is False else 'pending')
+            if self.settings['auto_update_consent'] != 'accepted':
+                self.settings['auto_check'] = False
         self.events = queue.Queue(); self.busy = False; self.result = None
         self.message = 'Check for a newer public version.'; self.downloaded = None
         self.cancel = threading.Event()
@@ -134,7 +141,14 @@ class UpdateClient:
         os.replace(temporary, self.settings_file)
 
     def set_auto(self, enabled):
-        self.settings['auto_check'] = bool(enabled); self.save()
+        self.settings['auto_check'] = bool(enabled)
+        if self.require_consent:
+            self.settings['auto_update_consent'] = 'accepted' if enabled else 'declined'
+        self.save()
+
+    @property
+    def needs_auto_consent(self):
+        return self.require_consent and self.settings.get('auto_update_consent') == 'pending'
 
     def start(self, action='check', destination=None):
         if self.busy:

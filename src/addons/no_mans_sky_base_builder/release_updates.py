@@ -4,13 +4,89 @@ import os
 import platform
 from pathlib import Path
 import bpy
-from bpy.props import StringProperty
+from bpy.props import BoolProperty, StringProperty
 from .furby_updates import ProcessUpdateClient as UpdateClient
 
 _classes=[]
 _client=None
 _reporter=None
 _restore_errors=None
+
+def _online_access_locked():
+    return not bpy.app.online_access and bpy.app.online_access_override
+
+
+def _set_auto_updates(context, enabled):
+    """Apply an explicit choice; never enable networking before consent."""
+    if not enabled:
+        _client.set_auto(False)
+        _client.message='Automatic update checks are off.'
+        return
+    if _online_access_locked():
+        raise RuntimeError('Blender was started in offline mode. Restart without --offline-mode to enable updates.')
+    previous_online=context.preferences.system.use_online_access
+    previous_settings=dict(_client.settings)
+    try:
+        context.preferences.system.use_online_access=True
+        if bpy.ops.wm.save_userpref() != {'FINISHED'}:
+            raise RuntimeError('Blender could not save the Online Access preference.')
+        _client.set_auto(True)
+    except Exception:
+        context.preferences.system.use_online_access=previous_online
+        _client.settings=previous_settings
+        try:bpy.ops.wm.save_userpref()
+        except Exception:pass
+        raise
+    _client.start()
+
+
+def _show_auto_update_prompt(context):
+    if bpy.app.background:
+        return False
+    def draw(menu, context):
+        layout=menu.layout
+        layout.label(text="This enables internet access for Blender")
+        layout.label(text="and automatic checks for Base Builder updates.")
+        layout.label(text="Other add-ons can use Blender's internet access too.")
+        layout.label(text="Updates are installed when you choose.")
+        locked=_online_access_locked()
+        if locked:
+            layout.separator()
+            layout.label(text='Blender was started in offline mode.', icon='INFO')
+            layout.label(text='Restart without --offline-mode to enable updates.')
+        layout.separator()
+        row=layout.row(align=True)
+        row.operator_context='EXEC_DEFAULT'
+        yes=row.row(align=True)
+        yes.enabled=not locked
+        yes.operator('furby_'+_client.product+'.auto_update_choice',text='Yes',icon='CHECKMARK').enabled=True
+        row.operator('furby_'+_client.product+'.auto_update_choice',text='No',icon='X').enabled=False
+    context.window_manager.popup_menu(draw, title='Enable auto updates?', icon='QUESTION')
+    # Dismissal is a No too: show once, and never silently opt a user in.
+    _client.set_auto(False)
+    _client.message='Automatic update checks are off. Enable them in Updates & Support.'
+    return True
+
+
+def _offer_auto_updates():
+    if bpy.app.background or not _client.needs_auto_consent:
+        return False
+    manager=bpy.context.window_manager
+    if manager is None or manager.is_interface_locked:
+        return False
+    for window in manager.windows:
+        if getattr(window,'modal_operators',()):continue
+        for area in window.screen.areas:
+            if area.type != 'VIEW_3D':continue
+            region=next((r for r in area.regions if r.type=='WINDOW'),None)
+            if region is None:continue
+            try:
+                with bpy.context.temp_override(window=window,area=area,region=region):
+                    return _show_auto_update_prompt(bpy.context)
+            except (RuntimeError,AttributeError):
+                return False
+    return False
+
 
 def start(action='check'):
     if not getattr(bpy.app,'online_access',True):
@@ -22,7 +98,7 @@ def register(product, installed, category):
     global _client, _reporter, _restore_errors
     from .furby_errors import ErrorReporter, guard_blender
     _reporter=ErrorReporter(product,installed,platform.system()+" / Blender "+bpy.app.version_string)
-    _client=UpdateClient(product,installed)
+    _client=UpdateClient(product,installed,require_consent=(product=='bbe'))
     prefix='furby_'+product
     class Check(bpy.types.Operator):
         bl_idname=prefix+'.check_updates';bl_label='Check for updates'
@@ -35,8 +111,22 @@ def register(product, installed, category):
     class Auto(bpy.types.Operator):
         bl_idname=prefix+'.auto_updates';bl_label='Check for updates on startup'
         def execute(self, context):
+            if _client.require_consent:
+                if _client.settings.get('auto_check'):
+                    _set_auto_updates(context,False)
+                else:
+                    _show_auto_update_prompt(context)
+                return {'FINISHED'}
             _client.set_auto(not _client.settings.get('auto_check',True))
             if getattr(bpy.app,'online_access',True):_client.maybe_check()
+            return {'FINISHED'}
+    class AutoChoice(bpy.types.Operator):
+        bl_idname=prefix+'.auto_update_choice';bl_label='Automatic update checks'
+        enabled: BoolProperty(default=False, options={'HIDDEN','SKIP_SAVE'})
+        def execute(self, context):
+            try:_set_auto_updates(context,self.enabled)
+            except (OSError,RuntimeError) as exc:
+                self.report({'ERROR'},str(exc));return {'CANCELLED'}
             return {'FINISHED'}
     class Folder(bpy.types.Operator):
         bl_idname=prefix+'.download_folder';bl_label='Open downloads folder'
@@ -114,15 +204,16 @@ def register(product, installed, category):
             layout.operator(Online.bl_idname,icon='URL')
             layout.operator(Email.bl_idname,icon='URL')
             layout.label(text='Support@furiousfurby.com')
-    for kind,cls in [('OT_check',Check),('OT_download',Download),('OT_auto',Auto),('OT_folder',Folder),('OT_report',Report),('OT_online',Online),('OT_email',Email),('OT_error_prompt',ErrorPrompt),('PT_updates',Panel)]:
+    for kind,cls in [('OT_check',Check),('OT_download',Download),('OT_auto',Auto),('OT_auto_choice',AutoChoice),('OT_folder',Folder),('OT_report',Report),('OT_online',Online),('OT_email',Email),('OT_error_prompt',ErrorPrompt),('PT_updates',Panel)]:
         cls.__name__=prefix.upper()+'_'+kind
         bpy.utils.register_class(cls);_classes.append(cls)
     _restore_errors=guard_blender(_reporter,__package__)
-    if getattr(bpy.app,'online_access',True):_client.maybe_check()
+    if not bpy.app.background and getattr(bpy.app,'online_access',True):_client.maybe_check()
     bpy.app.timers.register(poll,first_interval=.5)
 
 def poll():
     if _client is None:return None
+    if _offer_auto_updates():return 2.0
     if _reporter is not None and not bpy.app.background:
         import queue
         try:payload=_reporter.queue.get_nowait()
