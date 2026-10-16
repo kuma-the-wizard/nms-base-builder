@@ -27,7 +27,7 @@ ADDON_ID = __package__.rsplit(".", 1)[0]
 
 # How many recently used parts to remember. The list is rewritten every time a
 # part is added, so it cannot be allowed to grow forever.
-RECENTS_LIMIT = 60
+RECENTS_LIMIT = 5
 
 # Used when the preferences cannot be reached, so a panel still draws something
 # instead of throwing and leaving the region blank.
@@ -136,9 +136,12 @@ def push_recent(recent_ids, object_id, limit=RECENTS_LIMIT):
     Returns:
         list: A new list, most recent first, no longer than `limit`.
     """
-    entries = [entry for entry in recent_ids if entry != object_id]
-    entries.insert(0, object_id)
-    return entries[:limit]
+    return list(dict.fromkeys([object_id, *recent_ids]))[:limit]
+
+
+def _limited_recents(entries):
+    """Keep the five newest distinct parts when reading an older store."""
+    return list(dict.fromkeys(entries))[:RECENTS_LIMIT]
 
 
 # --- the on disk store -------------------------------------------------------
@@ -233,13 +236,20 @@ def read_store():
         return _store_cache
 
     store = _read_store_file(path)
+    if store is not None:
+        limited = _limited_recents(store['recent_objects'])
+        if limited != store['recent_objects']:
+            store['recent_objects'] = limited
+            if write_store(store):
+                return _store_cache
     if store is None:
         # nothing on disk yet: either a first run, or an upgrade from the
         # version that kept all this in the preferences
         store = _migrate_from_preferences()
+        store['recent_objects'] = _limited_recents(store['recent_objects'])
         if any(store[key] for key in STORE_KEYS):
-            write_store(store)
-            return _store_cache
+            if write_store(store):
+                return _store_cache
 
     _store_cache = store
     _store_mtime = mtime
@@ -316,7 +326,7 @@ def save_stored_list(name, value):
         bool: True if it reached the disk.
     """
     store = dict(read_store())
-    store[name] = list(value)
+    store[name] = _limited_recents(value) if name == 'recent_objects' else list(value)
     return write_store(store)
 
 
@@ -631,7 +641,7 @@ def collect_recent_objects(categories_data, recent_ids):
     """
     all_objects = dict(iter_all_parts(categories_data))
     return {obj_id: all_objects[obj_id]
-            for obj_id in recent_ids
+            for obj_id in _limited_recents(recent_ids)
             if obj_id in all_objects}
 
 

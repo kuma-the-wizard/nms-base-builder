@@ -529,6 +529,10 @@
         "POWER_POINTS": [
             "POWER_A, POWER_B",
             "POWER"
+        ],
+        "TRADE_TERMINALS": [
+            "MIDDLE_OUT,MIDDLE_IN",
+            "ATTACH"
         ]
     },
     "SHORT_WALLS": {
@@ -1239,6 +1243,10 @@
         "SPACEPAD": [
             "NORTH, EAST, SOUTH, WEST",
             "NORTH, EAST, SOUTH, WEST"
+        ],
+        "TRADE_TERMINALS": [
+            "NORTH, EAST, SOUTH, WEST",
+            "ATTACH"
         ]
     },
     "CUBE_ROOF": {
@@ -1293,6 +1301,10 @@
         "SPACEPAD": [
             "NORTH, EAST, WEST",
             "NORTH, EAST, SOUTH, WEST"
+        ],
+        "TRADE_TERMINALS": [
+            "NORTH, EAST, WEST",
+            "ATTACH"
         ]
     },
     "CONTAINERS": {

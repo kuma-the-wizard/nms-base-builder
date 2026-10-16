@@ -67,28 +67,37 @@ def available():
 
 
 def relink_texture_images(images=None):
-    """Point images embedded in HD asset .blends at the installed textures.
+    """Resolve BBE texture references against this machine's HD library.
 
-    The source assets contain absolute paths from the machine that built the
-    library. Blender does not automatically rebase those paths on append.
+    Appended assets carry the library builder's paths. Shared projects instead
+    carry their author's downloaded-pack paths, including their user folder.
+    Recognise both layouts and require an exact manifest-relative filename;
+    unrelated user textures and packed images must keep their own content.
     """
-    root = installed_root()
+    root = library_root()
     if root is None:
         return 0
     if images is None:
         import bpy
         images = bpy.data.images
-    known = specification()['files']
+    spec = specification()
+    known = {name.casefold(): name for name in spec['files']
+             if name.startswith('textures/')}
     changed = 0
-    marker = 'models-high-res/textures/'
+    # The pack ID also covers a custom BBE_ASSET_LIBRARY_ROOT on another PC.
+    markers = ('/models-high-res/textures/', '/' + spec['id'].casefold() + '/textures/')
     for image in images:
         if image.source != 'FILE' or image.packed_file:
             continue
-        path = image.filepath.replace('\\', '/')
-        if marker not in path:
-            continue
-        relative = 'textures/' + path.split(marker, 1)[1]
-        if relative not in known:
+        path = '/' + image.filepath.replace('\\', '/').lstrip('/')
+        lower_path = path.casefold()
+        relative = None
+        for marker in markers:
+            if marker in lower_path:
+                suffix = path[lower_path.index(marker) + len(marker):]
+                relative = known.get(('textures/' + suffix).casefold())
+                break
+        if relative is None:
             continue
         target = root / relative
         if target.is_file() and image.filepath != str(target):

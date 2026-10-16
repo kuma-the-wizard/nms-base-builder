@@ -255,6 +255,14 @@ def draw_base_picker(container, save_data):
             "object.nms_export_base_to_save", icon="EXPORT", text="Export to Save"
             )
 
+    # Standalone file export uses the build currently in Blender, independent
+    # of save-slot selection and never writes the game save.
+    file_export = se_column.column(align=True)
+    if bpy.context.scene.nms_base_tool.string_base_type == BaseType.CORVETTE:
+        file_export.operator('bbe.export_ship_file', text='Export Scene to .nmsship...', icon='EXPORT')
+    else:
+        file_export.operator('bbe.export_base_file', text='Export Scene to .nmsbase...', icon='EXPORT')
+
     if save_data.nms_base_type == BaseType.STATION:
         station_reference.draw(se_column, bpy.context)
     elif save_data.nms_base_type == BaseType.CORVETTE:

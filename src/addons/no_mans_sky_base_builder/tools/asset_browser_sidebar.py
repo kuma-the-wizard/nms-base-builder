@@ -19,10 +19,33 @@ from ..utils.asset_browser_utils import get_grid_settings
 
 _sessions = {}
 _resources = {}
+_panel_bodies = {}
 _enabled = False
 _CATEGORY = 'NMS Asset Browser'
 _PANEL_LEFT = 6
 _PANEL_RIGHT = 25
+
+
+def panel_visibility(context, expanded):
+    """The native header/body draw callbacks report whether the panel is open.
+
+    Blender draws the header for collapsed panels too, but only calls the body
+    callback when expanded. Category selection alone cannot establish that.
+    Store region identity as well, since opening a file replaces the layout.
+    """
+    _panel_bodies[context.area.as_pointer()] = (context.region.as_pointer(), expanded)
+
+
+def grid_bounds(width, height, scale):
+    """Shared drawing/input bounds, excluding Blender's tabs and resize edge."""
+    return (_PANEL_LEFT * scale, 0,
+            max(0, width - (_PANEL_LEFT + _PANEL_RIGHT) * scale),
+            max(0, height - 170 * scale))
+
+
+def scrollbar_bounds(bounds, scale):
+    left, bottom, width, height = bounds
+    return (left + width - 11 * scale, bottom, 11 * scale, height)
 
 
 def request_redraw():
@@ -44,6 +67,7 @@ def _release(key, wm):
             pass
         textures.clear()
     _sessions.pop(key, None)
+    _panel_bodies.pop(key, None)
 
 
 class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
@@ -70,6 +94,7 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
         self._groups, self._tiles, self._titles = {}, [], []
         self._total, self._max_offset, self._view_height = 0, 0, 1
         self._scale = 1
+        self._bounds = None
         self._rect_shader = gpu.shader.from_builtin('UNIFORM_COLOR')
         self._image_shader = gpu.shader.from_builtin('IMAGE')
         handler = bpy.types.SpaceView3D.draw_handler_add(self.draw_grid, (), 'UI', 'POST_PIXEL')
@@ -100,7 +125,11 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
             self._area.tag_redraw()
 
     def _active(self, region):
+        active_object = self._window.view_layer.objects.active
         return (region and region.type == 'UI' and region.width > 64 and
+                (active_object is None or active_object.mode == 'OBJECT') and
+                self._area.spaces.active.show_region_ui and
+                _panel_bodies.get(self._key) == (region.as_pointer(), True) and
                 region.active_panel_category == _CATEGORY)
 
     def modal(self, context, event):
@@ -110,6 +139,8 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
             if self._area.type != 'VIEW_3D' or self._area not in tuple(self._window.screen.areas):
                 _release(self._key, context.window_manager)
                 return {'CANCELLED'}
+            if context.window != self._window:
+                return {'PASS_THROUGH'}
             if event.type == 'TIMER':
                 region = next((r for r in self._area.regions if r.type == 'UI'), None)
                 if self._active(region):
@@ -117,21 +148,26 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
                 return {'PASS_THROUGH'}
             region = next((r for r in self._area.regions if r.type == 'UI'), None)
             if not self._active(region):
+                self._drag, self._pressed, self._hover = False, None, None
+                return {'PASS_THROUGH'}
+            if self._bounds is None:
                 return {'PASS_THROUGH'}
             x = event.mouse_x - region.x
             y = event.mouse_y - region.y
-            inside = 0 <= x < region.width and 0 <= y < self._view_height
+            inside = _contains(self._bounds, x, y)
             if event.type == 'LEFTMOUSE' and event.value == 'RELEASE' and self._drag:
                 self._drag = False
                 return {'RUNNING_MODAL'}
-            if self._drag or (inside and event.type == 'LEFTMOUSE' and
-                              event.value == 'PRESS' and x >= region.width -
-                              (_PANEL_RIGHT + 11) * self._scale):
+            if self._drag or (self._max_offset > 0 and event.type == 'LEFTMOUSE' and
+                              event.value == 'PRESS' and
+                              _contains(scrollbar_bounds(self._bounds, self._scale), x, y)):
                 self._drag = True
                 self._offset = self._max_offset * min(1, max(0, (self._view_height-y) / max(1, self._view_height)))
                 self._area.tag_redraw()
                 return {'RUNNING_MODAL'}
             if not inside:
+                if event.value == 'RELEASE':
+                    self._pressed = None
                 if self._hover is not None:
                     self._hover = None
                     self._area.tag_redraw()
@@ -143,7 +179,10 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
                 return {'RUNNING_MODAL'}
             top_y = self._view_height - y + self._offset
             hit = next(((tile, tile_action(tile, x, top_y, self._scale))
-                        for tile in self._tiles if _contains(tile[:4], x, top_y)), None)
+                        for tile in self._tiles
+                        if self._offset <= tile[1] and
+                        tile[1] + tile[3] <= self._offset + self._view_height and
+                        _contains(tile[:4], x, top_y)), None)
             hover = (hit[0][4], hit[1]) if hit else None
             if hover != self._hover:
                 self._hover = hover
@@ -179,6 +218,7 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
             return
         region = context.region
         if not self._active(region):
+            self._bounds = None
             return
         self.refresh(context)
         width, height = region.width, region.height
@@ -186,13 +226,12 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
         self._scale = scale
         # Panel header, search, quick categories, category, group and hint.
         # Keep this strip native so text entry and dropdowns retain Blender's UI.
-        self._view_height = max(1, height - 170 * scale)
+        self._bounds = grid_bounds(width, height, scale)
+        left, _bottom, panel_width, self._view_height = self._bounds
         key = (width, height, scale, self._size, self._columns, self._signature)
         if key != self._geometry_key:
-            panel_width = width - (_PANEL_LEFT + _PANEL_RIGHT) * scale
             titles, tiles, self._total = grid_geometry(
                 self._groups, panel_width, self._size, self._columns, scale)
-            left = _PANEL_LEFT * scale
             self._titles = [(x + left, top, title) for x, top, title in titles]
             self._tiles = [(x + left, top, w, h, object_id, data)
                            for x, top, w, h, object_id, data in tiles]
@@ -201,8 +240,6 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
             self._geometry_key = key
         gpu.state.blend_set('ALPHA')
         try:
-            left = _PANEL_LEFT * scale
-            panel_width = width - (_PANEL_LEFT + _PANEL_RIGHT) * scale
             self.rectangle(left, 0, panel_width, self._view_height, (.16, .16, .16, 1))
             for x, top, title in self._titles:
                 y = self._view_height - top + self._offset - 18 * scale
@@ -229,9 +266,10 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
                 self.label(left + 12*scale, self._view_height-25*scale,
                            'No parts in this view.', panel_width-24*scale)
             if self._max_offset:
+                track_x, _bottom, _width, _height = scrollbar_bounds(self._bounds, scale)
                 thumb = max(30*scale, self._view_height**2 / max(self._total, 1))
                 top = self._offset / self._max_offset * (self._view_height-thumb)
-                self.rectangle(width-(_PANEL_RIGHT+7)*scale, self._view_height-top-thumb,
+                self.rectangle(track_x+4*scale, self._view_height-top-thumb,
                                4*scale, thumb, (.45,.45,.45,1))
         finally:
             gpu.state.blend_set('NONE')
@@ -241,6 +279,7 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
 def _close_all(_dummy=None):
     for key in tuple(_resources):
         _release(key, bpy.context.window_manager)
+    _panel_bodies.clear()
 
 
 def _restore():

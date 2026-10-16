@@ -15,6 +15,7 @@ import bpy
 from .. import builder_v2
 from ..group import Group
 from ..part import Part
+from ..part_overrides.fossil_models import resolve_model_id
 from ..utils import materials_v2
 
 
@@ -119,10 +120,13 @@ def _switch_scene_parts(context, target_high_res, proxy_cache, progress=None):
         # an obsolete mesh or a cube that represented a formerly missing part.
 
         object_id = source_object[Part.PROP_OBJECT_ID]
+        model_id = resolve_model_id(source_object)
         user_data = source_object.get(Part.PROP_USER_DATA, Part.DEFAULT_USER_DATA)
 
-        if target_high_res:
-            new_mesh = builder_v2.load_high_res_mesh(object_id, asset_index)
+        if target_high_res or (object_id == 'BUILDTERMINAL' and source_object.get('bbe_trade_terminal_wall_model')):
+            new_mesh = (builder_v2.load_trade_terminal_wall_mesh()
+                        if object_id == 'BUILDTERMINAL' and source_object.get('bbe_trade_terminal_wall_model')
+                        else builder_v2.load_high_res_mesh(model_id, asset_index))
             # An id the high res library does not cover - one of the ones it
             # still misses, or a mirrored part whose twin has no model of its
             # own. Left exactly as it is rather than swapped for something that
@@ -135,7 +139,7 @@ def _switch_scene_parts(context, target_high_res, proxy_cache, progress=None):
             to_colour.append((source_object, user_data))
         else:
             if not builder_v2.apply_proxy_mesh(
-                source_object, object_id, user_data, cache=proxy_cache
+                source_object, model_id, user_data, cache=proxy_cache
             ):
                 missing += 1
                 continue

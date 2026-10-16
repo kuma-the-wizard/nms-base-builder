@@ -318,10 +318,14 @@ def import_paticular_base_from_save(base_identifier,  save_slot):
     return searched_base
     
 #save a base to save file
-def save_base_to_save_file(objects_data, base_identifier,  save_slot, base_name = None):
+def save_base_to_save_file(objects_data, base_identifier, save_slot, base_name=None, progress=None):
     from .save_file import SaveFile
     pending = []
-    for slot in save_slot:
+    total = max(1, len(save_slot))
+    for index, slot in enumerate(save_slot):
+        if progress is not None:
+            progress.update(.15 + .40 * index / total,
+                            f'Loading save point {index + 1} / {total}')
         save_file = SaveFile(slot)
         save_file.load()
         
@@ -345,11 +349,26 @@ def save_base_to_save_file(objects_data, base_identifier,  save_slot, base_name 
                 ship_ownsership_element[SaveTranslation.base_name] = base_name
         
         pending.append(save_file)
+        if progress is not None:
+            progress.update(.15 + .40 * (index + 1) / total,
+                            f'Prepared save point {index + 1} / {total}')
     # Capture both save points and their metadata before changing either file.
+    if progress is not None:
+        progress.update(.58, 'Backing up save points')
     generation, _ = backup_policy.snapshot(save_slot, 'export')
-    for save_file in pending:
+    for index, save_file in enumerate(pending):
+        if progress is not None:
+            progress.update(.64 + .25 * index / total,
+                            f'Writing save point {index + 1} / {total}')
         save_file.save()
+        if progress is not None:
+            progress.update(.64 + .25 * (index + 1) / total,
+                            f'Wrote save point {index + 1} / {total}')
+    if progress is not None:
+        progress.update(.90, 'Finalizing backup')
     backup_policy.finish(generation)
+    if progress is not None:
+        progress.update(.94, 'Save export finished')
     return "Base/Corvette saved sucessfully"
 
 # a folder within save_directory , where backups will be stored

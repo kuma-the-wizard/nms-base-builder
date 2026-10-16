@@ -119,12 +119,24 @@ def validate_material(colour_name, colour_value):
     Returns:
         bpy.Material: The Blender material.
     """
-    # Retrieve material if it already exists.
+    # Retrieve material if it already exists. Older BBE files can already
+    # contain this palette material with only its Solid-view colour set.
     colour_material = bpy.data.materials.get(colour_name, None)
-    # Create material.
     if not colour_material:
         colour_material = bpy.data.materials.new(name=colour_name)
-        colour_material.diffuse_color = colour_value
+    colour_material.diffuse_color = colour_value
+
+    # Material Preview and renders read the shader, not diffuse_color. Keep
+    # the simple palette shader in sync without replacing any linked texture
+    # or user-authored node graph.
+    if not colour_material.use_nodes:
+        colour_material.use_nodes = True
+    if colour_material.node_tree:
+        for node in colour_material.node_tree.nodes:
+            if node.type == 'BSDF_PRINCIPLED':
+                base = node.inputs.get('Base Color')
+                if base is not None and not base.is_linked:
+                    base.default_value = colour_value
     return colour_material
 
 
@@ -333,6 +345,10 @@ def optimise_materials():
     from ..part_overrides import parts_override
     classes_dict = parts_override.get_override_classes()
     materials_v2 = _materials_v2()
+    # This function runs once after a saved scene opens. Migrate the shared HD
+    # material networks too, so old files do not need a recolour/reimport to
+    # receive the same surface corrections as newly placed parts.
+    materials_v2.ensure_finish_nodes()
 
     unique_materials = {}
     # loop through all objects

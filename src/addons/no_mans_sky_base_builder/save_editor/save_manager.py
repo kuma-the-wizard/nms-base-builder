@@ -1,6 +1,6 @@
 import bpy
 import json
-from .. import builder, builder_v2
+from .. import builder, builder_v2, progress_ui
 from . import save_editor_dependencies
 from . import save_editor_utils, station_reference
 from .save_editor_utils import BaseType, BaseData
@@ -386,21 +386,24 @@ class SaveManager(bpy.types.PropertyGroup):
         
     # collect data from scene and export it to save file
     def export_base(self,context,  base_identifiers, save_links):
-        # convert scene to json representing base data
-        nms_tools = context.scene.nms_main
-        serialised_base_objects_data  = nms_tools.serialise(objects_only = True)
-        prefs = context.scene.nms_base_tool
-        new_base_name = prefs.string_base
-        if not new_base_name or not new_base_name.strip():
-            new_base_name = None
-        
-        # provide data to utils and return status string to calling function
-        result = save_editor_utils.save_base_to_save_file(serialised_base_objects_data, base_identifiers, save_links, base_name = new_base_name)
-        
-        # refresh UI
-        self.refresh_bases_list()
-        
-        return result 
+        with progress_ui.Activity('Exporting to Save') as progress:
+            progress.update(.02, 'Collecting scene parts')
+            nms_tools = context.scene.nms_main
+            serialised_base_objects_data = nms_tools.serialise(objects_only=True)
+            prefs = context.scene.nms_base_tool
+            new_base_name = prefs.string_base
+            if not new_base_name or not new_base_name.strip():
+                new_base_name = None
+
+            progress.update(.15, 'Preparing save points')
+            result = save_editor_utils.save_base_to_save_file(
+                serialised_base_objects_data, base_identifiers, save_links,
+                base_name=new_base_name, progress=progress)
+
+            progress.update(.95, 'Refreshing base list')
+            self.refresh_bases_list()
+            progress.update(1.0, 'Complete' if result else 'Base not found; nothing written')
+            return result
       
     # This functin collects data realated to base so that it can be identified in save file
     # since there is no unique property to identify a base, we prepare a fingerprint of that base with collection of properties

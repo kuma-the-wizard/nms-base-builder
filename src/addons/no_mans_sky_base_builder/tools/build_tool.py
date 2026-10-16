@@ -433,15 +433,15 @@ class BuildTool(bpy.types.PropertyGroup):
         # use.
         if len(selected_objects) == 1:
             source = bpy.context.view_layer.objects.active
-            if "snapped_to" in source:
-                target = bpy.data.objects[source["snapped_to"]]
-            else:
+            if source is not None and "snapped_to" in source:
+                target = bpy.context.scene.objects.get(source["snapped_to"])
+            if target is None:
                 message = (
                     "This item has not been snapped to anything. Please select "
                     "the item you want to snap it to"
                 )
                 ShowMessageBox(message=message, title="Snap")
-                return {"FINISHED"}
+                return {"CANCELLED"}
 
         # If 2 are selected, use them as the snapping items.
         elif len(selected_objects) == 2:
@@ -451,23 +451,34 @@ class BuildTool(bpy.types.PropertyGroup):
         # If otherwise, we should skip and warn the user.
         else:
             message = (
-                "Make sure you have two items selected. Select the item you"
-                " want to snap to, then the item you want to snap."
+                "Select the item to move first, then select its target last."
             )
             ShowMessageBox(message=message, title="Snap")
-            return {"FINISHED"}
+            return {"CANCELLED"}
 
         # Perform Snap
         source = BUILDER.get_builder_object_from_bpy_object(source)
         target = BUILDER.get_builder_object_from_bpy_object(target)
         if source and target:
-            source.snap_to(
+            # A terminal/wall pair has an unambiguous moving part. Accept
+            # either selection order without ever moving the wall.
+            if (getattr(target, 'object_id', None) == 'BUILDTERMINAL'
+                    and target.get_snap_pair_options(source)):
+                source, target = target, source
+            snapped = source.snap_to(
                 target,
                 next_source=next_source,
                 prev_source=prev_source,
                 next_target=next_target,
                 prev_target=prev_target,
             )
+            if snapped is not False:
+                return {"FINISHED"}
+        ShowMessageBox(
+            message="These parts do not have a compatible BBE snap connection.",
+            title="Snap",
+        )
+        return {"CANCELLED"}
         
     def get_part_count(self):
         parts_count = 0

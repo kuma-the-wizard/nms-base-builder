@@ -276,8 +276,7 @@ class Snap(bpy.types.Operator):
             "next_target": self.next_target,
             "prev_target": self.prev_target,
         }
-        build_tool.snap(**kwargs)
-        return {"FINISHED"}
+        return build_tool.snap(**kwargs)
 
     
 

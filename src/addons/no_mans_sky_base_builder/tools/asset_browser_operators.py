@@ -8,6 +8,7 @@ from .. import builder_v2
 from ..utils import asset_browser_utils
 from ..utils.asset_browser_utils import get_preferences
 import ctypes
+from contextlib import nullcontext
 
 try:
     from ctypes import wintypes
@@ -18,6 +19,36 @@ except (ImportError, ValueError):
 
 BUILDER = Builder()
 ADDON_ID = asset_browser_utils.ADDON_ID
+
+
+def browser_pin_object():
+    """Provide Properties with a context without touching scene selection."""
+    obj = bpy.data.objects.get("Asset Browser Window")
+    if obj is None:
+        mesh = bpy.data.meshes.new("Asset Browser Window")
+        obj = bpy.data.objects.new("Asset Browser Window", mesh)
+    # Blender 5.1 omits object contexts (including CONSTRAINT and MODIFIER)
+    # for an unlinked pin, leaving a reopened browser as two Scene panels.
+    if obj.name not in bpy.context.scene.collection.all_objects:
+        bpy.context.scene.collection.objects.link(obj)
+    obj.hide_set(True)
+    obj.hide_render = True
+    obj.hide_select = True
+    obj.use_fake_user = True
+    return obj
+
+
+def placement_view(context):
+    """Use the user's 3D view, not the pop-out browser's copied view layer."""
+    for window in context.window_manager.windows:
+        if window.scene != context.scene:
+            continue
+        for area in window.screen.areas:
+            if area.type == 'VIEW_3D':
+                region = next((r for r in area.regions if r.type == 'WINDOW'), None)
+                if region is not None:
+                    return bpy.context.temp_override(window=window, area=area, region=region)
+    return nullcontext()
 
 
 def _get_user32():
@@ -222,11 +253,13 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
             return {'CANCELLED'}
         
         attempts_count = 0
+        setup_state = {'last_error': None}
         
         def get_timeout():
             nonlocal attempts_count
             attempts_count +=1
             if attempts_count >= 200:
+                print('BBE Asset Browser: setup timed out; window remains editable')
                 asset_browser_grid.unmark_window_pending(new_window)
                 return None
             return 0.05
@@ -243,26 +276,18 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
                 areas_sorted = sorted(new_window.screen.areas, key=lambda a: a.x)
                 left_area, right_area = areas_sorted[0], areas_sorted[1]
 
-                prev_dummy_obj = bpy.data.objects.get("Asset Browser Window",None)
-                if prev_dummy_obj is not None:
-                    bpy.data.objects.remove(prev_dummy_obj, do_unlink=True)
-                    
-                bpy.ops.mesh.primitive_cube_add(size=0.1, location=(0, 0, 0))
-                dummy_obj = context.active_object
-                dummy_obj.name = "Asset Browser Window"
+                # A primitive-add operator deselects the placement target.
+                # Keep this UI-only object unlinked and reuse it across windows.
+                dummy_obj = browser_pin_object()
                 
                 for area, ctx_type in ((left_area, 'CONSTRAINT'), (right_area, 'MODIFIER')):
                     area.type = 'PROPERTIES'
                     space = area.spaces.active
-                    space.context = ctx_type
-                    space.show_region_header = False
                     space.use_pin_id = True
                     space.pin_id = dummy_obj
+                    space.context = ctx_type
+                    space.show_region_header = False
                     
-                for collection in list(dummy_obj.users_collection):
-                    collection.objects.unlink(dummy_obj)
-                dummy_obj.use_fake_user = True
-
                 # Keep the native category controls on the left; the right
                 # surface owns its image hit areas and corner controls.
                 right_area.type = 'IMAGE_EDITOR'
@@ -271,18 +296,31 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
                 right_area.spaces.active.show_region_header = False
                 right_area.spaces.active.show_region_tool_header = False
                 right_area.spaces.active.show_region_hud = False
-                region = next(r for r in right_area.regions if r.type == 'WINDOW')
+                region = next((r for r in right_area.regions if r.type == 'WINDOW'), None)
+                if region is None:
+                    return get_timeout()
                 with bpy.context.temp_override(window=new_window, area=right_area, region=region):
-                    bpy.ops.bbe.asset_grid('INVOKE_DEFAULT')
+                    result = bpy.ops.bbe.asset_grid('INVOKE_DEFAULT')
+                    if 'RUNNING_MODAL' not in result:
+                        return get_timeout()
                 asset_browser_grid.unmark_window_pending(new_window)
                 return None
-            except (ReferenceError, RuntimeError, TypeError, AttributeError):
+            except (ReferenceError, RuntimeError, TypeError, AttributeError) as error:
+                if str(error) != setup_state['last_error']:
+                    print(f'BBE Asset Browser: setup will retry: {error}')
+                    setup_state['last_error'] = str(error)
                 return get_timeout()
 
         def switch_tab():
             try:
                 window_exists = any(w == new_window for w in wm.windows)
                 if not window_exists:
+                    return None
+
+                # Blender may reuse the previously split screen when a
+                # pop-out is closed and reopened. Configure it in place.
+                if len(new_window.screen.areas) >= 2:
+                    bpy.app.timers.register(configure_areas, first_interval=0.02)
                     return None
 
                 if target_area.type != 'PROPERTIES':
@@ -311,7 +349,10 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
 
                 bpy.app.timers.register(configure_areas, first_interval=0.02)
                 return None
-            except (ReferenceError, RuntimeError, TypeError, AttributeError):
+            except (ReferenceError, RuntimeError, TypeError, AttributeError) as error:
+                if str(error) != setup_state['last_error']:
+                    print(f'BBE Asset Browser: split will retry: {error}')
+                    setup_state['last_error'] = str(error)
                 return get_timeout()
 
         bpy.app.timers.register(switch_tab, first_interval=0.02)
@@ -414,11 +455,14 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
             # classes throwing. This used to go straight to item.object and turn
             # that into an unhandled AttributeError in the operator.
             # Keep the selected target before importing a proxy changes selection.
-            selected_target = context.active_object
-            if selected_target is not None and not selected_target.select_get():
-                selected_target = None
             try:
-                item = builder_v2.add_part(self.object_id, builder_object=BUILDER)
+                with placement_view(context):
+                    selected_target = bpy.context.active_object
+                    if selected_target is not None and not selected_target.select_get():
+                        selected_target = None
+                    placement_matrix = (selected_target.matrix_world.copy()
+                                        if selected_target is not None else None)
+                    item = builder_v2.add_part(self.object_id, builder_object=BUILDER)
             except Exception as error:
                 report_error(self,{'ERROR'}, f"Could not add {self.object_id}: {error}")
                 return {'CANCELLED'}
@@ -427,6 +471,14 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
             if bpy_obj is None:
                 report_error(self,{'ERROR'}, f"Could not add {self.object_id} to scene")
                 return {'CANCELLED'}
+
+            # The browser can keep a different active object from the main
+            # viewport. The user's selection is the only placement source.
+            if placement_matrix is None:
+                bpy_obj.location = (0.0, 0.0, 0.0)
+                bpy_obj.scale = (1.0, 1.0, 1.0)
+            else:
+                bpy_obj.matrix_world = placement_matrix
 
             # Pipe placement uses the same endpoint frames and continuation
             # history as the sidebar Snap button, rather than copying the origin.
@@ -481,14 +533,14 @@ class AssetBrowserObjectMoreOptions(bpy.types.Operator):
 class AssetBrowserCategorySelected(bpy.types.Operator):
     bl_idname = "object.nms_asset_browser_category_selected"
     bl_label = "Category Selected"
-    bl_description = "Category of objects"
+    bl_description = "Expand or collapse this category; clears the current search"
 
     category: bpy.props.StringProperty()
     
     def execute(self, context):
         scene = context.scene
         asset_browser = scene.nms_asset_browser
-        asset_browser.asset_browser_caterogies = self.category
+        asset_browser.toggle_category(self.category)
         return {'FINISHED'}
     
 class AssetBrowserCategoryFavourite(bpy.types.Operator):

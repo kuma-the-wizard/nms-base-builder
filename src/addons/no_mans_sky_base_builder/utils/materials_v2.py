@@ -960,8 +960,13 @@ def ensure_finish_nodes(materials=None):
         if mat is None or not mat.node_tree:
             continue
 
+        # Older building assets connected the gloss channel directly to
+        # Roughness. Repair it independently of finish-network version so
+        # existing .blend files receive the same fix as newly appended parts.
+        repaired_roughness = _repair_building_roughness(mat)
         version = mat.get(FINISH_NODES_TAG)
         if version == FINISH_NODES_VERSION:
+            changed += int(repaired_roughness)
             continue
 
         # Only the materials that carry the colourise group. That keeps this off
@@ -996,6 +1001,73 @@ def ensure_finish_nodes(materials=None):
         changed += 1
 
     return changed
+
+
+def _repair_building_roughness(mat):
+    """Restore verified building materials' gloss-to-roughness conversion.
+
+    The shipped interior and alloy floor assets use MASKS.red directly, although the
+    material's roughness is (1 - red) * gMaterialParamsVec4.x. The current
+    InteriorTiling multiplier is 1.0; the alloy floor and stair use 0.9.
+    Preserve an existing multiplier and the object's finish adjustments.
+
+    Match the native material and the actual unmodified input connection,
+    rather than a Blender material name. This fixes every shared/copy instance
+    while leaving custom networks, other materials and finish choices alone.
+    """
+    path = str(mat.get("nms_material_path", "")).replace("\\", "/").upper()
+    verified_materials = {
+        "/CUBEROOM_INNERWALL/INTERIORTILING_MAT2.MATERIAL.MBIN":
+            "INTERIORTILINGTEXTURE.MASKS",
+        "/FIBREGLASS/BASIC_FLOOR/KITBASHMETALTRIMMAT.MATERIAL.MBIN":
+            "FIBERGLASSTRIM.MASKS",
+        "/FIBREGLASS/BASIC_RAMP_THIN/METALTRIMMAT.MATERIAL.MBIN":
+            "FIBERGLASSTRIM.MASKS",
+    }
+    texture_name = next((name for suffix, name in verified_materials.items()
+                         if path.startswith("MODELS/") and path.endswith(suffix)), None)
+    if texture_name is None:
+        return False
+    principled = next((n for n in mat.node_tree.nodes
+                       if n.type == 'BSDF_PRINCIPLED'), None)
+    if principled is None:
+        return False
+    target = principled.inputs["Roughness"]
+    # Finish nodes carry the original surface value on their first input.
+    # Change that original only; user-selected finish offsets still apply.
+    while target.is_linked and _is_finish_node(target.links[0].from_node):
+        target = target.links[0].from_node.inputs[0]
+    # The native .9 alloy multiplier was correctly retained by the asset
+    # generator. Invert the texture before it, without changing the scale.
+    if target.is_linked:
+        scaled = target.links[0].from_node
+        if scaled.type == 'MATH' and scaled.operation == 'MULTIPLY':
+            if scaled.inputs[1].is_linked:
+                return False
+            target = scaled.inputs[0]
+    if not target.is_linked:
+        return False
+    source = target.links[0].from_socket
+    separate = source.node
+    if separate.type not in {'SEPARATE_COLOR', 'SEPRGB'} or source.name not in {'Red', 'R'}:
+        return False
+    if not separate.inputs[0].is_linked:
+        return False
+    texture = separate.inputs[0].links[0].from_node
+    image = getattr(texture, "image", None)
+    if image is None:
+        return False
+    filename = os.path.basename(image.filepath.replace("\\", "/")).upper()
+    if filename not in {texture_name + '.WEBP', texture_name + '.DDS'}:
+        return False
+    invert = mat.node_tree.nodes.new("ShaderNodeMath")
+    invert.operation = 'SUBTRACT'
+    invert.label = "NMS Building Gloss to Roughness"
+    invert.location = (separate.location.x + 180, separate.location.y - 160)
+    invert.inputs[0].default_value = 1.0
+    mat.node_tree.links.new(source, invert.inputs[1])
+    mat.node_tree.links.new(invert.outputs[0], target)
+    return True
 
 
 def dedupe_appended_data():

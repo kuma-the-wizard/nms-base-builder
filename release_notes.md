@@ -1,3 +1,16 @@
+release 18.1.62
+-------------
+
+Restore the complete Colour & Materials section in the Base Builder sidebar,
+including the palette selector, swatches, and colour picker. The top-toolbar
+Color menu remains available. All 18.1.61 runtime files and assets are retained
+except the restored panel registration, version number, and release instructions.
+
+Install no_mans_sky_base_builder-18.1.62.zip using Blender's Install from Disk,
+then restart Blender. Windows x64; Blender 5.1.2 and 5.2.2 LTS validation covered
+panel registration, all 18 palettes, and the existing bulk-colouring checks.
+The ZIP passed archive integrity and comparison with the published 18.1.61 installer.
+
 release 18.0.9-station-reference
 -------------
 

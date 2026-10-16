@@ -1,8 +1,40 @@
-## 18.1.45 - Duplicate save checklist
+## 18.1.62 - Restore the sidebar Colour & Materials section
 
-- Restore the ship and base checklist when creating a duplicate save.
-- Preserve the source save's universal ID and Steam metadata slot identifier when copying to a new slot.
-- Align the sidebar asset grid with its upper controls.
+- Restore the complete Colour & Materials section in the Base Builder sidebar, including the material palette selector, colour swatches, and colour picker.
+- Keep the top-toolbar Color menu available alongside the sidebar controls.
+- Preserve all fixes and assets from 18.1.61.
+
+## 18.1.61 - Large-room glass placement
+
+- Correct misplaced corner panes on Square Rooms and Square Deepwater Chambers, and floating roof panes on Cylindrical Rooms and Deepwater Chambers. Solid and Material Preview now use the same correctly assembled glass geometry.
+- Apply the correction to recognised Detailed Proxy meshes when placing parts, switching quality, or opening older shared projects. Preserve part transforms, export records, texture coordinates, and other geometry; leave custom glass meshes alone.
+
+## 18.1.60 - Sidebar Asset Browser input and visibility
+
+- Keep thumbnail and scrollbar input inside the browser content, allowing Blender's vertical sidebar tabs and resize border to receive clicks normally.
+- Hide the thumbnail overlay when its native panel is collapsed, including collapsed panels restored from shared projects. Reset panel visibility when a file loads.
+- Use the same bounds for drawing and input, and ignore clipped tiles that are not visible.
+
+## 18.1.59 - Textures in shared Blender projects
+
+- Resolve saved Detailed Proxy textures from another user's downloaded HD library against the local installed pack. This fixes pink decals and materials when opening shared `.blend` projects.
+- Match only known BBE library paths and manifest textures; preserve packed artwork and unrelated user images. Loading textures does not save or overwrite the project file.
+
+## 18.1.58 - Category navigation and fossil preservation
+
+- Allow the active Asset Browser category to collapse. Category and group navigation clear the search instead of leaving category headers disabled.
+- Keep each fossil's exact variant through Simple/Detailed proxy switches and group/ungroup operations, including group export and restoration.
+- Restore damaged fossil proxies when opening older projects if their variant is still recorded. Preserve unidentified fossils and user-edited meshes.
+
+## 18.1.57 - Sidebar build file import
+
+- Make the sidebar's file import button open the same Corvette, base, prefab, and JSON/TXT importer as the I/O menu.
+
+## 18.1.56 - Standalone Corvette and base files
+
+- Add direct import for `.nmsship`, `.nmsbase`, `.nmsprefab`, and build JSON/TXT in the I/O menu, including parts-only files with a selectable base type.
+- Export Corvette `.nmsship` packages while retaining their class, inventory, technology, appearance, and other package entries. New ships can use an existing `.nmsship` as a metadata template.
+- Export planet, freighter, space, and station bases as `.nmsbase` without changing their BaseType. Clarify that the older File controls work with BBE project JSON and that Save Manager writes to a game save.
 
 ## 18.1.44 - Clickable sidebar thumbnails
 

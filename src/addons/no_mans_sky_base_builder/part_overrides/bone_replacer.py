@@ -2,6 +2,7 @@ from copy import copy
 
 from .. import part
 from ..utils import blend_utils
+from .fossil_models import resolve_model_id
 
 
 class BONE_REPLACER(part.Part):
@@ -46,7 +47,11 @@ class BONE_REPLACER(part.Part):
         time_stamp = self.time_stamp
         order = self.order
         belongs_to_preset = self.belongs_to_preset
-        bone_id = self.message
+        bone_id = resolve_model_id(self.object)
+        if bone_id == self.object_id:
+            # A missing or unknown variant cannot be inferred from the family.
+            # Keep its original record rather than replacing the part ID.
+            return self
         # the bone id is in the override table too, so this lands on BONE, which
         # builds it out of the high res library
         bone_part = builder_v2.add_part(
@@ -57,6 +62,7 @@ class BONE_REPLACER(part.Part):
         bone_part.time_stamp = time_stamp
         bone_part.order = order
         bone_part.belongs_to_preset = belongs_to_preset
+        bone_part.message = self.message
         # Clipboard, Save Manager and prefab import all use the returned Part.
         # Keep both wrappers live after replacing the temporary placeholder.
         blend_utils.delete(self.object)

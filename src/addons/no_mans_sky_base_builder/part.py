@@ -714,6 +714,13 @@ class Part(object):
         self.SNAP_CACHE[self.name] = source_item_snap_reference
         self.SNAP_CACHE[target.name] = target_item_snap_reference
 
+        if self.object_id == 'BUILDTERMINAL':
+            # Successful BBE snap points for this part are wall sockets.
+            # Copying a transform or using Blender's native snap must not
+            # change which of the game's two terminal models is displayed.
+            from . import builder_v2
+            builder_v2.use_trade_terminal_wall_model(self.object)
+
         return True
 
     def get_closest_snap_points(self, target, source_filter=None, target_filter=None):

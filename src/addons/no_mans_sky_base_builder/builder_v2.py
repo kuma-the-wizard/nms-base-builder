@@ -8,6 +8,7 @@ from .part import Part
 from .utils import blend_utils, material, materials_v2, collection_utils
 from .utils import variant_map
 from .part_overrides import parts_override
+from .part_overrides.fossil_models import BASE_IDS as FOSSIL_BASE_IDS, resolve_model_id
 from .utils import python as python_utils
 
 BUILDER = builder.get_builder()
@@ -66,6 +67,9 @@ MESH_REVISIONS.update(dict.fromkeys(('PIPE','FRE_FACE_WALL','FRE_ROOM_IND1','SET
 # The downloaded pack confused Builders cables with Bazaar fabric hangings.
 CABLE_CORRECTIONS = ('B_WALLHANGING1', 'B_WALLHANGING2', 'B_WALLHANGING3')
 MESH_REVISIONS.update(dict.fromkeys(CABLE_CORRECTIONS, '18.1.20'))
+# The game routes a terminal snapped to a wall to BASETERMINAL. The normal
+# BUILDTERMINAL asset remains the freestanding model.
+MESH_REVISIONS['BUILDTERMINAL_WALL'] = '18.1.52-wall'
 BYTEBEAT_PARTS = {'BYTEBEAT', 'BYTEBEATSWITCH', 'HOLO_DISCO_0', 'U_BYTEBEATLINE'}
 
 # Set once per session by get_asset_index().
@@ -406,6 +410,8 @@ def refresh_bytebeat_proxies(scene):
 # get the shared mesh datablock for an object id, appending it on first use
 def correct_hd_display(mesh, object_id):
     """Upgrade HD display data only; placement and export records stay intact."""
+    from .utils import room_glass
+    room_glass.correct(mesh, object_id)
     if object_id == 'U_BYTEBEATLINE' and not mesh.get('bbe_beat_glow_revision'):
         # Native crossed ribbons already span local Z=0..1. Feather their
         # width in local coordinates so cable length and endpoints stay exact.
@@ -495,8 +501,8 @@ def correct_hd_display(mesh, object_id):
     mesh['bbe_display_revision'] = '18.1.39'
 
 
-def load_high_res_mesh(object_id, asset_index=None):
-    if not getattr(bpy.context.scene, "bbe_detailed_proxies", True):
+def load_high_res_mesh(object_id, asset_index=None, *, force=False):
+    if not force and not getattr(bpy.context.scene, "bbe_detailed_proxies", True):
         return None
     asset_index = asset_index if asset_index is not None else get_asset_index()
 
@@ -555,6 +561,44 @@ def load_high_res_mesh(object_id, asset_index=None):
     materials_v2.note_appended_data()
     correct_hd_display(mesh, object_id)
     return mesh
+
+
+def load_trade_terminal_wall_mesh():
+    """The game's snapped wall variant of BUILDTERMINAL."""
+    path = os.path.join(FILE_PATH, 'resources', 'hd_corrections', 'BUILDTERMINAL.blend')
+    # There is no separate low-resolution wall variant. Reuse the native
+    # wall mesh in either quality so a switch cannot restore the kiosk.
+    mesh = load_high_res_mesh('BUILDTERMINAL_WALL', {'BUILDTERMINAL_WALL': path}, force=True)
+    if mesh is not None:
+        # Snap bypasses the normal import/dedupe pass that repairs texture
+        # paths. Repair only this model's images, including cached meshes
+        # restored from an older .blend, without modifying object transforms.
+        pending = [mat.node_tree for mat in mesh.materials if mat and mat.use_nodes]
+        seen, images = set(), set()
+        while pending:
+            tree = pending.pop()
+            if tree in seen:
+                continue
+            seen.add(tree)
+            for node in tree.nodes:
+                if node.type == 'TEX_IMAGE' and node.image:
+                    images.add(node.image)
+                elif node.type == 'GROUP' and node.node_tree:
+                    pending.append(node.node_tree)
+        hd_library.relink_texture_images(images)
+    return mesh
+
+
+def use_trade_terminal_wall_model(obj):
+    """Show the native BASETERMINAL only after a successful BBE wall snap."""
+    if obj is None or obj.type != 'MESH' or obj.get('ObjectID') != 'BUILDTERMINAL':
+        return False
+    mesh = load_trade_terminal_wall_mesh()
+    if mesh is None:
+        return False
+    obj.data = mesh
+    obj['bbe_trade_terminal_wall_model'] = True
+    return True
 
 
 # False places every id from its own asset again, the way the addon did before
@@ -815,6 +859,8 @@ def apply_proxy_mesh(bpy_object, object_id, user_data, cache=None):
         bool: False when models/ has no fbx for the id, in which case the
             object is left exactly as it was.
     """
+    if object_id in FOSSIL_BASE_IDS:
+        object_id = resolve_model_id({'ObjectID': object_id, 'Message': bpy_object.get('Message', '')})
     if user_data is None:
         user_data = Part.DEFAULT_USER_DATA
     key = (object_id, str(user_data))
@@ -895,7 +941,7 @@ def new_proxy_object(object_id, user_data, cache=None):
     return bpy_object
 
 
-def new_merge_source(object_id, user_data, high_res=True, proxy_cache=None):
+def new_merge_source(object_id, user_data, high_res=True, proxy_cache=None, message=None):
     """Make a bare part object for something that is about to be merged away.
 
     Rebuilding a group places every child of it only to join them into one mesh
@@ -922,19 +968,22 @@ def new_merge_source(object_id, user_data, high_res=True, proxy_cache=None):
         bpy.types.Object: The new object, or None when neither library covers
             the id.
     """
+    model_id = resolve_model_id({'ObjectID': object_id, 'Message': message or ''})
     if high_res:
-        bpy_object = new_high_res_object(object_id)
+        bpy_object = new_high_res_object(model_id)
         if bpy_object is None:
-            bpy_object = new_proxy_object(object_id, user_data, cache=proxy_cache)
+            bpy_object = new_proxy_object(model_id, user_data, cache=proxy_cache)
     else:
-        bpy_object = new_proxy_object(object_id, user_data, cache=proxy_cache)
+        bpy_object = new_proxy_object(model_id, user_data, cache=proxy_cache)
         if bpy_object is None:
-            bpy_object = new_high_res_object(object_id)
+            bpy_object = new_high_res_object(model_id)
 
     if bpy_object is None:
         return None
 
     bpy_object[Part.PROP_OBJECT_ID] = object_id
+    if message is not None:
+        bpy_object[Part.PROP_MESSAGE] = message
     bpy_object[Part.PROP_USER_DATA] = str(
         user_data if user_data is not None else Part.DEFAULT_USER_DATA
     )

@@ -34,6 +34,20 @@ def unmark_window_pending(window):
         pass
 
 
+def release_stale_sessions(window_manager):
+    """A just-closed pop-out may still own the pointer Blender reuses."""
+    live = {(window.as_pointer(), area.as_pointer())
+            for window in window_manager.windows for area in window.screen.areas
+            if area.type == 'IMAGE_EDITOR'}
+    for key, session in tuple(_sessions.items()):
+        try:
+            identity = (session._window.as_pointer(), session._area.as_pointer())
+        except ReferenceError:
+            identity = None
+        if identity not in live:
+            _release_session(key, window_manager)
+
+
 def request_redraw():
     """Property callbacks request a frame immediately, without waiting for a timer."""
     for session in tuple(_sessions.values()):
@@ -118,6 +132,7 @@ class BBE_OT_asset_grid(bpy.types.Operator):
     def invoke(self, context, event):
         if context.area.type != 'IMAGE_EDITOR':
             return {'CANCELLED'}
+        release_stale_sessions(context.window_manager)
         key = context.area.as_pointer()
         if key in _sessions:
             return {'CANCELLED'}

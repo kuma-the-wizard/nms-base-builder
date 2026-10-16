@@ -236,6 +236,12 @@ def relink_legacy_textures():
 def after_load(_unused):
     cancel_activation()
     relink_legacy_textures()
+    from .part_overrides.fossil_models import refresh_scene
+    from .utils import room_glass
+    for scene in bpy.data.scenes:
+        with bpy.context.temp_override(scene=scene, view_layer=scene.view_layers[0]):
+            refresh_scene(scene)
+            room_glass.refresh_scene(scene)
 
 
 _last_message = None

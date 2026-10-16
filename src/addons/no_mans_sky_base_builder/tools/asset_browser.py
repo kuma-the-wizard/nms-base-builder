@@ -98,6 +98,10 @@ class AssetBrowser(bpy.types.PropertyGroup):
     category_list: bpy.props.CollectionProperty(type=NMSCategoryOrderItem)
     category_list_index: bpy.props.IntProperty()
 
+    category_expanded: bpy.props.BoolProperty(
+        name="Expand category", default=True,
+        update=lambda self, context: self.invalidate_view())
+
     favourite_categories = []
     favourite_objects_data = {}
     recent_objects_data = {}
@@ -173,6 +177,8 @@ class AssetBrowser(bpy.types.PropertyGroup):
         return AssetBrowser.enum_categories
 
     def on_category_selected(self):
+        self.clear_search()
+        self.category_expanded = True
         self.enum_asset_browser_what_to_display = "asset"
         AssetBrowser.enum_sub_categories = self.extract_enum_sub_categories()
         self.asset_browser_sub_caterogies = "All"
@@ -180,6 +186,7 @@ class AssetBrowser(bpy.types.PropertyGroup):
 
 
     def on_sub_category_selected(self):
+        self.clear_search()
         self.enum_asset_browser_what_to_display = "asset"
         AssetBrowser.enum_sub_categories = self.extract_enum_sub_categories()
 
@@ -227,6 +234,21 @@ class AssetBrowser(bpy.types.PropertyGroup):
 
     def get_enum_sub_categories_list(self):
             return AssetBrowser.enum_sub_categories
+
+    def clear_search(self):
+        if self.asset_broser_search_query:
+            self.asset_broser_search_query = ""
+
+    def toggle_category(self, category):
+        was_open = (self.asset_browser_caterogies == category
+                    and self.category_expanded
+                    and self.enum_asset_browser_what_to_display == "asset"
+                    and not self.asset_broser_search_query)
+        self.clear_search()
+        if self.asset_browser_caterogies != category:
+            self.asset_browser_caterogies = category
+        self.enum_asset_browser_what_to_display = "asset"
+        self.category_expanded = not was_open
 
     def on_search_entered(self):
         search_filter = self.asset_broser_search_query
@@ -300,6 +322,7 @@ class AssetBrowser(bpy.types.PropertyGroup):
         return AssetBrowser.favourite_objects_data
 
     def show_favourite_obejcts(self):
+        self.clear_search()
         self.enum_asset_browser_what_to_display = "fav"
 
 
@@ -315,7 +338,8 @@ class AssetBrowser(bpy.types.PropertyGroup):
             return AssetBrowser.recent_objects_data
 
     def show_recent_objects(self):
-            self.enum_asset_browser_what_to_display = "recent"
+        self.clear_search()
+        self.enum_asset_browser_what_to_display = "recent"
 
     def add_to_recents_list(self, object_id):
         recent_objs = asset_browser_utils.push_recent(
@@ -328,6 +352,7 @@ class AssetBrowser(bpy.types.PropertyGroup):
         return asset_browser_utils.build_presets_data()
 
     def show_presets(self):
+        self.clear_search()
         self.enum_asset_browser_what_to_display = "preset"
 
     def get_preset_data(self):

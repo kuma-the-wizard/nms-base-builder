@@ -10,6 +10,7 @@ import uuid
 
 from .utils import blend_utils, materials_v2, mirror_utils, dictionary
 from .part import Part
+from .part_overrides.fossil_models import resolve_model_id
 
 nice_name_dictionary = dictionary.get_nice_names_diictionary()
 
@@ -35,7 +36,7 @@ class Group:
     PROP_OBJECT_ID = Part.PROP_OBJECT_ID
     PROP_USER_DATA = Part.PROP_USER_DATA
     PROP_TIMESTAMP = Part.PROP_TIMESTAMP
-    PROP_MESSAGE = Part.PROP_TIMESTAMP
+    PROP_MESSAGE = Part.PROP_MESSAGE
     
     # curve properties
     PROP_CHILD_CACHE = "child_cache"
@@ -81,6 +82,8 @@ class Group:
                 Group.PROP_TIMESTAMP: obj.get(Group.PROP_TIMESTAMP, int(time.time())),
                 Group.PROP_MATRIX_LOCAL: matrix_list,
             }
+            if Group.PROP_MESSAGE in obj:
+                cache[Group.PROP_MESSAGE] = obj[Group.PROP_MESSAGE]
 
             cache_data[obj.name] = cache
 
@@ -276,7 +279,7 @@ class Group:
             # Add part via builder - the caller's builder is passed through so
             # its part cache stays the one that gets filled
             new_part = _builder_v2().add_part(
-                object_id, user_data, builder_object=builder
+                resolve_model_id(cache_data), user_data, builder_object=builder
             )
             if new_part is None or not hasattr(new_part, "object"):
                 continue
@@ -382,7 +385,7 @@ class Group:
             # Add part via builder - the caller's builder is passed through so
             # its part cache stays the one that gets filled
             new_part = _builder_v2().add_part(
-                object_id, user_data, builder_object=builder
+                resolve_model_id(cache_data), user_data, builder_object=builder
             )
             if new_part is None or not hasattr(new_part, "object"):
                 continue
@@ -436,7 +439,7 @@ class Group:
             # Add part via builder - the caller's builder is passed through so
             # its part cache stays the one that gets filled
             new_part = _builder_v2().add_part(
-                object_id, user_data, builder_object=builder
+                resolve_model_id(cache_data), user_data, builder_object=builder
             )
             if new_part is None or not hasattr(new_part, "object"):
                 continue
@@ -684,6 +687,7 @@ class Group:
                     user_data,
                     high_res=target_high_res,
                     proxy_cache=proxy_cache,
+                    message=cache_data.get(Group.PROP_MESSAGE),
                 )
                 if new_obj is None:
                     continue

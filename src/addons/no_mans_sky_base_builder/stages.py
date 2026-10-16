@@ -387,6 +387,10 @@ def on_load(_):
         from . import builder_v2
         with bpy.context.temp_override(scene=scene):
             builder_v2.refresh_bytebeat_proxies(scene)
+            for obj in scene.objects:
+                if (obj.type == 'MESH' and obj.get('ObjectID') == 'BUILDTERMINAL'
+                        and obj.get('bbe_trade_terminal_wall_model')):
+                    builder_v2.use_trade_terminal_wall_model(obj)
         if getattr(scene, 'bbe_detailed_proxies', True) and hd_library.scenes_root():
             with bpy.context.temp_override(scene=scene):
                 for obj in list(scene.objects):

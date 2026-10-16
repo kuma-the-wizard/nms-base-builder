@@ -9355,8 +9355,7 @@
     "CUBEWINDOWS": {
         "parts": [
             "CUBEWINDOWOVAL",
-            "CUBEWINDOWSMALL",
-            "BUILDTERMINAL"
+            "CUBEWINDOWSMALL"
         ],
         "snap_points": {
             "ATTACH": {
@@ -22116,6 +22115,41 @@
                     ]
                 ],
                 "opposite": "FRONT"
+            }
+        }
+    },
+    "TRADE_TERMINALS": {
+        "parts": [
+            "BUILDTERMINAL"
+        ],
+        "snap_points": {
+            "ATTACH": {
+                "matrix": [
+                    [
+                        0,
+                        0,
+                        1,
+                        0
+                    ],
+                    [
+                        0,
+                        1,
+                        0,
+                        0
+                    ],
+                    [
+                        -1,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        1
+                    ]
+                ]
             }
         }
     }

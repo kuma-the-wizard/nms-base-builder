@@ -221,7 +221,8 @@ def register_menu():
     bpy.types.Scene.enum_assets_quick_access_view_mode = bpy.props.EnumProperty(
         name='View Mode', description='Quick access assets',
         items=[('fav', 'Favourites', 'Favourite parts', 'HEART', 0),
-               ('recent', 'Recent', 'Recently used parts', 'MOD_TIME', 1)],
+               ('recent', 'Recent', 'Recently used parts', 'MOD_TIME', 1),
+               ('search', 'Search', 'Find a part', 'VIEWZOOM', 2)],
         default='fav',
     )
     header = bpy.types.VIEW3D_HT_tool_header

@@ -1,4 +1,5 @@
 import json
+import base64
 import os
 import subprocess
 import sys
@@ -15,7 +16,7 @@ from bpy.props import (BoolProperty, EnumProperty, FloatProperty, IntProperty,
 from bpy.types import Panel, PropertyGroup
 from pathlib import Path
 
-from . import builder, icons, part, preset, group, builder_v2, viewport_overlay
+from . import builder, icons, part, preset, group, builder_v2, viewport_overlay, undo_guard, interchange
 from .base_properties import NMSBaseProperties
 from .addon_preferences import NMSAddonPreferences
 from .part_overrides import line
@@ -55,6 +56,40 @@ GHOSTED_ITEMS = ghosted_reference["GHOSTED"]
 nice_name_dictionary = dictionary.get_nice_names_diictionary()
 
 ADDON_ID = __package__
+
+
+def _clear_build_source(scene):
+    # Keep the old Text block for Blender's undo history, but stop saving an
+    # orphaned package once no scene refers to it.
+    old_name = scene.get('bbe_build_source_text')
+    block = bpy.data.texts.get(old_name) if old_name else None
+    if block and not any(other != scene and other.get('bbe_build_source_text') == old_name
+                         for other in bpy.data.scenes):
+        block.use_fake_user = False
+    for key in ('bbe_build_source_text', 'bbe_build_source_suffix'):
+        if key in scene:
+            del scene[key]
+
+
+def _store_build_source(scene, build_file, suffix):
+    from uuid import uuid4
+    block = bpy.data.texts.new('BBE build source ' + uuid4().hex[:10])
+    block.write(base64.b64encode(build_file.source_bytes).decode('ascii'))
+    block.use_fake_user = True  # retain package metadata across .blend saves
+    scene['bbe_build_source_text'] = block.name
+    scene['bbe_build_source_suffix'] = suffix.lower()
+
+
+def _restore_build_source(scene):
+    name = scene.get('bbe_build_source_text')
+    block = bpy.data.texts.get(name) if name else None
+    if block is None:
+        return None
+    try:
+        raw = base64.b64decode(block.as_string(), validate=True)
+        return interchange.BuildFile.from_bytes(raw, scene['bbe_build_source_suffix'])
+    except (KeyError, ValueError) as exc:
+        raise ValueError('The source build stored in this .blend is damaged; import the original file again') from exc
 # Use the installed manifest for both sidebar and updater version labels.
 import tomllib
 with open(Path(FILE_PATH) / "blender_manifest.toml", "rb") as _manifest_stream:
@@ -221,6 +256,55 @@ class NMSMain(PropertyGroup):
         data = self.serialise(objects_only=objects_only)
         bpy.context.window_manager.clipboard = json.dumps(data, indent=4)
 
+    def import_build_file(self, file_path, parts_base_type='HomePlanetBase'):
+        """Open a standalone build without touching any game save."""
+        path = Path(file_path)
+        build_file = interchange.BuildFile.read(path)
+        data = build_file.document
+        if isinstance(data, list):
+            data = {'Objects': data}
+        if build_file.kind == 'parts':
+            data = dict(data)
+            data['Objects'] = build_file.objects
+            data.setdefault('BaseType', {'PersistentBaseTypes': parts_base_type})
+            data.setdefault('Name', path.stem)
+        self.deserialise_from_data(data)
+        previous_objects = set(bpy.context.scene.objects)
+        builder_v2.deserialise_from_data(data)
+        station_reference.finish_transfer_import(bpy.context, data, previous_objects)
+        _store_build_source(bpy.context.scene, build_file, path.suffix)
+        return len(build_file.objects), build_file.kind
+
+    def export_base_file(self, file_path):
+        data = self.serialise()
+        base_type = data.get('BaseType', {}).get('PersistentBaseTypes')
+        if base_type == 'PlayerShipBase':
+            raise ValueError('Corvettes use Export Ship Package or Export Build JSON')
+        if base_type not in interchange.BASE_TYPES:
+            raise ValueError('Choose a supported base type in I/O metadata first')
+        source = _restore_build_source(bpy.context.scene)
+        if source and source.kind == 'base':
+            data = source.with_scene(data)
+        data.pop('Presets', None)  # Prefabs are a BBE project feature, not a base-file payload.
+        interchange.BuildFile.from_bytes(interchange._encode(data), '.nmsbase')
+        interchange.atomic_write(file_path, interchange._encode(data))
+        return len(data['Objects']), base_type
+
+    def export_ship_file(self, file_path, template_path=''):
+        data = self.serialise(objects_only=True)
+        if bpy.context.scene.nms_base_tool.string_base_type != 'PlayerShipBase':
+            raise ValueError('The current scene is not marked as a Corvette')
+        source = _restore_build_source(bpy.context.scene)
+        if source is None or source.kind != 'ship':
+            if not template_path:
+                raise ValueError('Import a .nmsship first, or choose a .nmsship template to retain ship class, inventory, and appearance')
+            source = interchange.BuildFile.read(template_path)
+        if source.kind != 'ship':
+            raise ValueError('Ship template must be a complete .nmsship package')
+        payload = source.ship_bytes(data, bpy.context.scene.nms_base_tool.string_base)
+        interchange.atomic_write(file_path, payload)
+        return len(data)
+
     # Save and Load Methods ---
     def save_nms_data(self, file_path):
         """Generate data and place it into a json file.
@@ -231,12 +315,13 @@ class NMSMain(PropertyGroup):
             file_path (str): The path to the json file.
         """
         data = self.serialise(get_presets=True)
-        # Add .json if it's not specified.
-        if not file_path.endswith(".json"):
-            file_path += ".json"
-        # Save to file path
-        with open(file_path, "w") as stream:
-            json.dump(data, stream, indent=4)
+        source = _restore_build_source(bpy.context.scene)
+        if source and source.kind == 'base':
+            data = source.with_scene(data)
+        path = Path(file_path)
+        if path.suffix.lower() != '.json':
+            path = path.with_suffix('.json')
+        interchange.atomic_write(path, interchange._encode(data))
 
     def load_nms_data(self, file_path):
         # First load
@@ -268,6 +353,8 @@ class NMSMain(PropertyGroup):
             * Resets the room visibility switch to default.
         """
         from . import stages
+
+        _clear_build_source(bpy.context.scene)
         stages.prepare_import(bpy.context.scene)
 
         BUILDER.clear_caches()
@@ -279,6 +366,7 @@ class NMSMain(PropertyGroup):
 
         base_props = bpy.context.scene.nms_base_tool
         base_props.new_file()
+        base_props.string_base_type = 'HomePlanetBase'
 
         # Remove all no mans sky items from scene.
         # Deselect all
@@ -359,12 +447,26 @@ class NMSMain(PropertyGroup):
 
     def apply_colour(self, colour_index=0, material=0):
         """Gives an item a new colour."""
-        selected_objects = bpy.context.selected_objects
+        selected_objects = list(bpy.context.selected_objects)
         if not selected_objects:
             ShowMessageBox(
                 message="Make sure you have an item selected.", title="Apply Colour"
             )
             return {"FINISHED"}
+
+        # A NMScribe White Border stroke is two overlapping native decals.
+        # Painting just one leaves the other white over the same artwork and
+        # makes the new colour appear to have done nothing. Treat this pair as
+        # one stroke while keeping both real parts and their export records.
+        trial_roots = {obj.parent for obj in selected_objects
+                       if obj.parent and obj.parent.get("nms_decal_trial_root")
+                       and obj.get("nms_text_owner") == obj.parent.get("nms_text_owner")}
+        for root in trial_roots:
+            for obj in root.children:
+                if (obj.get("ObjectID") == "BUILDDECAL2"
+                        and obj.get("nms_text_owner") == root.get("nms_text_owner")
+                        and obj not in selected_objects):
+                    selected_objects.append(obj)
 
         # Apply Colour Material.
         maeterial_index = int(material.split("_")[0])
@@ -584,11 +686,12 @@ class NMS_PT_hero_panel(Panel):
         file_box = workspace_row.box()
         file_column = file_box.column(align = True)
             
-        file_column.label(text="File")# icon = "COLLECTION_COLOR_04"
-        file_column.operator("object.nms_new_file", icon="FILE_NEW")
+        file_column.label(text="Scene")
+        file_column.operator("object.nms_new_file", text="Clear Build Scene...", icon="FILE_NEW")
         file_column.separator()
-        file_column.operator("object.nms_save_data", icon="FILE_TICK")
-        file_column.operator("object.nms_load_data", icon="FILE_FOLDER")
+        file_column.label(text="Build files")
+        file_column.operator("object.nms_save_data", text="Save Project JSON...", icon="FILE_TICK")
+        file_column.operator("bbe.import_build_file", text="Import Build from File...", icon="IMPORT")
 
 
 # File Buttons Panel ---
@@ -968,7 +1071,7 @@ def refresh_ui_part_list(scene, item_type="parts", pack=None):
 # File Operators ---
 class NewFile(bpy.types.Operator):
     bl_idname = "object.nms_new_file"
-    bl_label = "New Base..."
+    bl_label = "Clear Build Scene..."
     bl_options = {"REGISTER", "INTERNAL", "UNDO", "UNDO_GROUPED"}
 
     def execute(self, context):
@@ -983,8 +1086,9 @@ class NewFile(bpy.types.Operator):
 
 class SaveData(bpy.types.Operator):
     bl_idname = "object.nms_save_data"
-    bl_label = "Save Base As..."
+    bl_label = "Save BBE Project JSON..."
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.json", options={'HIDDEN'})
 
     def execute(self, context):
         scene = context.scene
@@ -999,9 +1103,10 @@ class SaveData(bpy.types.Operator):
 
 class LoadData(bpy.types.Operator):
     bl_idname = "object.nms_load_data"
-    bl_label = "Open Base..."
+    bl_label = "Open BBE Project JSON..."
     bl_options = {"UNDO", "REGISTER"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.json", options={'HIDDEN'})
 
     def execute(self, context):
         scene = context.scene
@@ -1012,6 +1117,97 @@ class LoadData(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+
+class ImportBuildFile(bpy.types.Operator):
+    bl_idname = 'bbe.import_build_file'
+    bl_label = 'Import Build from File...'
+    bl_description = 'Open a Corvette package, base file, prefab, or JSON/TXT build in this Blender scene'
+    bl_options = {'REGISTER', 'UNDO'}
+    filepath: bpy.props.StringProperty(subtype='FILE_PATH')
+    filter_glob: bpy.props.StringProperty(
+        default='*.nmsship;*.nmsbase;*.nmsprefab;*.json;*.txt', options={'HIDDEN'})
+    parts_base_type: bpy.props.EnumProperty(
+        name='If file has parts only',
+        description='Type to use if the file has no BaseType metadata',
+        items=[('HomePlanetBase', 'Planet Base', ''),
+               ('PlayerShipBase', 'Corvette', ''),
+               ('FreighterBase', 'Freighter Base', ''),
+               ('PlayerSpaceBase', 'Space Base', ''),
+               ('PlayerSpaceStationBase', 'Station Base', '')],
+        default='HomePlanetBase')
+
+    def draw(self, context):
+        self.layout.prop(self, 'parts_base_type')
+
+    def execute(self, context):
+        try:
+            count, kind = context.scene.nms_main.import_build_file(self.filepath, self.parts_base_type)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            self.report({'ERROR'}, f'Could not import build: {exc}')
+            return {'CANCELLED'}
+        label = {'parts': 'build', 'base': 'base', 'ship': 'Corvette'}[kind]
+        self.report({'INFO'}, f'Imported {count} {label} parts; no game save changed')
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
+class ExportBaseFile(bpy.types.Operator):
+    bl_idname = 'bbe.export_base_file'
+    bl_label = 'Export Base File (.nmsbase)...'
+    bl_description = 'Save the current planet, freighter, space, or station base as a standalone file'
+    filepath: bpy.props.StringProperty(subtype='FILE_PATH')
+    filter_glob: bpy.props.StringProperty(default='*.nmsbase', options={'HIDDEN'})
+
+    def execute(self, context):
+        path = str(Path(self.filepath).with_suffix('.nmsbase'))
+        try:
+            count, base_type = context.scene.nms_main.export_base_file(path)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            self.report({'ERROR'}, f'Could not export base: {exc}')
+            return {'CANCELLED'}
+        self.report({'INFO'}, f'Exported {count} {base_type} parts to {path}')
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
+class ExportShipFile(bpy.types.Operator):
+    bl_idname = 'bbe.export_ship_file'
+    bl_label = 'Export Corvette Package (.nmsship)...'
+    bl_description = 'Keep ship class, inventory, technology, and appearance from the imported package or template'
+    filepath: bpy.props.StringProperty(subtype='FILE_PATH')
+    template_path: bpy.props.StringProperty(
+        name='Ship package template', subtype='FILE_PATH',
+        description='Required for a new Corvette that was not imported from .nmsship')
+    filter_glob: bpy.props.StringProperty(default='*.nmsship', options={'HIDDEN'})
+
+    def draw(self, context):
+        source = context.scene.get('bbe_build_source_suffix')
+        if source != '.nmsship':
+            self.layout.label(text='New ship: select an existing .nmsship template')
+            self.layout.prop(self, 'template_path')
+        else:
+            self.layout.label(text='Class, inventory and appearance come from imported ship.')
+
+    def execute(self, context):
+        path = str(Path(self.filepath).with_suffix('.nmsship'))
+        try:
+            count = context.scene.nms_main.export_ship_file(path, self.template_path)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            self.report({'ERROR'}, f'Could not export Corvette: {exc}')
+            return {'CANCELLED'}
+        self.report({'INFO'}, f'Exported {count} Corvette parts to {path}')
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
 
 
 class ImportData(bpy.types.Operator):
@@ -1852,6 +2048,17 @@ known_curve_names = set()
 last_active = None
 first_update_skipped = False
 
+
+def reset_curve_tracking():
+    """Reseed Python-only caches from restored IDs without editing the scene."""
+    global known_curve_names, last_active
+    last_active = None
+    scene = getattr(bpy.context, 'scene', None)
+    known_curve_names = {
+        obj.name for obj in scene.objects
+        if obj.type == 'CURVE' and curve.Curve.PROP_CURVE_ID in obj
+    } if scene is not None else set()
+
 # To reset toggle button of save editor and initialize curve registry
 @persistent
 def reset_plugin_state(dummy):
@@ -1877,6 +2084,8 @@ def reset_plugin_state(dummy):
 # Whenever a curve is modified, automatically update whatever child objects that are associated with that curve.
 @persistent
 def udpates_handler(scene, depsgraph):
+    if undo_guard.restoring:
+        return
     
     global known_curve_names
     global last_active
@@ -1890,10 +2099,11 @@ def udpates_handler(scene, depsgraph):
 
     # keep track of active object to display or hide additional options related to that object
     # only continue when active object actually changes
-    if active_object is not None and active_object != last_active:
+    active_key = active_object.as_pointer() if active_object is not None else None
+    if active_object is not None and active_key != last_active:
         properties = scene.nms_properties
         properties.set_active_obect(active_object)
-        last_active = active_object
+        last_active = active_key
 
     # Collect curves that have recieved updates by user
     updated_curve_names = set()
@@ -2040,6 +2250,9 @@ classes = (
     NewFile,
     SaveData,
     LoadData,
+    ImportBuildFile,
+    ExportBaseFile,
+    ExportShipFile,
     ExportData,
     ExportObjectsData,
     ImportData,
@@ -2062,6 +2275,7 @@ classes = (
     NMS_PT_save_editor_panel,
     BBE_OT_backup_settings,
     NMS_PT_transformation_panel,
+    NMS_PT_colour_panel,
     NMS_PT_logic_panel,
     NMS_PT_tools_panel,
     NMS_PT_batch_tools_panel,
@@ -2133,6 +2347,7 @@ def register():
     stages.register()
     decals.register()
     hab_windows.register()
+    undo_guard.register()
     from .save_editor import corvette_optimizer
     corvette_optimizer.register()
     from .save_editor import ship_management
@@ -2147,6 +2362,7 @@ def register():
     bpy.app.timers.register(viewport_overlay.register_draw, first_interval=0.01)
 
 def unregister():
+    undo_guard.unregister()
     from .tools import asset_browser_grid, asset_browser_sidebar
     asset_browser_sidebar.unregister()
     asset_browser_grid.unregister()

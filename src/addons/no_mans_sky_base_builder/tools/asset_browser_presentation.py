@@ -110,6 +110,20 @@ def draw_grid_element(
     _place_button(asset_column.row(align=True), object_id, is_preset, text=asset_name)
     
     
+def draw_quick_access_element(layout, object_id, part_data, asset_icon_value=None):
+    """Compact, clickable icon/name row for the BBE header popover."""
+    if not part_data.get('name'):
+        return
+    row = layout.row(align=True)
+    row.scale_y = 1.25
+    _place_button(row, object_id, part_data.get('is_preset', False),
+                  _preview_icon(asset_icon_value), text=part_data['name'], emboss=True)
+    if part_data.get('variants'):
+        _variant_button(row, object_id, part_data['variants'])
+    if not part_data.get('is_preset'):
+        _more_options_button(row, object_id, part_data.get('is_fav', False))
+
+
 def draw_list_element( 
         grid, 
         grid_icon_size, 
@@ -390,11 +404,12 @@ def draw_asset_browser_left_options(context, asset_browser_box, scene):
     fav_cats_col = cats_col.column(align = True)
 
     categories_col = cats_col.column(align = True)
-    categories_col.enabled = not asset_browser.check_display_search_results
     for category_element in asset_browser.get_enum_categories_list():
         category = category_element[0]
 
         is_active = category == ab_category
+        is_expanded = (is_active and display_what == "asset"
+                       and asset_browser.category_expanded)
         is_fav = fav_cats and category in fav_cats
 
         if is_fav:
@@ -411,7 +426,7 @@ def draw_asset_browser_left_options(context, asset_browser_box, scene):
             text = category,
             depress = is_active,
             emboss = False,
-            icon = "TRIA_DOWN" if is_active and display_what == "asset" else "BLANK1" #"RIGHTARROW_THIN"
+            icon = "TRIA_DOWN" if is_expanded else "TRIA_RIGHT"
         )
         cat_button.category = category
 
@@ -425,7 +440,7 @@ def draw_asset_browser_left_options(context, asset_browser_box, scene):
         )
         fav_button.category = category
 
-        if is_active and display_what == "asset":
+        if is_expanded:
             sub_cat_main_row = cat_element_col.row(align = True)
             sub_cat_main_row.scale_y = 0.8
             sub_cat_gap_col = sub_cat_main_row.column(align = True)
@@ -501,8 +516,14 @@ class NMS_PT_asset_browser_panel(bpy.types.Panel):
     bl_region_type = "UI"
     bl_category = "NMS Asset Browser"
     bl_context = "objectmode"
+
+    def draw_header(self, context):
+        from .asset_browser_sidebar import panel_visibility
+        panel_visibility(context, False)
     
     def draw(self, context):
+        from .asset_browser_sidebar import panel_visibility
+        panel_visibility(context, True)
         layout = self.layout     
         scene = context.scene
         browser = scene.nms_asset_browser

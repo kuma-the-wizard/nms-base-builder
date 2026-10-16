@@ -1,6 +1,8 @@
 from copy import copy
+import bpy
 
 from .. import part
+from ..utils import blend_utils
 
 
 class BONE(part.Part):
@@ -50,6 +52,16 @@ class BONE(part.Part):
 
         bpy_object = builder_v2.new_high_res_object(object_id)
         if bpy_object is not None:
+            return bpy_object
+
+        # A saved scene's old object cache may contain a generic cube after a
+        # quality switch. Resolve the concrete model from its library instead.
+        mesh = builder_v2.load_proxy_mesh(object_id)
+        if mesh is not None:
+            # Part.__init__ paints this after returning. Its requested colour
+            # is not available here yet, so do not mutate a shared palette mesh.
+            bpy_object = bpy.data.objects.new(object_id, mesh.copy())
+            blend_utils.add_to_scene(bpy_object)
             return bpy_object
 
         return super(BONE, self).retrieve_object_from_id(object_id)

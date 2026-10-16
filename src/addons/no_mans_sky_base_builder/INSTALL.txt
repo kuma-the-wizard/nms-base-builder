@@ -1,4 +1,4 @@
-BASE BUILDER EXTENDED 18.1.44
+BASE BUILDER EXTENDED 18.1.62
 Base Builder by DjMonkey; Extended by Furiousfurby.
 Based on Kuma's 18.0.0 release.
 
@@ -35,11 +35,19 @@ In Save Manager, enable the save controls, choose your account and save slot,
 click Station, choose your station, then Import from Save.
 Space remains available for orbital space bases, separately from stations.
 
-Import from Clipboard and Open Base (.json) also load the station reference
+Import from Clipboard and I/O > Import Build from File also load the station reference
 automatically when the JSON includes BaseType.PersistentBaseTypes set to
 PlayerSpaceStationBase. Copy the complete station base record from the editor.
 Objects-only lists do not identify the base type and import only the parts;
 use Save Manager or the complete station base JSON to get the reference.
+
+STANDALONE BUILD FILES
+Use I/O > Import Build from File for .nmsship, .nmsbase, .nmsprefab and build
+JSON/TXT. Export Corvette .nmsship or base .nmsbase from the relevant Save
+Manager tab. These are local files; Export to Save writes to the selected game
+save and creates a backup first. Save/Open Project JSON stores a BBE project,
+not a NomNom or optimizer build file. For a new .nmsship, choose an existing
+ship package as the metadata template when exporting.
 
 Station Player Parts contains the editable build. Station Reference contains
 Outside and Inside. Outside has all six hull families and the major optional

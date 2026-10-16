@@ -1,13 +1,13 @@
 # Base Builder Extended
 
-Current standalone release: **18.1.42**. Windows x64, verified with Blender
-5.1.2 and 5.2.2 LTS. Models, textures and dependencies are included.
+Current standalone release: **18.1.62**. Windows x64, verified with Blender
+5.1.2 and 5.2.2 LTS.
 
-[Download the installer and read the release notes](https://github.com/slipperystickers/nms-base-builder/releases/tag/v18.1.42).
+[Download the installer and read the release notes](https://github.com/slipperystickers/nms-base-builder/releases/tag/v18.1.62).
 Install the attached plugin ZIP through Blender's **Install from Disk**, then
-restart all Blender windows. This release adds Save Manager backups, Corvette
-optimization and beta Ship Management; improves the Asset Browser and top
-toolbar; and adds an optional HD scenes/effects component for Scene Preview.
+restart Blender. This release restores the complete **Colour & Materials**
+sidebar section, including all material palettes, swatches, and the colour picker.
+The top-toolbar Color menu remains available, and all 18.1.61 fixes are retained.
 Keep the previous installer ZIP for rollback.
 
 **Base Builder by DjMonkey. Extended by Furiousfurby.** Based on Kuma's 18.0.0

@@ -18,6 +18,17 @@ class VIEW3D_PT_nms_io_panel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
+        files = layout.column(align=True)
+        files.label(text='Standalone build files', icon='FILE_FOLDER')
+        files.operator('bbe.import_build_file', text='Import Build from File...', icon='IMPORT')
+        base_type = context.scene.nms_base_tool.string_base_type
+        if base_type == 'PlayerShipBase':
+            files.operator('bbe.export_ship_file', text='Export Corvette (.nmsship)...', icon='EXPORT')
+            files.operator('object.nms_save_data', text='Export Build JSON...', icon='FILE_TICK')
+        else:
+            files.operator('bbe.export_base_file', text='Export Base (.nmsbase)...', icon='EXPORT')
+            files.operator('object.nms_save_data', text='Save BBE Project JSON...', icon='FILE_TICK')
+        layout.separator()
         layout.label(text="Save Manager", icon="FILE_TICK")
         save_editor_presentation.draw_save_manager(layout, context)
         if not context.scene.nms_save_data.check_plugin_enabled:
@@ -35,7 +46,7 @@ class VIEW3D_PT_nms_base_builder(bpy.types.Panel):
     bl_label = "Base Builder Extended"
     bl_description = "Proxy quality, Asset Browser, and quick access to parts"
     # Popovers size themselves from this rather than from their content.
-    bl_ui_units_x = 13
+    bl_ui_units_x = 24
     
 
     def draw(self, context):
@@ -82,42 +93,34 @@ class VIEW3D_PT_nms_base_builder(bpy.types.Panel):
         
         def draw_assets(asset_data):
             if asset_data:
-                row = quick_access_column.row(align = True)
-                for subcategories, object_ids in asset_data.items():
-                    asset_browser_presentation.draw_sub_category(
-                        pcoll = pcoll, 
-                        container = row, 
-                        label = subcategories,
-                        elements_list = object_ids, 
-                        number_of_columns = 4,
-                        icon_size = 2,
-                        grid_type = "Other",
-                        show_title = False
-                    )
+                # A popover needs full-width rows. Grid cards (and whole
+                # search categories) side by side shrink to unusable slivers.
+                for object_ids in asset_data.values():
+                    for object_id, part_data in object_ids.items():
+                        asset_browser_presentation.draw_quick_access_element(
+                            quick_access_column, object_id, part_data,
+                            pcoll[object_id].icon_id if object_id in pcoll else None)
                 
         
-        recent_data = asset_browser.get_recent_objects_data()
         if enum_assets_quick_access_view_mode == "recent":
+            recent_data = asset_browser.get_recent_objects_data()
             if recent_data:
-                recent_first_four = dict(list(recent_data.items())[:4])
-                recent_dict = {"Recent Objects": recent_first_four}
-    
-                draw_assets(recent_dict)
-        else:
+                draw_assets({"Recent Objects": dict(list(recent_data.items())[:5])})
+            else:
+                quick_access_column.label(text="No recent parts yet.", icon='INFO')
+        elif enum_assets_quick_access_view_mode == "fav":
             fav_data = asset_browser.get_favourite_objects_data()
             if fav_data:
-                fav_first_four = dict(list(fav_data.items())[:4])
-                fav_dict = {"Favourite Objects": fav_first_four}
-                draw_assets(fav_dict)
-        
-        layout.separator()
-        search_colun = layout.column(align = True)
-        search_colun.label(text = "Search Items")
-        search_colun.prop(asset_browser, "asset_broser_search_query", text="", icon='VIEWZOOM')
-        
-        if asset_browser.enum_asset_browser_what_to_display == "search":
-            search_data = asset_browser.get_search_results()
-            draw_assets(search_data)
+                draw_assets({"Favourite Objects": fav_data})
+            else:
+                quick_access_column.label(text="No favourite parts yet.", icon='INFO')
+        else:
+            quick_access_column.prop(asset_browser, "asset_broser_search_query", text="", icon='VIEWZOOM')
+            query = asset_browser.asset_broser_search_query.strip()
+            if len(query) > 2:
+                draw_assets(asset_browser.filter_objects_with_string(query))
+            else:
+                quick_access_column.label(text="Type at least 3 characters.", icon='INFO')
 
 
 def _draw_toolbar_group(self, context):
