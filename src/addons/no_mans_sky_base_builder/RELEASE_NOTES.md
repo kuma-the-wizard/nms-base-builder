@@ -1,3 +1,60 @@
+## 18.1.84
+
+### Corvette picker
+- Close the Corvette selection menu after choosing a ship. Keep its button labeled Select Corvette and show the selected ship below it.
+- Remove freighters from selectable ship lists and selection lookup in both Main and Expedition saves. Preserve Corvette health warnings and repair actions.
+
+## 18.1.83
+
+### WASD navigation and export responsiveness
+- Fixed WASD being blocked by the sidebar Asset Browser's background listener, including restored workspaces. Active transforms and controller sessions still retain input ownership.
+- Kept the progress overlay visible from export confirmation through scene checks, ship validation, verified writes and list refresh.
+- Reduced repeated save copying during comparison checks and stopped rebuilding the save-key translation table for every nested value. Preservation checks, backups and stale-save protection remain in place.
+
+## 18.1.82
+
+## Cockpit selector stability and feature help
+
+- Fix changing/garbled cockpit selector labels by retaining their strings for the dialog and undo/redo lifetime. The reviewed cockpit list stays stable; changed or removed entries require reopening instead of redirecting a selection.
+- Add Swap Cockpit Order to both BBE menus, retaining the Optimizer Settings shortcut. The swap changes scene export order immediately, never physical placement. Ordinary and optimized exports use that order; saving the .blend keeps it with the project, and Undo/Redo works.
+- Add clearer hover descriptions, contextual How this works popups and BBE Feature Help. Topics explain cockpit order, optimizer settings, Corvette export, keep-build repair, file replacement, recovery and WASD navigation, including when changes take effect and what can undo them. Help is local and does not modify data.
+
+## Ship warnings, keep-build repair and new-slot export
+
+- Check Corvette health as soon as a save is loaded. The shared I/O selector highlights affected builds in red, explains the problem and identifies ship slots consistently as 1–12. Missing-build Corvettes are also listed; the freighter stays separate.
+- Add Repair — Keep My Build directly below the selected build in I/O, in both the top bar and sidebar, and Repair Build in Ship Management. Repair retains the saved objects, transforms, colors and readable inventories, technology, hyperslots, class, stats and appearance. Invalid data resets are listed and require separate confirmation. A missing build can be supplied through scene export or Replace From File.
+- Add Overwrite Selected Ship / New Empty Ship Slot to ordinary and optimized Corvette Export to Save. New slots use the minimal Corvette ship record with exactly the scene objects; no template parts are added. Slots reserved by orphan builds are never treated as empty. Both Main and Expedition contexts are supported.
+- Never add a missing cockpit during repair or export. Show an unflyable-ship warning and allow the operation. Repairs without a cockpit keep their warning in the selector until the user adds one.
+- Stale selections, changed scenes or optimizer settings, changed save files and competing Ship Management drafts are rejected; verified backups precede writes. Preserve unrelated ships and freighter data.
+- Keep ordinary and optimized objects-only exports from overwriting or renaming a non-Corvette ship through an uncertain build link. Complete reviewed replacement remains available to correct the slot.
+- Preserve ship inventory, class and appearance when importing a Corvette from a game save, so Export Corvette works without first importing a .nmsship template. The source metadata survives saving and reopening the Blender project. Older projects can explicitly use the original Corvette selected in I/O while retaining their current edited parts.
+- Use the same save-point selection in the list, importer and Ship Management, including equal timestamps.
+- Show mismatched ship slots in red, with a brief reason and full details in Link Status. Keep the manager open and safe inventory edits available.
+- Keep Replace From File as a separate explicitly reviewed option. A complete .nmsship replaces ownership, inventories, appearance and the linked build together; objects-only replacement requires one correctly linked Corvette.
+- Require confirmation for duplicate build replacement. Preserve unrelated ships, builds, contexts and freighter data. Save Changes revalidates the draft, checks external changes, creates verified backups and rolls back failed writes.
+- Verified with English/obfuscated synthetic saves, the supplied report in memory, backup/rollback tests and Blender 5.1.2 / 5.2.2. No in-game repair validation is claimed.
+
+## Optional WASD navigation
+
+- Matching WASD Navigation toggles in the BBE dropdown and sidebar. Off by default; settings follow Blender add-on preferences.
+- Hold right mouse for look and WASD/arrow movement; Q/E moves vertically, Shift speeds up, Ctrl slows down and wheel adjusts speed. Release right mouse or Esc stops. Quick right-click retains the context menu.
+- Works in Object and Mesh Edit modes with left-click selection. Changes only the viewport, leaving camera view before movement; does not transform objects or the camera. Existing modal tools/controller sessions retain input.
+- Timers run only during navigation and stop on release, disable, file load or unregister. Native keymap and lifecycle checks passed in Blender 5.1.2 / 5.2.2.
+
+## Saved Asset Browser compatibility
+
+- Restore the thumbnail grid for older saved Asset Browser layouts that used an unlinked cube helper. Keep normal model objects out of automatic helper cleanup.
+
+## Opt-in Blender diagnostic tickets
+
+- Send captured BBE errors to the owner inbox as Blender Diagnostics after explicit approval, without Discord, an account, email, a private reporter link, replies or attachments.
+- Respect Blender Online Access and offline mode. Automatic prompts wait for online access and an idle 3D View. Preview the error and review the full local report before sending; reporting never enables networking.
+- Include BBE/Blender versions, platform and detailed proxy-pack availability. Redact common personal paths, credential fields and email addresses. No project, game save, screenshot or attachment is uploaded.
+- Use a separate bounded Python helper so sending does not block Blender. Failed sends remain local for manual retry; per-report identifiers prevent duplicates after a lost response. Status and Review / Send Last Error appear in Updates & Support.
+- Capture handled errors in Ship Management, import/export, recovery and other BBE operators, as well as uncaught execute/invoke exceptions. This does not collect native Blender crash dumps.
+
+Requires website support 2.1.0. Keep this installer staged until that endpoint is deployed. Local client/server integration, consent/offline tests and Blender 5.1.2 / 5.2.2 checks passed. Normal website support conversations remain available separately.
+
 ## 18.1.81
 
 ## Ship Management with uncertain Corvette links

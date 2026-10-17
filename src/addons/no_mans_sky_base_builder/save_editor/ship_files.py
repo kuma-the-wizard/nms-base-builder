@@ -17,13 +17,16 @@ def hashes(paths):
 def read(links):
     with progress_ui.Activity('Loading Ship Management') as progress:
         paths = [Path(p) for p in links]
-        latest = max(paths, key=lambda p: p.stat().st_mtime_ns)
+        latest = max(paths, key=lambda p: (p.stat().st_mtime_ns, str(p)))
         progress.update(.08, f'Loading {latest.name}')
-        root = SaveFile(latest).load()
+        save = SaveFile(latest)
+        root = save.load()
         progress.update(.72, 'Checking save files')
         watched = paths + [p.with_name('mf_' + p.name) for p in paths
                            if p.with_name('mf_' + p.name).exists()]
         current_hashes = hashes(watched)
+        if current_hashes[str(latest)] != save.source_hash:
+            raise ValueError('Save changed while reading. Refresh the save list and try again.')
         progress.update(1.0, 'Ship Management ready')
         return root, current_hashes, latest
 
@@ -38,8 +41,10 @@ def empty_slots(folder):
     return [i for i in range(1,16) if not any(p.exists() or p.with_name('mf_'+p.name).exists() for p in slot_paths(folder,i))]
 
 
-def commit(root, paths, expected, source=None, name=None, create=False):
+def commit(root, paths, expected, source=None, name=None, create=False, progress=None):
     """All files staged/verified first. No replace of occupied duplicate targets."""
+    if progress is not None:
+        return _commit(root, paths, expected, source, name, create, progress)
     title = 'Creating new save slot' if create else 'Saving Ship Management changes'
     with progress_ui.Activity(title) as progress:
         return _commit(root, paths, expected, source, name, create, progress)

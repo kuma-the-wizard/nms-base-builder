@@ -3,6 +3,7 @@
 Only Blender's main thread runs the timer and save operator. Recovery copies
 live under the shared backup folder, never beside or over a project file.
 """
+from .furby_errors import report_error
 import hashlib
 import json
 import os
@@ -327,7 +328,7 @@ class BBE_OT_open_recovery(bpy.types.Operator):
         if (path.suffix.lower() != '.blend'
                 or not any(root in path.parents for root in _recovery_roots())
                 or not path.is_file()):
-            self.report({'ERROR'}, 'Recovery copy is missing or outside the backup folder')
+            report_error(self, {'ERROR'}, 'Recovery copy is missing or outside the backup folder')
             return {'CANCELLED'}
         return bpy.ops.wm.open_mainfile(filepath=str(path))
 
@@ -344,7 +345,7 @@ class BBE_OT_recovery_now(bpy.types.Operator):
             path = _snapshot()
         except Exception as exc:
             _record_failure(exc)
-            self.report({'ERROR'}, f'Recovery copy failed: {exc}')
+            report_error(self, {'ERROR'}, f'Recovery copy failed: {exc}')
             return {'CANCELLED'}
         self.report({'INFO'}, f'Recovery copy saved: {path}')
         return {'FINISHED'}
@@ -366,7 +367,7 @@ class BBE_OT_open_backup_root(bpy.types.Operator):
             else:
                 subprocess.Popen(['xdg-open', str(root)])
         except (OSError, ValueError) as exc:
-            self.report({'ERROR'}, f'Could not open backup folder: {exc}')
+            report_error(self, {'ERROR'}, f'Could not open backup folder: {exc}')
             return {'CANCELLED'}
         return {'FINISHED'}
 
@@ -389,6 +390,8 @@ def draw_controls(layout, context, *, boxed=True):
         else:
             schedule.label(text='Manual only')
     box.label(text='Keeps the last 3 recovery saves')
+    from .save_editor.function_help import help_button
+    help_button(box, 'RECOVERY')
     status = box.row()
     status.alert = bool(_last_error)
     status.label(text=_status(prefs))

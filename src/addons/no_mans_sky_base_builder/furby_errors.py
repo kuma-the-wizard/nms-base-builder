@@ -1,4 +1,4 @@
-"""Local, bounded error reports. A browser review is always required to send."""
+"""Local, bounded error reports. Sending always requires explicit user approval."""
 import datetime
 import functools
 import hashlib
@@ -12,6 +12,7 @@ import queue
 import re
 import sys
 import traceback
+import uuid
 from urllib.parse import quote
 
 def redact(value):
@@ -27,7 +28,7 @@ class ErrorReporter:
     def __init__(self,product,version,environment='',directory=None):
         self.product,self.version,self.environment=product,version,environment
         self.directory=Path(directory or Path(os.environ.get('LOCALAPPDATA',Path.home()))/'Furby'/'Support Reports'/product)
-        self.queue=queue.Queue();self.seen=set();self.latest=None;self.logger=None
+        self.queue=queue.Queue();self.seen=set();self.latest=None;self.logger=None;self.context_info=None
     def claim_prompt(self,payload):
         fingerprint=hashlib.sha256((payload['title']+payload['description']).encode()).hexdigest()
         if fingerprint in self.seen or len(self.seen)>=20:return False
@@ -35,7 +36,11 @@ class ErrorReporter:
     def record(self,title,detail,enqueue=True):
         # Reporting must never turn an application error into another exception.
         try:
-            payload=dict(app=self.product,version=self.version,title=redact(title)[:160],description=redact(detail),environment=self.environment or platform.system(),createdUtc=datetime.datetime.now(datetime.timezone.utc).isoformat())
+            environment=self.environment or platform.system()
+            if self.context_info:
+                try:environment+=' / '+self.context_info()
+                except Exception:pass
+            payload=dict(report_id=uuid.uuid4().hex,app=self.product,version=self.version,title=redact(title)[:160],description=redact(detail),environment=environment,createdUtc=datetime.datetime.now(datetime.timezone.utc).isoformat())
             if self.logger is None:
                 self.directory.mkdir(parents=True,exist_ok=True)
                 self.logger=logging.Logger('furby-errors-'+self.product)
@@ -108,7 +113,10 @@ def startup_failure(error,product,version,gui=True):
 _active_reporter=None
 
 def report_error(operator,kinds,message):
-    if "ERROR" in kinds and _active_reporter is not None:_active_reporter.record(getattr(operator,"bl_label","Add-on error"),message)
+    if "ERROR" in kinds and _active_reporter is not None:
+        detail=str(message)
+        if sys.exc_info()[0] is not None:detail+='\n\n'+traceback.format_exc()
+        _active_reporter.record(getattr(operator,"bl_label","Add-on error"),detail)
     return operator.report(kinds,message)
 
 def guard_blender(reporter,package):

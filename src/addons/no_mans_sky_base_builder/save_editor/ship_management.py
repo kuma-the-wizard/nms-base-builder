@@ -1,4 +1,5 @@
 """Ship Management: isolated save draft and a draggable inventory grid."""
+from ..furby_errors import report_error
 import copy
 import json
 import math
@@ -9,7 +10,7 @@ import blf
 import gpu
 from bpy.app.handlers import persistent
 from gpu_extras.batch import batch_for_shader
-from . import ship_core as core, ship_inventory as catalog, ship_files
+from . import ship_core as core, ship_inventory as catalog, ship_files, ship_repair
 from .save_editor_utils import BaseType
 
 SESSION = None
@@ -69,6 +70,17 @@ def current_inventory():
 
 def store_inventory(inv):
     s=state();core.set_inventory(s['root'],s['context'],s['index'],s['container'],inv);s['dirty']=True
+    refresh_status(s)
+
+
+def refresh_status(s):
+    s['link_issues'] = core.inspect_links(s['root'])
+    s['slot_issues'] = {ctx: ship_repair.inspect_slots(s['root'], ctx)[0]
+                        for ctx in core.contexts(s['root'])}
+
+
+def pending_repair(s):
+    return any(p['context'] == s['context'] for p in s.get('repairs', []))
 
 
 def at(inv,pos):
@@ -89,7 +101,7 @@ def finish_dialog():
 class Dialog:
     def cancel(self,context):finish_dialog()
     def fail(self,exc):
-        self.report({'ERROR'},str(exc));finish_dialog();return {'CANCELLED'}
+        report_error(self, {'ERROR'},str(exc));finish_dialog();return {'CANCELLED'}
 
 
 class BBE_OT_ship_class(Dialog,bpy.types.Operator):
@@ -286,6 +298,125 @@ class BBE_OT_ship_insert(Dialog,bpy.types.Operator):
         finish_dialog();return {'FINISHED'}
 
 
+class BBE_OT_ship_replace_file(Dialog, bpy.types.Operator):
+    bl_idname = 'bbe.ship_replace_file'
+    bl_label = 'Replace / Repair Ship'
+    filepath: bpy.props.StringProperty(subtype='FILE_PATH')
+    filter_glob: bpy.props.StringProperty(default='*.nmsship;*.json;*.txt;*.nmsbase;*.nmsprefab', options={'HIDDEN'})
+    mode: bpy.props.EnumProperty(name='Replacement', items=[
+        ('FULL', 'Replace entire ship', 'Replace ship, inventories, appearance and build from a complete Corvette package'),
+        ('OBJECTS', 'Replace build objects only', 'Keep the ship record, inventories and appearance; requires a correctly linked Corvette')])
+
+    def invoke(self, context, event):
+        s = state()
+        self._session = s
+        self._target = (s['context'], s['index'])
+        s['busy'] = True
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+    def draw(self, context):
+        self.layout.prop(self, 'mode')
+        self.layout.label(text='Full replacement requires a complete .nmsship package.')
+        self.layout.label(text='Next: review destination and linked builds. No save writes yet.')
+
+    def execute(self, context):
+        try:
+            s = state()
+            if s is not getattr(self, '_session', None) or self._target != (s['context'], s['index']):
+                raise ValueError('The selected save or ship changed; choose the replacement again.')
+            payload = ship_repair.read_replacement(self.filepath, self.mode)
+            records = ship_repair.linked_builds(s['root'], *self._target)
+            if self.mode == 'OBJECTS':
+                ship_repair.make_plan(s['root'], *self._target, payload, self.mode)
+            s['replacement_review'] = dict(payload=payload, mode=self.mode,
+                context=self._target[0], index=self._target[1], records=records,
+                source=Path(self.filepath).name, fingerprint=ship_repair.fingerprint(s['root']))
+            bpy.ops.bbe.ship_replace_review('INVOKE_DEFAULT')
+            return {'FINISHED'}
+        except Exception as exc:
+            return self.fail(exc)
+
+
+class BBE_OT_ship_replace_review(Dialog, bpy.types.Operator):
+    bl_idname = 'bbe.ship_replace_review'
+    bl_label = 'Review Ship Replacement'
+    anchor: bpy.props.IntProperty(name='Keep destination metadata from build record', min=1)
+    confirm_duplicates: bpy.props.BoolProperty(name='Replace ALL duplicate linked builds listed above', default=False)
+    confirm_target: bpy.props.BoolProperty(name='I confirm this destination and the replacement shown above', default=False)
+
+    def invoke(self, context, event):
+        s = state()
+        review = s.get('replacement_review')
+        if review is None:
+            return self.fail(ValueError('Choose a replacement file first.'))
+        self._session = s
+        self._review = review
+        self.anchor = review['records'][0] + 1 if review['records'] else 1
+        self.confirm_duplicates = self.confirm_target = False
+        return context.window_manager.invoke_props_dialog(self, width=700, confirm_text='Stage Replacement')
+
+    def draw(self, context):
+        s = state(); r = self._review; l = self.layout
+        from .function_help import help_button
+        help_button(l, 'REPLACE')
+        ship = core.ships(s['root'], r['context'])[r['index']]
+        l.label(text=f"Destination: {r['context']} / Slot {r['index'] + 1:02} / {core.get(ship, 'Name') or 'Unnamed / empty'}", icon='ERROR')
+        l.label(text=f"Source: {r['source']}")
+        full = r['mode'] == 'FULL'
+        l.label(text='REPLACE ENTIRE SHIP' if full else 'REPLACE BUILD OBJECTS ONLY')
+        if full:
+            l.label(text=f"New Corvette: {core.get(r['payload']['ship'], 'Name')} / {len(r['payload']['objects'])} parts")
+            l.label(text='Replaces ship record, cargo, technology, class, stats, hyperslots and appearance.')
+            l.label(text='Appearance: package settings' if r['payload'].get('custom') is not None else 'Appearance: default Corvette settings (package has no appearance record)')
+        else:
+            l.label(text=f"New build: {len(r['payload']['objects'])} parts")
+            l.label(text='Keeps ship, cargo, technology, class, stats, hyperslots and appearance.')
+        from .corvette_actions import warning
+        warning(l, r['payload']['objects'])
+        bases = core.get(core.player(s['root'], r['context']), 'PersistentPlayerBases', [])
+        box = l.box(); box.label(text='Build records replaced:')
+        for number in r['records']:
+            base = bases[number]
+            box.label(text=f"Record {number + 1}: {core.get(base, 'Name') or 'Unnamed'} ({len(core.get(base, 'Objects', []))} parts)")
+        if not r['records']:
+            box.label(text='No linked build: create one for this slot.')
+        if len(r['records']) > 1:
+            box.prop(self, 'anchor')
+            box.prop(self, 'confirm_duplicates')
+        l.label(text='Other ship slots and the freighter are preserved.')
+        l.label(text='This stages a draft. Save Changes creates verified backups before writing.')
+        l.prop(self, 'confirm_target')
+
+    def cancel(self, context):
+        if SESSION is getattr(self, '_session', None):
+            SESSION.pop('replacement_review', None)
+        finish_dialog()
+
+    def execute(self, context):
+        try:
+            s = state(); r = self._review
+            if s is not self._session or s.get('replacement_review') is not r:
+                raise ValueError('This replacement review expired.')
+            if ship_repair.fingerprint(s['root']) != r['fingerprint']:
+                raise ValueError('The draft changed; review the replacement again.')
+            if not self.confirm_target:
+                raise ValueError('Confirm the destination before staging replacement.')
+            plan = ship_repair.make_plan(s['root'], r['context'], r['index'], r['payload'], r['mode'],
+                anchor=self.anchor - 1 if r['records'] else None, replace_duplicates=self.confirm_duplicates)
+            draft = ship_repair.apply_plan(s['root'], plan)
+            plans = [*s.get('repairs', []), plan]
+            ship_repair.validate_reviewed_draft(s['original'], draft, plans)
+            s['root'] = draft; s['repairs'] = plans; s['dirty'] = True
+            s.pop('replacement_review', None)
+            refresh_status(s)
+            s['selected'] = (0, 0); s['move_special'] = None
+            s['error'] = f"Replacement staged for slot {r['index'] + 1}. Review, then Save Changes."
+        except Exception as exc:
+            return self.fail(exc)
+        finish_dialog(); return {'FINISHED'}
+
+
 class BBE_OT_ship_save(Dialog,bpy.types.Operator):
     bl_idname='bbe.ship_save';bl_label='Save Ship Changes'
     def invoke(self,context,event):return context.window_manager.invoke_props_dialog(self,width=610)
@@ -295,17 +426,20 @@ class BBE_OT_ship_save(Dialog,bpy.types.Operator):
         for p in s['links']:l.label(text=str(p))
         l.label(text='Both save points will receive this draft, based on the latest save.')
         l.label(text='Verified backups are created before replacement.')
+        for plan in s.get('repairs', []):
+            l.label(text=f"REPLACE {plan['context']} slot {plan['index']+1}: " + ('entire ship' if plan['mode']=='FULL' else 'build objects'), icon='ERROR')
         if any(s.get('link_issues', {}).values()):
-            l.label(text='Existing uncertain ownership records will be preserved exactly.', icon='INFO')
+            l.label(text='Other uncertain ownership records will be preserved exactly.', icon='INFO')
         for ctx in core.contexts(s['root']):
             count=sum(core.occupied(v) for v in core.ships(s['root'],ctx));l.label(text=f'{ctx}: {count} owned ships')
     def execute(self,context):
         try:
             s=state()
-            core.validate_draft(s['original'],s['root'])
+            ship_repair.validate_reviewed_draft(s['original'],s['root'],s.get('repairs', []))
             if s['root']==s['original']:raise ValueError('No changes to save')
             backups=ship_files.commit(s['root'],s['links'],s['hashes'])
             s['original']=copy.deepcopy(s['root']);s['dirty']=False;_,s['hashes'],s['source']=ship_files.read(s['links'])
+            s['repairs'] = []; refresh_status(s)
             s['error']=f'Saved. {len(backups)} verified backups created.'
             s['source_scene'].nms_save_data.refresh_bases_list()
         except Exception as exc:return self.fail(exc)
@@ -319,7 +453,7 @@ class BBE_OT_ship_link_status(Dialog,bpy.types.Operator):
     def draw(self,context):
         s=state();l=self.layout
         l.label(text='Inventory, technology, class, stats and hyperslot edits remain available.')
-        l.label(text='Contexts with uncertain links keep their saved ownership records unchanged.')
+        l.label(text='Replace / Repair Ship reviews a specific replacement; other uncertain records stay unchanged.')
         l.label(text='Move Up/Down and Add Corvette are locked only in those contexts.')
         l.label(text='Duplicate Save / Clear Builds requires valid links in all contexts.')
         for ctx,issues in s.get('link_issues',{}).items():
@@ -328,6 +462,11 @@ class BBE_OT_ship_link_status(Dialog,bpy.types.Operator):
             for issue in issues[:8]:
                 for line in textwrap.wrap(issue,90):box.label(text=line)
             if len(issues)>8:box.label(text=f'{len(issues)-8} additional link warnings in this context.')
+            for index, messages in s.get('slot_issues', {}).get(ctx, {}).items():
+                if messages:
+                    box.label(text=f"Slot {index+1:02}: {core.get(core.ships(s['root'],ctx)[index], 'Name') or 'Unnamed / empty'}", icon='ERROR')
+                    for message in messages:
+                        for line in textwrap.wrap(message,90):box.label(text=line)
     def execute(self,context):
         finish_dialog();return {'FINISHED'}
 
@@ -453,8 +592,8 @@ def flush_frame():
 
 def layout_geometry(region):
     w,h=region.width,region.height
-    cell=min(105,max(48,(w-290)/10),max(48,(h-270)/6))
-    return 255,h-145,cell,cell
+    cell=min(105,max(48,(w-290)/10),max(48,(h-300)/6))
+    return 255,h-170,cell,cell
 
 
 def draw_overlay(self):
@@ -464,25 +603,29 @@ def draw_overlay(self):
     region=bpy.context.region;w,h=region.width,region.height
     FRAME={'pos':[],'colour':[],'icon_pos':[],'icon_uv':[],'overlay_pos':[],'overlay_colour':[],'text':[]}
     gpu.state.blend_set('ALPHA');rect(0,0,w,h,(.022,.03,.045,1));self._buttons=[];self._cells=[];self._popup_buttons=[]
-    def button(x,y,bw,title,action,active=False,enabled=True):
+    def button(x,y,bw,title,action,active=False,enabled=True,warning=None):
         rect(x,y,bw,27,(.12,.31,.45,1) if active else (.09,.12,.17,1))
-        text(x+7,y+8,title,12,(.88,.91,.96,1) if enabled else (.4,.44,.5,1),width=bw-10)
+        text(x+7,y+(15 if warning else 8),('! ' if warning else '')+title,11 if warning else 12,(1,.32,.32,1) if warning else (.88,.91,.96,1) if enabled else (.4,.44,.5,1),width=bw-10)
+        if warning:text(x+7,y+3,warning,9,(1,.48,.48,1),width=bw-10)
         if enabled:self._buttons.append((x,y,bw,27,action))
     text(18,h-31,'SHIP MANAGEMENT (BETA)',20)
     text(320,h-30,'Inventory & Technology',19)
     dirty=s.get('dirty',False);text(w-185,h-28,'Unsaved draft' if dirty else 'Saved snapshot',13)
     for i,ctx in enumerate(core.contexts(s['root'])):button(18+i*112,h-70,106,'Main' if ctx=='Main' else 'Expedition',('context',ctx),s['context']==ctx)
     owned=core.ships(s['root'],s['context'])
-    restricted=bool(s.get('link_issues',{}).get(s['context']))
-    if any(s.get('link_issues',{}).values()):
+    restricted=bool(s.get('link_issues',{}).get(s['context'])) or pending_repair(s)
+    slot_issues=s.get('slot_issues',{}).get(s['context'],{})
+    if any(s.get('link_issues',{}).values()) or any(slot_issues.values()):
         button(600,h-38,220,'Ownership notice / Link Status',('links',None))
     for i,ship in enumerate(owned):
         label=core.get(ship,'Name') or ('Unnamed ship' if core.occupied(ship) else 'EMPTY')
-        button(18,h-110-i*30,216,f'{i+1:02}  {label}',('ship',i),i==s['index'])
+        button(18,h-110-i*30,216,f'{i+1:02}  {label}',('ship',i),i==s['index'],warning=next(iter(slot_issues.get(i,[])),None))
     button(18,h-490,103,'Move Up',('move',-1),enabled=not restricted);button(131,h-490,103,'Move Down',('move',1),enabled=not restricted)
     button(18,h-526,216,'Add Minimal Corvette',('add',None),enabled=not restricted)
     cls=core.get(core.get(core.get(owned[s['index']],'Inventory',{}),'Class',{}),'InventoryClass','—')
     button(18,h-562,216,'Ship Class: '+cls,('class',None))
+    button(18,h-598,103,'Repair Build...',('repair',None))
+    button(131,h-598,103,'Replace File...',('replace',None))
     button(18,75,216,'Save Changes...',('save',None));button(18,38,216,'Close',('close',None))
     button(w-37,h-38,28,'X',('close',None))
     for i,(container,label) in enumerate((('Inventory_TechOnly','Technology'),('Inventory','Cargo'))):
@@ -492,6 +635,15 @@ def draw_overlay(self):
         text(18,105,'Ship links locked — see Link Status',11,(1,.75,.38,1),216)
     if not core.occupied(ship):
         text(275,h-140,'Empty slot — select an owned ship to edit.' if restricted else 'Empty ship slot - add a minimal Corvette to begin.',16)
+        flush_frame();gpu.state.blend_set('NONE');return
+    messages=slot_issues.get(s['index'],[])
+    if messages:
+        text(255,h-137,'! '+messages[0],12,(1,.38,.38,1),w-275)
+        text(255,h-155,'Repair keeps your saved build and readable ship data. Link Status shows all issues.',11,(1,.65,.65,1),w-275)
+    try:
+        inv=current_inventory();core.validate_inventory(inv)
+    except (ValueError,TypeError,KeyError,AttributeError):
+        text(255,h-190,'Inventory cannot be edited safely. Repair Build can retain its parts and review data resets.',13,(1,.45,.45,1),w-275)
         flush_frame();gpu.state.blend_set('NONE');return
     for i,(label,action) in enumerate((('Add item','insert'),('Edit / Roll','edit'),('Remove','remove'),('Unlock All','unlock'),('Move Hyperslot','special'))):
         button(255+i*112,h-108,105,label,(action,None))
@@ -592,7 +744,7 @@ class BBE_OT_ship_management_window(bpy.types.Operator):
     bl_description='Manage ship slots, technology, cargo and supercharged slots'
     def invoke(self,context,event):
         global SESSION,HANDLER,ACTIVE_UI
-        if context.area.type!='VIEW_3D':self.report({'ERROR'},'Open Ship Management in the 3D View');return {'CANCELLED'}
+        if context.area.type!='VIEW_3D':report_error(self, {'ERROR'},'Open Ship Management in the 3D View');return {'CANCELLED'}
         try:
             if SESSION is None:raise ValueError('Open Ship Management from a Corvette save')
             self._area=context.area;self._space=context.space_data;self._ui_flags={p:getattr(self._space,p) for p in ('show_region_ui','show_region_toolbar','show_region_header')}
@@ -602,7 +754,7 @@ class BBE_OT_ship_management_window(bpy.types.Operator):
             HANDLER=bpy.types.SpaceView3D.draw_handler_add(draw_overlay,(self,),'WINDOW','POST_PIXEL')
             ACTIVE_UI=self
             context.window_manager.modal_handler_add(self);context.area.tag_redraw();return {'RUNNING_MODAL'}
-        except Exception as exc:self.report({'ERROR'},str(exc));return {'CANCELLED'}
+        except Exception as exc:report_error(self, {'ERROR'},str(exc));return {'CANCELLED'}
     def close(self):
         global SESSION,HANDLER,ACTIVE_UI
         if HANDLER:bpy.types.SpaceView3D.draw_handler_remove(HANDLER,'WINDOW')
@@ -675,6 +827,8 @@ class BBE_OT_ship_management_window(bpy.types.Operator):
                         s['busy']=True
                         if op=='class':bpy.ops.bbe.ship_class('INVOKE_DEFAULT')
                         elif op=='links':bpy.ops.bbe.ship_link_status('INVOKE_DEFAULT')
+                        elif op=='replace':bpy.ops.bbe.ship_replace_file('INVOKE_DEFAULT')
+                        elif op=='repair':bpy.ops.bbe.corvette_repair_keep('INVOKE_DEFAULT', in_manager=True)
                         elif op=='stats':bpy.ops.bbe.ship_stats('INVOKE_DEFAULT')
                         elif op=='add':bpy.ops.bbe.ship_add('INVOKE_DEFAULT')
                         elif op=='save':bpy.ops.bbe.ship_save('INVOKE_DEFAULT')
@@ -828,15 +982,16 @@ class BBE_OT_ship_management(bpy.types.Operator):
                 index=core.get(core.player(root,ctx),'PrimaryShip',0)
             if type(index) is not int or not 0<=index<12 or not core.occupied(owned[index]):
                 index=next((i for i,ship in enumerate(owned) if core.occupied(ship)),0)
-            SESSION=dict(root=root,original=copy.deepcopy(root),hashes=hashes,source=source,links=links,context=ctx,index=index,container='Inventory_TechOnly',selected=(0,0),busy=False,error='',link_issues=issues)
+            SESSION=dict(root=root,original=copy.deepcopy(root),hashes=hashes,source=source,links=links,context=ctx,index=index,container='Inventory_TechOnly',selected=(0,0),busy=False,error='',link_issues=issues,repairs=[])
+            refresh_status(SESSION)
             SOURCE_WINDOW=context.window;SESSION['source_scene']=context.scene
             open_manager_window(context.window_manager)
             return {'FINISHED'}
         except Exception as exc:
-            SESSION=None;self.report({'ERROR'},str(exc));return {'CANCELLED'}
+            SESSION=None;report_error(self, {'ERROR'},str(exc));return {'CANCELLED'}
 
 
-CLASSES=(BBE_PG_ship_catalog_item,BBE_PG_ship_catalog,BBE_UL_ship_catalog,BBE_PG_ship_keep,BBE_PG_ship_copy,BBE_PG_ship_stat,BBE_OT_ship_class,BBE_OT_ship_stats,BBE_OT_ship_add,BBE_OT_ship_item,BBE_OT_ship_insert,BBE_OT_ship_save,BBE_OT_ship_link_status,BBE_OT_ship_duplicate,BBE_OT_ship_move_hyperslot,BBE_OT_ship_discard,BBE_OT_ship_lost,BBE_OT_ship_management_window,BBE_OT_ship_management)
+CLASSES=(BBE_PG_ship_catalog_item,BBE_PG_ship_catalog,BBE_UL_ship_catalog,BBE_PG_ship_keep,BBE_PG_ship_copy,BBE_PG_ship_stat,BBE_OT_ship_class,BBE_OT_ship_stats,BBE_OT_ship_add,BBE_OT_ship_item,BBE_OT_ship_insert,BBE_OT_ship_replace_file,BBE_OT_ship_replace_review,BBE_OT_ship_save,BBE_OT_ship_link_status,BBE_OT_ship_duplicate,BBE_OT_ship_move_hyperslot,BBE_OT_ship_discard,BBE_OT_ship_lost,BBE_OT_ship_management_window,BBE_OT_ship_management)
 
 def register():
     for cls in CLASSES:bpy.utils.register_class(cls)

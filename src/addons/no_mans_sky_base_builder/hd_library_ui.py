@@ -1,4 +1,5 @@
 """One-click detailed proxies, with a one-time download when needed."""
+from .furby_errors import report_error
 import textwrap
 from pathlib import Path
 import bpy
@@ -172,7 +173,7 @@ class BBE_OT_hd_remove(bpy.types.Operator):
             hd_library.remove_installed(confirmed)
             builder_v2.get_asset_index(rebuild=True)
         except (OSError, ValueError, RuntimeError) as exc:
-            self.report({'ERROR'}, str(exc))
+            report_error(self, {'ERROR'}, str(exc))
             return {'CANCELLED'}
         self.report({'INFO'}, 'HD pack deleted. Click Detailed Proxies to download it again.')
         redraw()

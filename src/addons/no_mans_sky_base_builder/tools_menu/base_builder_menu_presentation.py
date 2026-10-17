@@ -3,7 +3,7 @@
 import bpy
 from ..tools import asset_browser_presentation
 from ..save_editor import save_editor_presentation
-from .. import icons, hd_library, hd_library_ui, project_recovery
+from .. import icons, hd_library, hd_library_ui, project_recovery, wasd_navigation
 
 class VIEW3D_PT_nms_io_panel(bpy.types.Panel):
     """ Save Files Browser """
@@ -58,6 +58,12 @@ class VIEW3D_PT_nms_base_builder(bpy.types.Panel):
         pcoll = icons.get_asset_icons_pcoll()
         
         
+        wasd_navigation.draw_controls(layout, context)
+        from ..save_editor.corvette_optimizer import draw_cockpit_controls
+        from ..save_editor.function_help import help_button
+        draw_cockpit_controls(layout)
+        help_button(layout, text='BBE Feature Help')
+        layout.separator()
         proxy_box = layout.column(align=True)
         proxy_box.label(text="Switch Proxy Quality")
         proxy_column = proxy_box.row(align=False)

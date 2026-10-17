@@ -1,4 +1,5 @@
 import json
+import hashlib
 import struct
 import lz4.block
 from pathlib import Path
@@ -21,6 +22,7 @@ class SaveFile:
     def load(self):
         with open(self.path, "rb") as f:
             raw = f.read()
+        self.source_hash = hashlib.sha256(raw).hexdigest()
         offset = 0
         
         # I dont understand this portion
@@ -144,7 +146,9 @@ class SaveFile:
         save_type = self.context or data[SaveTranslation.active_context]
         key_base_list = SaveTranslation.base_context if save_type == "Main" else SaveTranslation.expedition_context
         ship_ownsership = data[key_base_list][SaveTranslation.player_state_data][SaveTranslation.ship_ownership]
-        return ship_ownsership[user_data][SaveTranslation.base_name]
+        if type(user_data) is not int or not 0 <= user_data < len(ship_ownsership):
+            return 'Default'
+        return ship_ownsership[user_data].get(SaveTranslation.base_name, 'Default')
     
     def get_base_name(self, base):
         

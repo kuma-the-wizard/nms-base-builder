@@ -42,6 +42,10 @@ def export(objects, identifier, links, base_name=None, progress=None):
             save = SaveFile(path)
             save.load()
             base = save.search_base_with_identifier(identifier)
+            if base is not None:
+                from . import ship_repair, ship_core
+                ship_repair.require_objects_destination(save.json_data,
+                    save.context or ship_core.get(save.json_data, 'ActiveContext'), base)
             if base is None:
                 raise ValueError(f'Corvette not found in {path.name}; reselect or repin it')
             base[K.objects] = translate_to_obf_data(copy.deepcopy(objects))

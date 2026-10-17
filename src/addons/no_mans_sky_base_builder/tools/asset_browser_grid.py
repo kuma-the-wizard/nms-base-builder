@@ -375,10 +375,39 @@ def _saved_browser_target(window):
     if len(areas) < 2 or areas[0].type != 'PROPERTIES':
         return None
     pinned = areas[0].spaces.active.pin_id
-    if not _is_browser_pin(pinned):
+    if not (_is_browser_pin(pinned) or _is_legacy_browser_layout(areas)):
         return None
     right = areas[1]
     return right if right.type in {'PROPERTIES', 'IMAGE_EDITOR'} else None
+
+
+def _is_legacy_browser_layout(areas):
+    """Older launchers pinned an unlinked cube, not the newer tagged mesh.
+
+    Recognize that only inside its dedicated saved browser layout. Do not
+    broaden the scene-cleanup predicate: a similarly named model is user data.
+    """
+    if len(areas) != 2 or areas[0].type != 'PROPERTIES':
+        return False
+    left = areas[0].spaces.active
+    obj = left.pin_id
+    if (obj is None or getattr(obj, 'type', None) != 'MESH'
+            or obj.name != 'Asset Browser Window' or not obj.use_fake_user
+            or 'ObjectID' in obj
+            or obj.users_collection or not left.use_pin_id
+            or left.context != 'CONSTRAINT'):
+        return False
+    mesh = obj.data
+    if (len(mesh.vertices), len(mesh.edges), len(mesh.polygons)) not in {
+            (0, 0, 0), (8, 12, 6)}:
+        return False
+    right = areas[1]
+    if right.type == 'IMAGE_EDITOR':
+        return not right.spaces.active.show_region_header
+    if right.type == 'PROPERTIES':
+        return (right.spaces.active.pin_id == obj
+                and right.spaces.active.context == 'MODIFIER')
+    return False
 
 
 def _is_browser_pin(obj):

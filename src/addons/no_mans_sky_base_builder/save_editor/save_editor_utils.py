@@ -34,6 +34,7 @@ class BaseData:
     parts_count: int
     save_slot = []
     save_context = None
+    issues = ()
     
     
     def __init__(self, index = None ,base = None, ship_ownership = None):
@@ -49,7 +50,7 @@ class BaseData:
         if len(base_name.strip()) == 0:
             base_name = "unknow_name"
             
-        ship_ownership_entry = ship_ownership[user_data] if in_base_type == BaseType.CORVETTE and 0 <= user_data < len(ship_ownership) else None
+        ship_ownership_entry = ship_ownership[user_data] if in_base_type == BaseType.CORVETTE and type(user_data) is int and isinstance(ship_ownership, list) and 0 <= user_data < len(ship_ownership) else None
         if ship_ownership_entry is not None and in_base_type == BaseType.CORVETTE and base_name == "Default":
             base_name = ship_ownership_entry[SaveTranslation.base_name]
         
@@ -214,13 +215,26 @@ def _extract_context_bases(save_slot, save_context, save_file=None):
     space_station = []
     
     total_parts_count = 0
+    from . import ship_core, ship_repair
+    try:
+        slot_issues, unassigned = ship_repair.inspect_slots(save_file.json_data, save_context)
+    except (ValueError, TypeError, KeyError) as exc:
+        slot_issues, unassigned = {}, [str(exc)]
     
     #record only what is necessary rather than entire data about base
     for index,base in enumerate(obfuscated_persistent_base_data):
+        if not isinstance(base, dict):
+            continue
         
         base_data = BaseData(index, base, ship_ownsership)
         base_data.save_slot = save_slot
         base_data.save_context = save_context
+        if base_data.base_type == BaseType.CORVETTE:
+            slot = base_data.user_data
+            base_data.issues = (tuple(slot_issues.get(slot, ())) if type(slot) is int and 0 <= slot < 12
+                                else ('Build has no valid ship slot. Review Link Status in Ship Management.',))
+            if not slot_issues and unassigned:
+                base_data.issues = tuple(unassigned)
         
         #store list of corvettes and bases in their respective list
         match base_data.base_type :
@@ -243,7 +257,13 @@ def _extract_context_bases(save_slot, save_context, save_file=None):
             total_parts_count += base_data.parts_count
     
     # sort list of corvettes with restpect to their user_data, because user_data represents location of corvette in ship slots making it wasy to read
-    corvettes.sort(key=lambda x: x.user_data)
+    corvettes.sort(key=lambda x: x.user_data if type(x.user_data) is int else 99)
+    missing = []
+    for index, issues in slot_issues.items():
+        if 'Corvette ship has no linked build.' in issues:
+            ship = ship_core.ships(save_file.json_data, save_context)[index]
+            missing.append(dict(context=save_context, index=index,
+                                name=ship_core.get(ship, 'Name') or 'Unnamed', issues=issues))
     
     # return combined list in an object for easy search
     return {
@@ -255,6 +275,8 @@ def _extract_context_bases(save_slot, save_context, save_file=None):
         "spacestation":space_station,
         "stations":space_station,
         "total_parts_count": total_parts_count,
+        "missing_corvettes": missing,
+        "link_warnings": unassigned,
     }
     
     
@@ -266,13 +288,15 @@ def extract_bases_list_from_save(save_slot, progress=None):
     if progress:
         progress.update(.65, 'Reading bases and Corvettes')
     result = {'corvettes': [], 'bases': [], 'external': [], 'space': [], 'spacestation': [], 'freighters': [], 'freighter': None, 'total_parts_count': 0,
-              'source_file': sf.path.name, 'source_mtime': sf.path.stat().st_mtime}
+              'source_file': sf.path.name, 'source_mtime': sf.path.stat().st_mtime,
+              'source_path': str(sf.path), 'source_hash': sf.source_hash,
+              'missing_corvettes': [], 'link_warnings': []}
     for context, key in (('Main', SaveTranslation.base_context), ('Season', SaveTranslation.expedition_context)):
         if progress:
             progress.update(.70 if context == 'Main' else .85,
                             f'Indexing {context} save')
         player = sf.json_data.get(key, {}).get(SaveTranslation.player_state_data, {})
-        if not player.get(SaveTranslation.persistent_player_bases):
+        if not player:
             continue
         data = _extract_context_bases(save_slot, context, sf)
         for name in ('corvettes','bases','external','space','spacestation'):
@@ -282,21 +306,19 @@ def extract_bases_list_from_save(save_slot, progress=None):
             if result['freighter'] is None:
                 result['freighter'] = data['freighter']
         result['total_parts_count'] += data['total_parts_count']
+        result['missing_corvettes'].extend(data['missing_corvettes'])
+        result['link_warnings'].extend(data['link_warnings'])
     result['stations'] = result['spacestation']
     return result
 
 
 # active save is most recently modified save file
 def get_lastes_save_file_location(save_slot):
-    save_1 = Path(save_slot[0])
-    save_2 = Path(save_slot[1])
-    
-    # store when last time these save files were modified
-    m_time_save_1 = os.path.getmtime(save_1)
-    m_time_save_2 = os.path.getmtime(save_2)
-    
-    # return the save file that was most recently modified
-    return save_1 if m_time_save_1 > m_time_save_2 else save_2
+    paths = [Path(p) for p in save_slot if p and Path(p).exists()]
+    if not paths:
+        raise ValueError('No readable save points in this slot.')
+    # Match Ship Management, including deterministic equal-timestamp selection.
+    return max(paths, key=lambda p: (p.stat().st_mtime_ns, str(p)))
     
 # helper function that gives returns save file object for easier loading
 def get_save_file(save_slot):
@@ -307,7 +329,7 @@ def get_save_file(save_slot):
 
 
 # impart a base from save file
-def import_paticular_base_from_save(base_identifier, save_slot, progress=None):
+def import_paticular_base_from_save(base_identifier, save_slot, progress=None, with_ship_source=False):
     save_file = get_save_file(save_slot)
     if progress:
         progress.update(.1, 'Loading selected save point')
@@ -325,11 +347,26 @@ def import_paticular_base_from_save(base_identifier, save_slot, progress=None):
         return None
         
     #return bases after translating it to engish
+    raw_base = searched_base
     searched_base = save_translation.translate_to_eng_data(searched_base)
+    package, source_error = None, ''
+    if with_ship_source and base_identifier.base_type == BaseType.CORVETTE:
+        from . import ship_package
+        try:
+            # Capture metadata from the very same read as the imported parts.
+            bases = save_file.get_bases_list_pointer()
+            actual = [i for i, base in enumerate(bases) if base is raw_base]
+            if len(actual) != 1:
+                raise ValueError('The imported build is duplicated; use Repair Corvette in I/O.')
+            from . import ship_core
+            ctx = save_file.context or ship_core.get(save_file.json_data, 'ActiveContext')
+            package = ship_package.from_save(save_file.json_data, ctx, actual[0])
+        except (ValueError, TypeError, KeyError) as exc:
+            source_error = str(exc)
     if progress:
         progress.update(.95, 'Build data ready')
 
-    return searched_base
+    return (searched_base, package, source_error) if with_ship_source else searched_base
     
 #save a base to save file
 def save_base_to_save_file(objects_data, base_identifier, save_slot, base_name=None, progress=None):
@@ -347,6 +384,10 @@ def save_base_to_save_file(objects_data, base_identifier, save_slot, base_name=N
         in_base = save_file.search_base_with_identifier(base_identifier)
         if in_base is None:
             return
+        if base_identifier.base_type == BaseType.CORVETTE:
+            from . import ship_repair, ship_core
+            ship_repair.require_objects_destination(save_file.json_data,
+                save_file.context or ship_core.get(save_file.json_data, 'ActiveContext'), in_base)
         
         # here update objects list with list provided
         in_base[SaveTranslation.objects] = save_translation.translate_to_obf_data(objects_data)

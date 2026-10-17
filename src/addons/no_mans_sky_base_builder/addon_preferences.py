@@ -3,11 +3,20 @@ from bpy.props import (BoolProperty, EnumProperty, FloatProperty, IntProperty,
                        PointerProperty, StringProperty)
 
 from .save_editor import save_editor_utils
+from .wasd_navigation import settings_changed
 
 ADDON_ID = __package__
 
 class NMSAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = ADDON_ID
+
+    bbe_wasd_enabled: BoolProperty(
+        name='WASD Navigation', default=False, update=settings_changed,
+        description='Hold right mouse in the 3D view for WASD movement and mouse look (Object and Mesh Edit modes); quick right-click still opens the context menu',
+    )
+    bbe_wasd_speed: FloatProperty(name='Navigation Speed', default=10, min=.01, max=10000,
+        description='View movement in Blender units per second; mouse wheel adjusts while navigating')
+    bbe_wasd_sensitivity: FloatProperty(name='Look Sensitivity', default=1, min=.1, max=5)
 
     bbe_recovery_mode: EnumProperty(
         name='Project Recovery',

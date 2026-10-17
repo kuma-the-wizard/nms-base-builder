@@ -22,11 +22,13 @@ def put(obj, name, value):
 
 def translate(value, english=True):
     mapping = {v: k for k, v in KEYS.items()} if english else KEYS
-    if isinstance(value, dict):
-        return {mapping.get(k, k): translate(v, english) for k, v in value.items()}
-    if isinstance(value, list):
-        return [translate(v, english) for v in value]
-    return value
+    def visit(node):
+        if isinstance(node, dict):
+            return {mapping.get(k, k): visit(v) for k, v in node.items()}
+        if isinstance(node, list):
+            return [visit(v) for v in node]
+        return node
+    return visit(value)
 
 
 def contexts(root):
@@ -106,6 +108,34 @@ def validate_links(root, context):
         raise ValueError(issues[0] + ' Reordering, creation and removing builds require valid links. Inventory edits remain available in Ship Management.')
 
 
+def inventory_edit_context(original, draft, context):
+    """Comparison-only view allowing validated edits to existing inventories.
+
+    Copy the dictionaries/lists we replace, without copying unrelated save
+    data. Neither input is mutated; this view must never become an editable draft.
+    """
+    context_key = key(original, 'BaseContext' if context == 'Main' else 'ExpeditionContext')
+    expected_context = dict(original[context_key])
+    expected_player = dict(player(original, context))
+    put(expected_context, 'PlayerStateData', expected_player)
+    before, after = ships(original, context), ships(draft, context)
+    allowed = list(before)
+    put(expected_player, 'ShipOwnership', allowed)
+    for index, (old_ship, new_ship) in enumerate(zip(before, after)):
+        if not occupied(old_ship):
+            continue
+        for field in ('Inventory', 'Inventory_TechOnly', 'Inventory_Cargo'):
+            field_key = key(old_ship, field)
+            if field_key not in old_ship or field_key not in new_ship:
+                continue
+            if old_ship[field_key] != new_ship[field_key]:
+                validate_inventory(translate(new_ship[field_key]))
+                if allowed[index] is old_ship:
+                    allowed[index] = dict(old_ship)
+                allowed[index][field_key] = new_ship[field_key]
+    return expected_context
+
+
 def validate_draft(original, draft):
     """Permit local inventory edits while preserving uncertain save topology.
 
@@ -116,26 +146,14 @@ def validate_draft(original, draft):
     """
     if contexts(original) != contexts(draft):
         raise ValueError('Save contexts changed; reopen Ship Management.')
-    expected = copy.deepcopy(original)
+    expected = dict(original)
     for context, issues in inspect_links(original).items():
         context_key = key(original, 'BaseContext' if context == 'Main' else 'ExpeditionContext')
         if not issues:
             validate_links(draft, context)
-            expected[context_key] = copy.deepcopy(draft[context_key])
+            expected[context_key] = draft[context_key]
             continue
-        before = ships(original, context)
-        after = ships(draft, context)
-        allowed = ships(expected, context)
-        for index, (old_ship, new_ship) in enumerate(zip(before, after)):
-            if not occupied(old_ship):
-                continue
-            for field in ('Inventory', 'Inventory_TechOnly', 'Inventory_Cargo'):
-                field_key = key(old_ship, field)
-                if field_key not in old_ship or field_key not in new_ship:
-                    continue
-                if old_ship[field_key] != new_ship[field_key]:
-                    validate_inventory(translate(new_ship[field_key]))
-                    allowed[index][field_key] = copy.deepcopy(new_ship[field_key])
+        expected[context_key] = inventory_edit_context(original, draft, context)
         if expected[context_key] != draft[context_key]:
             label = 'Expedition' if context == 'Season' else 'Main'
             raise ValueError(f'{label}: uncertain ownership records changed. Only inventory, class and stat edits can be saved in this context.')

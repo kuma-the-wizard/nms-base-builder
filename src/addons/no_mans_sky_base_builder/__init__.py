@@ -1,3 +1,4 @@
+from .furby_errors import report_error
 import json
 import base64
 import os
@@ -16,7 +17,7 @@ from bpy.props import (BoolProperty, EnumProperty, FloatProperty, IntProperty,
 from bpy.types import Panel, PropertyGroup
 from pathlib import Path
 
-from . import builder, icons, part, preset, group, builder_v2, viewport_overlay, undo_guard, interchange, project_recovery, progress_ui, compatibility
+from . import builder, icons, part, preset, group, builder_v2, viewport_overlay, undo_guard, interchange, project_recovery, progress_ui, compatibility, wasd_navigation
 from .base_properties import NMSBaseProperties
 from .addon_preferences import NMSAddonPreferences
 from .part_overrides import line
@@ -66,7 +67,7 @@ def _clear_build_source(scene):
     if block and not any(other != scene and other.get('bbe_build_source_text') == old_name
                          for other in bpy.data.scenes):
         block.use_fake_user = False
-    for key in ('bbe_build_source_text', 'bbe_build_source_suffix'):
+    for key in ('bbe_build_source_text', 'bbe_build_source_suffix', 'bbe_ship_source_error'):
         if key in scene:
             del scene[key]
 
@@ -275,24 +276,31 @@ class NMSMain(PropertyGroup):
         progress.update(1.0, 'Base file ready')
         return len(data['Objects']), base_type
 
-    def export_ship_file(self, file_path, template_path=''):
+    def export_ship_file(self, file_path, template_path='', use_selected_save=False, warnings=None):
         with progress_ui.Activity('Exporting Corvette package') as progress:
-            return self._export_ship_file(file_path, template_path, progress)
+            return self._export_ship_file(file_path, template_path, progress, use_selected_save, warnings)
 
-    def _export_ship_file(self, file_path, template_path, progress):
+    def _export_ship_file(self, file_path, template_path, progress, use_selected_save=False, warnings=None):
         data = self.serialise(objects_only=True, progress=progress,
                               progress_range=(.02, .72))
         if bpy.context.scene.nms_base_tool.string_base_type != 'PlayerShipBase':
             raise ValueError('The current scene is not marked as a Corvette')
         progress.update(.76, 'Reading ship package metadata')
         source = _restore_build_source(bpy.context.scene)
+        if use_selected_save:
+            from .save_editor import ship_package
+            source = ship_package.selected_save_source(bpy.context)
         if source is None or source.kind != 'ship':
             if not template_path:
-                raise ValueError('Import a .nmsship first, or choose a .nmsship template to retain ship class, inventory, and appearance')
+                reason = bpy.context.scene.get('bbe_ship_source_error')
+                raise ValueError(reason or 'Ship metadata is missing. Re-import this Corvette from Save with this version, or choose its complete .nmsship as the ship package template.')
             source = interchange.BuildFile.read(template_path)
         if source.kind != 'ship':
             raise ValueError('Ship template must be a complete .nmsship package')
         payload = source.ship_bytes(data, bpy.context.scene.nms_base_tool.string_base)
+        from .save_editor.ship_repair import cockpit_warning
+        if warnings is not None and cockpit_warning(data):
+            warnings.append(cockpit_warning(data))
         progress.update(.92, 'Writing Corvette package')
         interchange.atomic_write(file_path, payload)
         progress.update(1.0, 'Corvette package ready')
@@ -664,6 +672,12 @@ class NMS_PT_hero_panel(Panel):
         fourth_column.operator("object.nms_visit_patreon", text = "Patreon", icon_value = pateron_icon.icon_id)
         fourth_column.operator("object.nms_visit_steam_games", text = "Steam Games", icon_value = steam_icon.icon_id)
         
+        wasd_navigation.draw_controls(layout, context)
+        from .save_editor.corvette_optimizer import draw_cockpit_controls
+        draw_cockpit_controls(layout)
+        from .save_editor.function_help import help_button
+        help_button(layout, text='BBE Feature Help')
+
         workspace_row = layout.row(align=True)
         workspace_box = workspace_row.box()
         workspace_column = workspace_box.column(align = False)
@@ -1093,7 +1107,7 @@ class ImportBuildFile(bpy.types.Operator):
         try:
             count, kind = context.scene.nms_main.import_build_file(self.filepath, self.parts_base_type)
         except (OSError, ValueError, KeyError, TypeError) as exc:
-            self.report({'ERROR'}, f'Could not import build: {exc}')
+            report_error(self, {'ERROR'}, f'Could not import build: {exc}')
             return {'CANCELLED'}
         label = {'parts': 'build', 'base': 'base', 'ship': 'Corvette'}[kind]
         self.report({'INFO'}, f'Imported {count} {label} parts; no game save changed')
@@ -1116,7 +1130,7 @@ class ExportBaseFile(bpy.types.Operator):
         try:
             count, base_type = context.scene.nms_main.export_base_file(path)
         except (OSError, ValueError, KeyError, TypeError) as exc:
-            self.report({'ERROR'}, f'Could not export base: {exc}')
+            report_error(self, {'ERROR'}, f'Could not export base: {exc}')
             return {'CANCELLED'}
         self.report({'INFO'}, f'Exported {count} {base_type} parts to {path}')
         return {'FINISHED'}
@@ -1135,26 +1149,39 @@ class ExportShipFile(bpy.types.Operator):
         name='Ship package template', subtype='FILE_PATH',
         description='Required for a new Corvette that was not imported from .nmsship')
     filter_glob: bpy.props.StringProperty(default='*.nmsship', options={'HIDDEN'})
+    use_selected_save: bpy.props.BoolProperty(name='Use selected save Corvette', default=False,
+        description='Use class, inventory, technology and appearance from the Corvette selected in I/O; export current Blender parts')
 
     def draw(self, context):
         source = context.scene.get('bbe_build_source_suffix')
         if source != '.nmsship':
-            self.layout.label(text='New ship: select an existing .nmsship template')
-            self.layout.prop(self, 'template_path')
+            self.layout.prop(self, 'use_selected_save')
+            if self.use_selected_save:
+                selected = context.scene.nms_save_data.get_current_base_identifiers()
+                if selected and selected.base_type == 'PlayerShipBase' and type(selected.user_data) is int and 0 <= selected.user_data < 12:
+                    self.layout.label(text=f'{selected.save_context} / Ship slot {selected.user_data + 1}: {selected.base_name}')
+                    self.layout.label(text='Exports current Blender parts with this saved ship’s stats and inventory.')
+                else:
+                    self.layout.label(text='Select the original Corvette in I/O first.', icon='ERROR')
+            else:
+                self.layout.label(text='Or choose a complete .nmsship template:')
+                self.layout.prop(self, 'template_path')
         else:
             self.layout.label(text='Class, inventory and appearance come from imported ship.')
 
     def execute(self, context):
         path = str(Path(self.filepath).with_suffix('.nmsship'))
         try:
-            count = context.scene.nms_main.export_ship_file(path, self.template_path)
+            warnings = []
+            count = context.scene.nms_main.export_ship_file(path, self.template_path, self.use_selected_save, warnings)
         except (OSError, ValueError, KeyError, TypeError) as exc:
-            self.report({'ERROR'}, f'Could not export Corvette: {exc}')
+            report_error(self, {'ERROR'}, f'Could not export Corvette: {exc}')
             return {'CANCELLED'}
-        self.report({'INFO'}, f'Exported {count} Corvette parts to {path}')
+        self.report({'WARNING'} if warnings else {'INFO'}, f'Exported {count} Corvette parts to {path}' + (' — ' + ' '.join(warnings) if warnings else ''))
         return {'FINISHED'}
 
     def invoke(self, context, event):
+        self.use_selected_save = False
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
@@ -2319,10 +2346,17 @@ def register_core():
     hab_windows.register()
     undo_guard.register()
     project_recovery.register()
+    wasd_navigation.register()
     from .save_editor import corvette_optimizer
+    from .save_editor import function_help
+    function_help.register()
     corvette_optimizer.register()
     from .save_editor import ship_management
     ship_management.register()
+    from .save_editor import corvette_io
+    corvette_io.register()
+    from .save_editor import corvette_actions
+    corvette_actions.register()
     
     if reset_plugin_state not in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.append(reset_plugin_state)
@@ -2345,15 +2379,22 @@ def unregister():
         bpy.app.handlers.load_post.remove(schedule_prefab_catalogue)
     del bpy.types.WindowManager.bbe_prefabs
     del bpy.types.WindowManager.bbe_prefab_index
+    wasd_navigation.unregister()
     project_recovery.unregister()
     undo_guard.unregister()
     from .tools import asset_browser_grid, asset_browser_sidebar
     asset_browser_sidebar.unregister()
     asset_browser_grid.unregister()
     from .save_editor import ship_management
+    from .save_editor import corvette_io
+    from .save_editor import corvette_actions
+    corvette_actions.unregister()
+    corvette_io.unregister()
     ship_management.unregister()
     from .save_editor import corvette_optimizer
     corvette_optimizer.unregister()
+    from .save_editor import function_help
+    function_help.unregister()
     from . import release_updates
     release_updates.unregister()
     from . import hd_library_ui, stages, decals, hab_windows

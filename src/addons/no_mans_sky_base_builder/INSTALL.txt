@@ -1,4 +1,4 @@
-BASE BUILDER EXTENDED 18.1.81
+BASE BUILDER EXTENDED 18.1.84
 Base Builder by DjMonkey; Extended by Furiousfurby.
 Based on Kuma's 18.0.0 release.
 
@@ -116,3 +116,54 @@ On first use, choose Yes in Enable auto updates? to allow Blender internet
 access and automatic update checks. No or dismissing the prompt keeps checks
 off and remembers your choice. Change it later in Updates & Support.
 Updates are installed when you choose; downloads remain verified installer ZIPs.
+
+WASD NAVIGATION (OPTIONAL)
+Toggle WASD Navigation in either the top BBE menu or the BBE sidebar.
+In Object or Mesh Edit mode, hold right mouse and use WASD or arrows to move.
+Q/E moves down/up, Shift speeds up, Ctrl slows down, wheel changes speed.
+Release right mouse or Esc stops. Quick right-click opens the context menu.
+Requires Blender left-click selection. Moves only the viewport, never camera objects.
+
+SHIP WARNINGS AND REPAIR
+The I/O Corvette selector shows affected builds in red as soon as the save loads.
+Select a warning entry to see its explanation and Repair - Keep My Build button.
+Repair keeps the saved parts and their transforms/colors, plus readable ship
+inventories, technology, hyperslots, class, stats and appearance. Any unreadable
+data resets are listed and require a separate confirmation. Backups precede writes.
+Slots use numbers 1-12; the freighter is listed separately. Missing-build Corvette
+slots also appear in the selector. An invalid slot link requires explicit review
+in Ship Management rather than guessing a destination.
+Red Ship Management rows explain slot/build mismatches. Link Status has details.
+Repair Build stages the same keep-build repair inside Ship Management.
+Replace From File is separate: review a complete .nmsship replacement, or replace
+only build objects on a correctly linked Corvette. Duplicate builds require explicit
+confirmation. Save Changes creates verified backups before writing the reviewed
+draft. Unrelated ships and freighter data are preserved. Structural checks do not
+guarantee in-game functionality.
+
+COCKPIT ORDER AND FEATURE HELP
+Swap Cockpit Order is in the top BBE menu, the BBE sidebar and Optimizer Settings.
+Choose any two cockpits and confirm. This immediately exchanges their export order;
+it never moves their models. Both ordinary and optimized exports use this order.
+Save the .blend to retain it with that project. Ctrl+Z undoes the scene change;
+opening another project uses that project's own order. The game save changes only
+when you export. Canceling Optimizer Settings does not undo a confirmed scene swap.
+Hover over controls for a short explanation. How this works and BBE Feature Help
+provide local information boxes about effects, timing, preservation and recovery.
+
+EXPORT TO AN EXISTING SHIP OR A NEW SLOT
+Corvette Export to Save and Optimize & Export offer Overwrite Selected Ship or
+New Empty Ship Slot. New slots use a minimal Corvette ship record and exactly
+the scene objects. No template parts are inserted. Existing destinations retain
+readable ship data; any data resets require review. A slot with an orphan build
+is not considered empty. Main and Expedition destinations are listed separately.
+Repair and export never insert a missing cockpit: they warn that the ship will
+be unflyable, but allow the operation. Add a cockpit yourself when ready to fly it.
+
+EXPORTING A CORVETTE IMPORTED FROM SAVE
+New imports retain the original ship's inventory, class and appearance for Export
+Corvette (.nmsship). That source information is saved with the Blender project.
+For an older project with existing edits, select its original Corvette in I/O,
+then check Use selected save Corvette in the export file dialog. This keeps the
+current Blender parts and uses that explicitly selected ship's metadata. A full
+.nmsship template is still available for projects without saved ship metadata.

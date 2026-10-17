@@ -12,6 +12,8 @@ _classes=[]
 _client=None
 _reporter=None
 _restore_errors=None
+_diagnostics=None
+_error_prompt_open=False
 
 def _online_access_locked():
     return not bpy.app.online_access and bpy.app.online_access_override
@@ -96,9 +98,14 @@ def start(action='check'):
     _client.start(action)
 
 def register(product, installed, category):
-    global _client, _reporter, _restore_errors
+    global _client, _reporter, _restore_errors, _diagnostics, _error_prompt_open
     from .furby_errors import ErrorReporter, guard_blender
+    from .blender_diagnostics import DiagnosticClient
+    _diagnostics=DiagnosticClient();_error_prompt_open=False
     _reporter=ErrorReporter(product,installed,platform.system()+" / Blender "+bpy.app.version_string)
+    if product=='bbe':
+        from . import hd_library
+        _reporter.context_info=lambda:'Detailed proxy pack: '+('available' if hd_library.available() else 'unavailable')
     _client=UpdateClient(product,installed,require_consent=(product=='bbe'))
     prefix='furby_'+product
     class Check(bpy.types.Operator):
@@ -166,23 +173,61 @@ def register(product, installed, category):
             query=urlencode(dict(app=product,version=installed,environment=platform.system()+' / Blender '+bpy.app.version_string))
             bpy.ops.wm.url_open(url='https://furiousfurby.com/support/?'+query)
             return {'FINISHED'}
+    class ErrorReview(bpy.types.Operator):
+        bl_idname=prefix+'.review_diagnostic';bl_label='Review full report'
+        payload_json: StringProperty(options={'HIDDEN'})
+        def execute(self,context):
+            try:
+                path=_reporter.save(json.loads(self.payload_json))
+                bpy.ops.wm.path_open(filepath=str(path))
+            except Exception:
+                self.report({'ERROR'},'Could not open the local diagnostic report. Nothing was sent.')
+                return {'CANCELLED'}
+            return {'FINISHED'}
     class ErrorPrompt(bpy.types.Operator):
-        bl_idname=prefix+'.error_report_prompt';bl_label='Send an error report?'
+        bl_idname=prefix+'.error_report_prompt';bl_label='Send diagnostics to FuriousFurby?'
         payload_json: StringProperty(options={'HIDDEN'})
         def invoke(self,context,event):
-            self.payload_json=json.dumps(_reporter.latest or {})
-            return context.window_manager.invoke_props_dialog(self,width=540)
+            global _error_prompt_open
+            if _error_prompt_open or _diagnostics.busy:return {'CANCELLED'}
+            if not self.payload_json:self.payload_json=json.dumps(_reporter.latest or {})
+            if not json.loads(self.payload_json):
+                self.report({'INFO'},'No diagnostic report is available yet.');return {'CANCELLED'}
+            _error_prompt_open=True
+            try:return context.window_manager.invoke_props_dialog(self,width=630,confirm_text='Send Diagnostics')
+            except Exception:
+                _error_prompt_open=False
+                raise
         def draw(self,context):
             import textwrap
-            for line in textwrap.wrap(json.loads(self.payload_json or '{}').get('title','An app error occurred'),60):self.layout.label(text=line)
-            self.layout.label(text='Open a report to review and attach screenshots or videos.')
-            self.layout.label(text='Choose Discord or anonymous reporting on the website.')
-            self.layout.label(text='Nothing is uploaded until you select Send report there.')
+            payload=json.loads(self.payload_json or '{}');l=self.layout
+            for line in textwrap.wrap(payload.get('title','An app error occurred'),75):l.label(text=line)
+            l.label(text='Sends error details, app/Blender versions and proxy-pack availability.')
+            l.label(text='Filed as Blender Diagnostics. No login, account, or replies.')
+            l.label(text='No project, game save, screenshot or attachment is included.')
+            l.label(text='Common personal paths and credentials are redacted; review before sending.')
+            box=l.box()
+            preview=payload.get('description','').splitlines()
+            for line in preview[:5]:
+                for part in textwrap.wrap(line,85)[:2]:box.label(text=part)
+            l.operator(ErrorReview.bl_idname).payload_json=self.payload_json
+            if not getattr(bpy.app,'online_access',False):
+                l.label(text='Online Access is off. Enable it in Preferences to send.',icon='INFO')
+            if _diagnostics.message:
+                for line in textwrap.wrap(_diagnostics.message,80):l.label(text=line)
+        def cancel(self,context):
+            global _error_prompt_open
+            _error_prompt_open=False
         def execute(self,context):
-            payload=json.loads(self.payload_json or '{}')
-            if payload:
+            global _error_prompt_open
+            _error_prompt_open=False
+            try:
+                payload=json.loads(self.payload_json or '{}')
                 _reporter.save(payload)
-                bpy.ops.wm.url_open(url=_reporter.url(payload))
+                _diagnostics.start(payload,consent=True,online=bool(getattr(bpy.app,'online_access',False)))
+            except Exception as exc:
+                self.report({'ERROR'},str(exc));return {'CANCELLED'}
+            self.report({'INFO'},_diagnostics.message+' Status is in Updates & Support.')
             return {'FINISHED'}
     class Panel(bpy.types.Panel):
         bl_idname=prefix.upper()+'_PT_updates';bl_label='Updates & Support'
@@ -206,7 +251,12 @@ def register(product, installed, category):
             layout.operator(Online.bl_idname,**icons.ui_icon('URL'))
             layout.operator(Email.bl_idname,**icons.ui_icon('URL'))
             layout.label(text='Support@furiousfurby.com')
-    for kind,cls in [('OT_check',Check),('OT_download',Download),('OT_auto',Auto),('OT_auto_choice',AutoChoice),('OT_folder',Folder),('OT_report',Report),('OT_online',Online),('OT_email',Email),('OT_error_prompt',ErrorPrompt),('PT_updates',Panel)]:
+            layout.separator();layout.label(text='Blender Diagnostics')
+            row=layout.row();row.enabled=bool(_reporter.latest) and not _diagnostics.busy and not _error_prompt_open
+            row.operator(ErrorPrompt.bl_idname,text='Review / Send Last Error')
+            if _diagnostics.message:
+                for line in textwrap.wrap(_diagnostics.message,40):layout.label(text=line)
+    for kind,cls in [('OT_check',Check),('OT_download',Download),('OT_auto',Auto),('OT_auto_choice',AutoChoice),('OT_folder',Folder),('OT_report',Report),('OT_online',Online),('OT_email',Email),('OT_error_review',ErrorReview),('OT_error_prompt',ErrorPrompt),('PT_updates',Panel)]:
         cls.__name__=prefix.upper()+'_'+kind
         bpy.utils.register_class(cls);_classes.append(cls)
     _restore_errors=guard_blender(_reporter,__package__)
@@ -216,26 +266,42 @@ def register(product, installed, category):
 def poll():
     if _client is None:return None
     if _offer_auto_updates():return 2.0
-    if _reporter is not None and not bpy.app.background:
+    diagnostic_before=_diagnostics.message
+    _diagnostics.poll(online=bool(getattr(bpy.app,'online_access',False)))
+    if _reporter is not None and not bpy.app.background and not _error_prompt_open and not _diagnostics.busy and bool(getattr(bpy.app,'online_access',False)):
         import queue
         try:payload=_reporter.queue.get_nowait()
         except queue.Empty:payload=None
         if payload:
-            _reporter.latest=payload
-            try:getattr(bpy.ops,'furby_'+_client.product).error_report_prompt('INVOKE_DEFAULT')
-            except (AttributeError,RuntimeError):
-                # A busy/modal context must not discard the user's prompt.
-                _reporter.queue.put(payload)
+            shown=False
+            manager=bpy.context.window_manager
+            if manager is not None and not manager.is_interface_locked:
+                for window in manager.windows:
+                    if getattr(window,'modal_operators',()):continue
+                    for area in window.screen.areas:
+                        if area.type!='VIEW_3D':continue
+                        region=next((r for r in area.regions if r.type=='WINDOW'),None)
+                        if region is None:continue
+                        try:
+                            with bpy.context.temp_override(window=window,area=area,region=region):
+                                result=getattr(bpy.ops,'furby_'+_client.product).error_report_prompt('INVOKE_DEFAULT',payload_json=json.dumps(payload))
+                            shown='RUNNING_MODAL' in result
+                        except (AttributeError,RuntimeError):pass
+                        if shown:break
+                    if shown:break
+            if not shown:_reporter.queue.put(payload)
     before=_client.message
     _client.poll()
-    if _client.busy or before!=_client.message:
+    if _client.busy or before!=_client.message or diagnostic_before!=_diagnostics.message:
         for window in bpy.context.window_manager.windows:
             for area in window.screen.areas:
                 if area.type=='VIEW_3D':area.tag_redraw()
-    return .5 if _client.busy else 2.0
+    return .5 if _client.busy or _diagnostics.busy else 2.0
 
 def unregister():
-    global _client, _reporter, _restore_errors
+    global _client, _reporter, _restore_errors, _diagnostics, _error_prompt_open
+    if _diagnostics:_diagnostics.close();_diagnostics=None
+    _error_prompt_open=False
     if _restore_errors:_restore_errors();_restore_errors=None
     _reporter=None
     if _client is not None:_client.close();_client=None

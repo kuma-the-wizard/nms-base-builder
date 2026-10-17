@@ -139,6 +139,13 @@ class ExportBaseToSave(bpy.types.Operator):
         data = getattr(context.scene, 'nms_save_data', None)
         return bool(data and data.has_selected_base())
 
+    def invoke(self, context, event):
+        data = context.scene.nms_save_data
+        selected = data.get_current_base_identifiers()
+        if selected and selected.base_type == save_editor_utils.BaseType.CORVETTE:
+            return bpy.ops.bbe.corvette_export('INVOKE_DEFAULT')
+        return self.execute(context)
+
     def execute(self, context):
         scene = context.scene
         save_data = scene.nms_save_data

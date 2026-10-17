@@ -4,6 +4,7 @@ draw_save_manager() holds the whole UI. The "Save Manager" dropdown in the
 viewport header (presentation/save_manager_menu.py) draws the same function
 into its popover, so the sidebar and the dropdown cannot drift apart.
 """
+from ..furby_errors import report_error
 
 import bpy
 import tempfile
@@ -52,7 +53,7 @@ class BBE_OT_backup_settings(bpy.types.Operator):
             with tempfile.TemporaryFile(dir=path):
                 pass
         except OSError as exc:
-            self.report({'ERROR'}, f'Backup folder is unavailable: {exc}')
+            report_error(self, {'ERROR'}, f'Backup folder is unavailable: {exc}')
             return {'CANCELLED'}
         prefs = context.preferences.addons[ADDON_ID].preferences
         prefs.nms_backup_folder_path = str(path) if self.folder.strip() else ''
@@ -74,7 +75,7 @@ class BBE_OT_refresh_save_counts(bpy.types.Operator):
         try:
             manager.refresh_bases_list()
         except Exception as exc:
-            self.report({'ERROR'}, f'Could not refresh save counts: {exc}')
+            report_error(self, {'ERROR'}, f'Could not refresh save counts: {exc}')
             return {'CANCELLED'}
         self.report({'INFO'}, 'Save counts refreshed from disk')
         return {'FINISHED'}
@@ -266,12 +267,18 @@ def draw_base_picker(container, save_data):
     base_index_row = se_column.row(align=True)
     selected = save_data.has_selected_base()
     base_index_row.alert = not selected
-    base_index_row.prop(save_data, "nms_base_index", text="", **icons.ui_icon("GEOMETRY_SET"))
+    if save_data.nms_base_type == BaseType.CORVETTE:
+        from . import corvette_io
+        corvette_io.draw_picker(base_index_row, save_data)
+    else:
+        base_index_row.prop(save_data, "nms_base_index", text="", **icons.ui_icon("GEOMETRY_SET"))
     if selected:
         selected_data = save_data.get_current_base_identifiers()
         if selected_data is not None:
-            selected_label = 'Freighter' if selected_data.base_type == BaseType.FREIGHTER else base_type
-            se_column.label(text=f"Selected {selected_label} in save: {selected_data.parts_count} parts")
+            if save_data.nms_base_type == BaseType.CORVETTE:
+                se_column.label(text=corvette_io.label(selected_data))
+            else:
+                se_column.label(text=f"Selected {base_type} in save: {selected_data.parts_count} parts")
             if selected_data.base_type != BaseType.EXTERNAL_BASE:
                 se_column.label(text=f"Other owned builds in save: {slot_total - selected_data.parts_count} parts")
 
@@ -285,18 +292,27 @@ def draw_base_picker(container, save_data):
             "object.nms_pin_base", **icons.ui_icon("PINNED"), text=" Pin for easy-access"
         )
 
+    if save_data.nms_base_type == BaseType.CORVETTE:
+        corvette_io.draw_status(se_column, save_data)
+        if save_data.extracted_base_data.get('missing_corvettes'):
+            notice = se_column.row(); notice.alert = True
+            notice.label(text='Missing Corvette builds: open the list to review / repair.', icon='ERROR')
     se_column.separator()
     import_export_row = se_column.row(align=True)
-    import_export_row.enabled = selected
+    import_row = import_export_row.row(align=True)
+    import_row.enabled = selected
     # Import button, this button will import the base to the scene.
-    import_export_row.operator(
+    import_row.operator(
         "object.nms_import_base_from_save", **icons.ui_icon("IMPORT"), text="Import from Save"
     )
 
     if save_data.nms_base_type != BaseType.EXTERNAL_BASE:
-        import_export_row.operator(
-            "object.nms_export_base_to_save", **icons.ui_icon("EXPORT"), text="Export to Save"
-            )
+        export_row = import_export_row.row(align=True)
+        export_row.operator_context = 'INVOKE_DEFAULT'
+        is_corvette = save_data.nms_base_type == BaseType.CORVETTE
+        export_row.enabled = selected or is_corvette
+        export_row.operator('bbe.corvette_export' if is_corvette else 'object.nms_export_base_to_save',
+                            **icons.ui_icon('EXPORT'), text='Export to Save...')
 
     # Standalone file export uses the build currently in Blender, independent
     # of save-slot selection and never writes the game save.
@@ -310,7 +326,6 @@ def draw_base_picker(container, save_data):
         station_reference.draw(se_column, bpy.context)
     elif save_data.nms_base_type == BaseType.CORVETTE:
         optimize_row = se_column.row()
-        optimize_row.enabled = selected
         corvette_optimizer.draw_row(optimize_row)
         management_row = se_column.row()
         management_row.operator_context = 'INVOKE_DEFAULT'

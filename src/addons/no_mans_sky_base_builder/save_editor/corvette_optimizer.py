@@ -1,13 +1,18 @@
 """Corvette priority editor and explicit optimized export for both Save Manager views."""
+from ..furby_errors import report_error
 import json
 from pathlib import Path
+from uuid import uuid4
 import bpy
+from bpy.app.handlers import persistent
 from .. import icons
 from .. import progress_ui
 from . import optimizer_core as core, optimizer_export
 from .save_editor_utils import BaseType
 
 _pending_optimizer_exports = {}
+_cockpit_dialogs = {}
+_no_cockpit_choices = ()
 
 
 def settings_file():
@@ -65,27 +70,58 @@ def read_state(state):
 def placed_cockpits(context):
     objects = [obj for obj in context.scene.objects
                if str(obj.get('ObjectID', '')).lstrip('^').upper().startswith('B_COK_')]
-    return sorted(objects, key=lambda obj: (obj.get('order', 0), obj.name))
+    # Match Builder.get_all_parts: stable scene order breaks duplicate order ties.
+    return sorted(objects, key=lambda obj: obj.get('order', 0))
+
+
+def cockpit_snapshot(context):
+    return (context.scene.session_uid,
+            tuple((obj.session_uid, obj.name, str(obj.get('ObjectID', '')), obj.get('order', 0))
+                  for obj in placed_cockpits(context)))
+
+
+def prepare_cockpit_choices(operator, context):
+    objects = placed_cockpits(context)
+    if len(objects) < 2:
+        raise ValueError('Place at least two Corvette cockpits before swapping their order.')
+    key = uuid4().hex
+    # Blender's enum callback borrows the strings. Retain them through redraws
+    # and undo/redo; store only plain data, never Blender object references.
+    _cockpit_dialogs[key] = dict(snapshot=cockpit_snapshot(context), items=tuple(
+        (str(index), f'{index + 1}. {obj.get("ObjectID", "")} — {obj.name}',
+         f'Cockpit {index + 1} in current export order. Location: {tuple(round(value, 2) for value in obj.location)}')
+        for index, obj in enumerate(objects)))
+    operator.choice_key = key
 
 
 def role_choices(self, context):
-    if context is None:
-        return []
-    return [(str(index), f'{index + 1}. {obj.get("ObjectID", "")} — {obj.name}',
-             f'Location: {tuple(round(value, 2) for value in obj.location)}')
-            for index, obj in enumerate(placed_cockpits(context))]
+    # RNA supplies OperatorProperties here, not the Python Operator instance.
+    return _cockpit_dialogs.get(self.choice_key, {}).get('items', _no_cockpit_choices)
+
+
+@persistent
+def clear_cockpit_choices(_=None):
+    _cockpit_dialogs.clear()
 
 
 class BBE_OT_swap_corvette_cockpits(bpy.types.Operator):
     bl_idname = 'bbe.swap_corvette_cockpits'
     bl_label = 'Swap Cockpit Order'
-    bl_description = 'Swap the saved order of two placed cockpits in this Blender scene'
+    bl_description = ('Immediately exchange two cockpits in this scene’s export order without moving them. '
+                      'Save the .blend to retain it; Ctrl+Z undoes it. The game save changes only when exported')
     bl_options = {'REGISTER', 'UNDO'}
 
-    first: bpy.props.EnumProperty(name='First', items=role_choices)
-    second: bpy.props.EnumProperty(name='Second', items=role_choices)
+    choice_key: bpy.props.StringProperty(options={'HIDDEN'})
+    first: bpy.props.EnumProperty(name='First cockpit', items=role_choices,
+        description='One of the two placed cockpits to exchange in export order; numbers show the current order')
+    second: bpy.props.EnumProperty(name='Second cockpit', items=role_choices,
+        description='The other cockpit to exchange with the first selection; its physical position stays unchanged')
 
     def invoke(self, context, event):
+        try:
+            prepare_cockpit_choices(self, context)
+        except ValueError as exc:
+            report_error(self, {'ERROR'}, str(exc)); return {'CANCELLED'}
         self.first = '0'
         self.second = '1'
         return context.window_manager.invoke_props_dialog(self, width=570, confirm_text='Swap Order')
@@ -98,17 +134,28 @@ class BBE_OT_swap_corvette_cockpits(bpy.types.Operator):
             return
         layout.prop(self, 'first')
         layout.prop(self, 'second')
-        layout.label(text='The optimizer preserves this order when exporting.', **icons.ui_icon('INFO'))
+        layout.label(text='Swap Order changes export order now. Neither cockpit moves.')
+        layout.label(text='Save the .blend to keep it. Ctrl+Z undoes the swap.')
+        layout.label(text='Ordinary and optimized exports both use this order.')
+        from .function_help import help_button
+        help_button(layout, 'COCKPIT')
+
+    def cancel(self, context):
+        _cockpit_dialogs.pop(self.choice_key, None)
 
     def execute(self, context):
+        reviewed = _cockpit_dialogs.get(self.choice_key)
+        if not reviewed or reviewed['snapshot'] != cockpit_snapshot(context):
+            report_error(self, {'ERROR'}, 'The cockpit list or order changed. Reopen Swap Cockpit Order and choose again.')
+            return {'CANCELLED'}
         objects = placed_cockpits(context)
         try:
             first, second = int(self.first), int(self.second)
         except (TypeError, ValueError):
-            self.report({'ERROR'}, 'Choose two placed parts')
+            report_error(self, {'ERROR'}, 'Choose two placed parts')
             return {'CANCELLED'}
         if first == second or min(first, second) < 0 or max(first, second) >= len(objects):
-            self.report({'ERROR'}, 'Choose two different placed parts')
+            report_error(self, {'ERROR'}, 'Choose two different placed parts')
             return {'CANCELLED'}
         # Normalize all placed part order values first: Blender duplicates and
         # newly added parts can have the same value, but serialization must be
@@ -208,7 +255,7 @@ class BBE_OT_optimizer_edit(bpy.types.Operator):
                     parts.pop(state.groups[gi].active_part)
             config = core.validate(config)
         except (ValueError, IndexError) as exc:
-            self.report({'ERROR'}, str(exc))
+            report_error(self, {'ERROR'}, str(exc))
             return {'CANCELLED'}
         populate(state, config)
         state.active_group = min(gi, max(0, len(state.groups) - 1))
@@ -245,6 +292,8 @@ class BBE_OT_optimizer_settings(bpy.types.Operator):
     def draw(self, context):
         state = context.window_manager.bbe_optimizer
         layout = self.layout
+        from .function_help import help_button
+        help_button(layout, 'OPTIMIZER')
         layout.label(text='Earlier entries are exported first. Select an entry and use the arrows.')
         columns = layout.split(factor=.30)
         for is_group, column in ((True, columns.column()), (False, columns.column())):
@@ -273,6 +322,8 @@ class BBE_OT_optimizer_settings(bpy.types.Operator):
         layout.label(text='Every saved field must match exactly. Different rotations, scales or colours are kept.', **icons.ui_icon('INFO'))
         layout.label(text='Applies to Optimize & Export only. Unlisted parts follow warning tiers, then names.')
         layout.operator_context = 'INVOKE_DEFAULT'
+        layout.separator()
+        layout.label(text='Separate scene edit: cockpit swaps apply immediately and are saved in the .blend.')
         layout.operator('bbe.swap_corvette_cockpits', text='Swap Placed Cockpit Order', **icons.ui_icon('ARROW_LEFTRIGHT'))
         layout.operator('bbe.optimizer_reset', **icons.ui_icon('LOOP_BACK'))
 
@@ -280,7 +331,7 @@ class BBE_OT_optimizer_settings(bpy.types.Operator):
         try:
             save_settings(read_state(context.window_manager.bbe_optimizer))
         except (OSError, ValueError, TypeError) as exc:
-            self.report({'ERROR'}, str(exc))
+            report_error(self, {'ERROR'}, str(exc))
             return {'CANCELLED'}
         self.report({'INFO'}, 'Corvette optimizer settings saved')
         return {'FINISHED'}
@@ -327,13 +378,15 @@ class BBE_OT_optimizer_export(bpy.types.Operator):
     expected_signature: bpy.props.StringProperty(default='', options={'HIDDEN'})
 
     def invoke(self, context, event):
+        if not self.pinned:
+            return bpy.ops.bbe.corvette_export('INVOKE_DEFAULT', optimized=True)
         try:
             with progress_ui.Activity('Preparing optimized export') as progress:
                 progress.update(.05, 'Collecting scene parts')
                 self._plan = prepare(context, self.pinned, progress)
                 progress.update(1.0, 'Review export details')
         except Exception as exc:
-            self.report({'ERROR'}, str(exc))
+            report_error(self, {'ERROR'}, str(exc))
             return {'CANCELLED'}
         return context.window_manager.invoke_props_dialog(self, width=540, confirm_text='Optimize & Export')
 
@@ -350,6 +403,8 @@ class BBE_OT_optimizer_export(bpy.types.Operator):
         layout.label(text=f"Identical objects to remove from export: {counts['removed']}")
         layout.label(text='Verified backups will be created before saving.', **icons.ui_icon('INFO'))
         layout.label(text='Your Blender objects stay in the scene.')
+        from .corvette_actions import warning
+        warning(layout, ordered)
 
     def execute(self, context):
         # The confirmation dialog must close before the viewport progress bar
@@ -405,9 +460,11 @@ class BBE_OT_optimizer_export(bpy.types.Operator):
                     self.report({'WARNING'}, f'Saved, but the save list could not refresh: {exc}')
                 progress.update(1.0, 'Export complete')
         except Exception as exc:
-            self.report({'ERROR'}, f'Optimized export failed: {exc}')
+            report_error(self, {'ERROR'}, f'Optimized export failed: {exc}')
             return {'CANCELLED'}
-        self.report({'INFO'}, f"Exported {counts['after']} objects; removed {counts['removed']} exact duplicates; {len(backups)} backups created")
+        from .ship_repair import cockpit_warning
+        warning = cockpit_warning(ordered)
+        self.report({'WARNING'} if warning else {'INFO'}, f"Exported {counts['after']} objects; removed {counts['removed']} exact duplicates; {len(backups)} backups created" + (' — ' + warning if warning else ''))
         return {'FINISHED'}
 
 
@@ -416,6 +473,13 @@ def draw_row(layout, pinned=False):
     row.operator_context = 'INVOKE_DEFAULT'
     row.operator('bbe.optimizer_export', **icons.ui_icon('EXPORT')).pinned = pinned
     row.operator('bbe.optimizer_settings', text='', **icons.ui_icon('PREFERENCES'))
+
+
+def draw_cockpit_controls(layout):
+    row = layout.row(align=True)
+    row.operator_context = 'INVOKE_DEFAULT'
+    row.operator('bbe.swap_corvette_cockpits', text='Swap Cockpit Order...', **icons.ui_icon('ARROW_LEFTRIGHT'))
+    row.operator('bbe.function_help', text='', icon='QUESTION').topic = 'COCKPIT'
 
 
 CLASSES = (BBE_PG_optimizer_part, BBE_PG_optimizer_group, BBE_PG_optimizer_settings,
@@ -428,9 +492,13 @@ def register():
     for cls in CLASSES:
         bpy.utils.register_class(cls)
     bpy.types.WindowManager.bbe_optimizer = bpy.props.PointerProperty(type=BBE_PG_optimizer_settings)
+    bpy.app.handlers.load_pre.append(clear_cockpit_choices)
 
 
 def unregister():
     del bpy.types.WindowManager.bbe_optimizer
     for cls in reversed(CLASSES):
         bpy.utils.unregister_class(cls)
+    if clear_cockpit_choices in bpy.app.handlers.load_pre:
+        bpy.app.handlers.load_pre.remove(clear_cockpit_choices)
+    clear_cockpit_choices()

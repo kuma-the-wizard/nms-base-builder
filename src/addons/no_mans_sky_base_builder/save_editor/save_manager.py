@@ -82,7 +82,7 @@ class SaveManager(bpy.types.PropertyGroup):
         name="base type",
         description="Type of the base, it can be a corvette and a normal planet base.",
         items = [
-            (BaseType.CORVETTE, "Corvette", "show list of corvettes and freighters",'AUTO',0),
+            (BaseType.CORVETTE, "Corvette", "Show saved Corvettes",'AUTO',0),
             (BaseType.BASE, "Planet", "show list of bases",'HOME',1),
             (BaseType.SPACE_BASE, "Space", "show list of space bases",'LIGHT_SUN',2),
             (BaseType.STATION, "Station", "Show owned station bases",'WORLD',4),
@@ -280,8 +280,6 @@ class SaveManager(bpy.types.PropertyGroup):
         enum_bases = [default_base_list_item]
         key = self.get_base_type_key(self.nms_base_type)
         entries = list(extracted_base_data.get(key, []))
-        if self.nms_base_type == BaseType.CORVETTE:
-            entries.extend(extracted_base_data.get('freighters', []))
         for ctx in ('Main', 'Season'):
             selected = [b for b in entries if b.save_context == ctx]
             if not selected:
@@ -289,9 +287,8 @@ class SaveManager(bpy.types.PropertyGroup):
             enum_bases.append(('', 'Main save' if ctx == 'Main' else 'Expedition', ''))
             for base in selected:
                 prefix = f'{base.user_data}. ' if base.base_type == BaseType.CORVETTE else ''
-                kind = ' (Freighter)' if base.base_type == BaseType.FREIGHTER else ''
                 ident = str(base.base_index) if ctx == 'Main' else f'Season:{base.base_index}'
-                enum_bases.append((ident, f'{prefix}{base.base_name}{kind} [{base.parts_count} parts]',
+                enum_bases.append((ident, f'{prefix}{base.base_name} [{base.parts_count} parts]',
                                    'Main save' if ctx == 'Main' else 'Expedition save'))
 
         return enum_bases
@@ -339,8 +336,9 @@ class SaveManager(bpy.types.PropertyGroup):
         #try to import json data from savefile and return error if data was not found
         with progress_ui.Activity('Reading save for import') as progress:
             progress.update(.08, 'Loading selected save point')
-            newly_imported_base = save_editor_utils.import_paticular_base_from_save(
-                base_identifiers, save_links, progress=progress)
+            imported_source = save_editor_utils.import_paticular_base_from_save(
+                base_identifiers, save_links, progress=progress, with_ship_source=True)
+            newly_imported_base, ship_source, source_error = imported_source or (None, None, '')
             progress.update(1.0, 'Importing models')
         if newly_imported_base is None:
             return "Error Importing base, base data is None"
@@ -358,6 +356,11 @@ class SaveManager(bpy.types.PropertyGroup):
         # Import json into scene
         nms_tools = context.scene.nms_main
         nms_tools.deserialise_from_data(nms_base_json)
+        from .. import _store_build_source
+        if ship_source is not None:
+            _store_build_source(context.scene, ship_source, '.nmsship')
+        elif source_error:
+            context.scene['bbe_ship_source_error'] = source_error
         #BUILDER.deserialise_from_data(nms_base_json)
         previous_objects = set(context.scene.objects)
         builder_v2.deserialise_from_data(nms_base_json)
@@ -368,6 +371,8 @@ class SaveManager(bpy.types.PropertyGroup):
             station_reference.imported_station(context, nms_base_json, imported)
             return "Station parts and reference imported; choose the exterior with the Outliner eyes"
         #return a string for operators for status message
+        if source_error:
+            return f'Imported {len(imported)} parts. Ship package export unavailable: {source_error}'
         if len(imported) < source_count:
             return f'Imported {len(imported)} of {source_count} parts (some source parts have no available model)'
         return f'Imported {len(imported)} parts into {context.scene.name}'
@@ -408,6 +413,10 @@ class SaveManager(bpy.types.PropertyGroup):
             progress.update(.95, 'Refreshing base list')
             self.refresh_bases_list()
             progress.update(1.0, 'Complete' if result else 'Base not found; nothing written')
+            if result and base_identifiers.base_type == BaseType.CORVETTE:
+                from .ship_repair import cockpit_warning
+                if cockpit_warning(serialised_base_objects_data):
+                    result += ' — ' + cockpit_warning(serialised_base_objects_data)
             return result
       
     # This functin collects data realated to base so that it can be identified in save file
@@ -421,8 +430,6 @@ class SaveManager(bpy.types.PropertyGroup):
         if not raw_index.isdigit():
             return None
         entries = list(SaveManager.extracted_base_data.get(self.get_base_type_key(), []))
-        if self.nms_base_type == BaseType.CORVETTE:
-            entries.extend(SaveManager.extracted_base_data.get('freighters', []))
         return next((b for b in entries if b.base_index == int(raw_index) and b.save_context == ctx), None)
 
     # Fucntion for UI to check if base list should be displayed or not

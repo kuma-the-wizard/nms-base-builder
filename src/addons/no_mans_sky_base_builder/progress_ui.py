@@ -63,6 +63,16 @@ def _draw():
         return
 
 
+class Range:
+    """Map a subtask onto its parent's visible progress without another overlay."""
+    def __init__(self, parent, start, end):
+        self.parent, self.start, self.end = parent, start, end
+
+    def update(self, fraction, detail=None):
+        fraction = min(1.0, max(0.0, float(fraction)))
+        self.parent.update(self.start + (self.end - self.start) * fraction, detail)
+
+
 class Activity:
     """Context-managed progress with cleanup on success and failure."""
 

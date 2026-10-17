@@ -1,9 +1,15 @@
 # Base Builder Extended
 
-Current standalone release: **18.1.81**. Windows x64, verified with Blender
+Current standalone release: **18.1.84**. Windows x64, verified with Blender
 5.1.2 and 5.2.2 LTS.
 
-[Download the installer and read the release notes](https://github.com/slipperystickers/nms-base-builder/releases/tag/v18.1.81).
+This update adds early Corvette warnings and reviewed keep-build repairs,
+one-step export to a new ship slot, saved ship metadata, optional WASD navigation,
+cockpit-order controls, restored Asset Browser layouts, faster export validation,
+and opt-in diagnostic tickets. The Corvette picker closes after selection and
+excludes freighters. The website diagnostic service is deployed and verified.
+
+[Download the installer and read the release notes](https://github.com/slipperystickers/nms-base-builder/releases/tag/v18.1.84).
 Install the attached plugin ZIP through Blender's **Install from Disk**, then
 restart Blender. This release adds independent rotating project recovery,
 fixes recovery timer interruptions, improves undo handling and build imports,
