@@ -1,4 +1,4 @@
-BASE BUILDER EXTENDED 18.1.78
+BASE BUILDER EXTENDED 18.1.79
 Base Builder by DjMonkey; Extended by Furiousfurby.
 Based on Kuma's 18.0.0 release.
 
@@ -22,6 +22,11 @@ INSTALL / UPDATE
 2. Edit > Preferences > Get Extensions > top-right menu > Install from Disk.
 3. Select the ZIP and enable Base Builder Extended.
 4. Restart all Blender windows after upgrading.
+If Charon Forge is enabled, BBE asks before activation. Continue disables
+Charon Forge and enables BBE; Cancel leaves Charon active and BBE inactive.
+BBE cannot intercept Charon's own installer. If Charon is enabled later,
+BBE warns that the session is incompatible; save work, close Blender, and
+restart with only one of the two add-ons enabled.
 For existing low-resolution curved bubble ducts, use Builder > Detailed Proxies.
 New pipes and bubble ducts added from the Asset Browser automatically join an
 endpoint of the selected pipe or bubble duct. Use Snap controls to cycle ends.

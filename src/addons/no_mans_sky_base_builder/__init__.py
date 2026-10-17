@@ -16,7 +16,7 @@ from bpy.props import (BoolProperty, EnumProperty, FloatProperty, IntProperty,
 from bpy.types import Panel, PropertyGroup
 from pathlib import Path
 
-from . import builder, icons, part, preset, group, builder_v2, viewport_overlay, undo_guard, interchange, project_recovery, progress_ui
+from . import builder, icons, part, preset, group, builder_v2, viewport_overlay, undo_guard, interchange, project_recovery, progress_ui, compatibility
 from .base_properties import NMSBaseProperties
 from .addon_preferences import NMSAddonPreferences
 from .part_overrides import line
@@ -531,6 +531,12 @@ class NMSMain(PropertyGroup):
 
         # Apply Colour Material.
         for obj in selected_objects:
+            if "GroupID" in obj:
+                if not group.Group.restore_cached_colours(obj, BUILDER):
+                    raise RuntimeError("Could not restore the group's cached colours")
+                continue
+            if "ObjectID" not in obj:
+                continue
             index = 0
             # Figure out default index.
             object_id = obj["ObjectID"]
@@ -546,7 +552,10 @@ class NMSMain(PropertyGroup):
             _material.assign_default_material(obj, index=index)
 
         # Refresh the viewport.
-        bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
+        for window in bpy.context.window_manager.windows:
+            for area in window.screen.areas:
+                if area.type == "VIEW_3D":
+                    area.tag_redraw()
         
     # update materials of selected objects depending on material picked using picker
     def on_color_picked(self):
@@ -2241,7 +2250,20 @@ classes = classes  + save_editor_operators.classes + station_reference.classes +
 
 
 
+_core_registered = False
+
+
 def register():
+    compatibility.register()
+    if compatibility.conflicting_charon():
+        compatibility.begin_preflight()
+        return
+    register_core()
+    compatibility.watch()
+
+
+def register_core():
+    global _core_registered
 
     from . import release_updates
     release_updates.register('bbe', ADDON_VERSION, 'No Mans Sky Base Builder')
@@ -2309,8 +2331,14 @@ def register():
         bpy.app.handlers.depsgraph_update_post.append(udpates_handler)
     
     bpy.app.timers.register(viewport_overlay.register_draw, first_interval=0.01)
+    _core_registered = True
 
 def unregister():
+    global _core_registered
+    compatibility.unregister()
+    if not _core_registered:
+        return
+    _core_registered = False
     if bpy.app.timers.is_registered(_refresh_prefab_catalogue_deferred):
         bpy.app.timers.unregister(_refresh_prefab_catalogue_deferred)
     if schedule_prefab_catalogue in bpy.app.handlers.load_post:

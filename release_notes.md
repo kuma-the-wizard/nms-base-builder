@@ -1,3 +1,15 @@
+release 18.1.79
+-------------
+
+## Group color reset and Charon Forge activation check
+
+- Fix Reset Default Color on a selected group. It restores each child part's cached color, including simple proxies, without the group's missing `ObjectID` error.
+- When Charon Forge is active or set to load at startup, BBE asks before activating: Continue disables Charon and enables BBE; Cancel keeps Charon and leaves BBE inactive.
+- If Charon is enabled after BBE, BBE warns that the current session is incompatible and asks for a save and restart. BBE cannot control Charon's installer or safely undo their overlapping registrations after Charon has activated.
+- The reported Blender 5.2 `acquire(): cookie doesn't exist!` traceback occurs in Blender's extension installer before BBE code runs. Save work, fully restart Blender, then retry Install from Disk. If it recurs, check whether Blender's session temporary directory is being removed.
+
+Install the intact **no_mans_sky_base_builder-18.1.79.zip** via Blender's **Install from Disk**, then restart Blender. Tested in Blender 5.1.2 and 5.2.2 LTS; the Charon prompt was checked in a separate Blender 5.1 GUI session. Existing projects and game saves were not changed.
+
 release 18.1.78
 -------------
 

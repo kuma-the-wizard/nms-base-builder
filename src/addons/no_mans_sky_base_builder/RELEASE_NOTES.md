@@ -1,3 +1,10 @@
+## 18.1.79 - Group default color and Charon activation check
+
+- Reset a selected group's color from its cached child part colors, including simple proxy materials, instead of reading the group's absent ObjectID.
+- When Charon Forge is enabled or configured to load at startup, ask before BBE registers its overlapping controls. Continue disables Charon; Cancel leaves BBE inactive.
+- Warn if Charon is enabled after BBE. Save and restart with one add-on enabled; BBE cannot intercept Charon's installer or safely undo already overlapping registrations in that session.
+- Blender 5.2's `acquire(): cookie doesn't exist!` error originates in Blender's extension installer before BBE runs. Restart Blender and retry the install if it occurs.
+
 ## 18.1.78 - Independent recovery timer and visible status
 
 - Prevent other add-ons' save-copy operations and normal saves from restarting BBE's recovery countdown or clearing its placement count. Only a project-path change starts a new schedule.

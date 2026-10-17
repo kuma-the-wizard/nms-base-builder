@@ -248,6 +248,32 @@ class Group:
         return max(counts, key=counts.get)
 
     @staticmethod
+    def restore_cached_colours(group_obj, builder):
+        """Remove a group's override and show its cached parts' original colours.
+
+        A merged group has no ObjectID or single part default. Rebuild the
+        display mesh from its child cache so simple proxies recover each
+        material as well as detailed groups recovering their palette preview.
+        The cache is also what export and ungroup use, so leave it untouched.
+        """
+        if Group.PROP_GROUP_ID not in group_obj:
+            return False
+        detailed = materials_v2.is_high_res(group_obj)
+        rebuilt, representative = Group._rebuild_group_mesh(
+            group_obj, builder, detailed
+        )
+        if rebuilt is None:
+            return False
+        previous = group_obj.data
+        group_obj.data = rebuilt
+        if Part.PROP_USER_DATA in group_obj:
+            del group_obj[Part.PROP_USER_DATA]
+        Group._apply_switched_colour(group_obj, detailed, representative)
+        if previous is not None and previous.users == 0:
+            bpy.data.meshes.remove(previous)
+        return True
+
+    @staticmethod
     def ungroup_objects( builder, parent_obj):
         """
         Restores grouped objects back to their original state from cache.
