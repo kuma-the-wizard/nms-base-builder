@@ -375,10 +375,38 @@ def _saved_browser_target(window):
     if len(areas) < 2 or areas[0].type != 'PROPERTIES':
         return None
     pinned = areas[0].spaces.active.pin_id
-    if getattr(pinned, 'name', None) != 'Asset Browser Window':
+    if not _is_browser_pin(pinned):
         return None
     right = areas[1]
     return right if right.type in {'PROPERTIES', 'IMAGE_EDITOR'} else None
+
+
+def _is_browser_pin(obj):
+    if obj is None or getattr(obj, 'type', None) != 'MESH':
+        return False
+    if obj.get('bbe_asset_browser_pin'):
+        return True
+    # Recognize the empty hidden helper saved by earlier BBE versions without
+    # treating a user's ordinary object with the same name as our UI data.
+    return (obj.name == 'Asset Browser Window' and not obj.data.vertices
+            and obj.hide_render and obj.hide_select and obj.use_fake_user)
+
+
+def _unlink_closed_browser_pins(window_manager):
+    """Keep the UI pin in bpy.data, but out of the Outliner while closed."""
+    if _pending_windows:
+        return
+    active = set()
+    for window in window_manager.windows:
+        for area in window.screen.areas:
+            if area.type == 'PROPERTIES':
+                pin = area.spaces.active.pin_id
+                if _is_browser_pin(pin):
+                    active.add(pin)
+    for obj in tuple(bpy.data.objects):
+        if _is_browser_pin(obj) and obj not in active:
+            for collection in tuple(obj.users_collection):
+                collection.objects.unlink(obj)
 
 
 def _restore_saved_windows(window_manager):
@@ -416,6 +444,7 @@ def _cleanup_closed():
             _release_session(key, bpy.context.window_manager)
     try:
         _restore_saved_windows(bpy.context.window_manager)
+        _unlink_closed_browser_pins(bpy.context.window_manager)
     except (ReferenceError, RuntimeError, TypeError, AttributeError) as exc:
         print(f'BBE Asset Browser: grid restore will retry: {exc}')
     return 1.0

@@ -66,6 +66,14 @@ def available():
     return library_root() is not None
 
 
+@lru_cache(maxsize=4)
+def _texture_names(pack_id, content_sha256):
+    """Index verified texture names once, including during a bulk proxy switch."""
+    spec = specification()
+    return {name.casefold(): name for name in spec['files']
+            if name.startswith('textures/')}
+
+
 def relink_texture_images(images=None):
     """Resolve BBE texture references against this machine's HD library.
 
@@ -81,8 +89,7 @@ def relink_texture_images(images=None):
         import bpy
         images = bpy.data.images
     spec = specification()
-    known = {name.casefold(): name for name in spec['files']
-             if name.startswith('textures/')}
+    known = _texture_names(spec['id'], spec['content_sha256'])
     changed = 0
     # The pack ID also covers a custom BBE_ASSET_LIBRARY_ROOT on another PC.
     markers = ('/models-high-res/textures/', '/' + spec['id'].casefold() + '/textures/')

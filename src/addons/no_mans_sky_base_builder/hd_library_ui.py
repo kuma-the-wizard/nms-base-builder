@@ -1,5 +1,6 @@
 """One-click detailed proxies, with a one-time download when needed."""
 import textwrap
+from pathlib import Path
 import bpy
 from bpy.app.handlers import persistent
 from . import hd_library
@@ -232,10 +233,60 @@ def relink_legacy_textures():
     return hd_library.relink_texture_images()
 
 
+def _saved_hd_needs_simple_proxies(scene):
+    """Detect detailed meshes with texture files unavailable on this machine."""
+    from . import builder_v2
+    from .part import Part
+    from .group import Group
+    from .utils import materials_v2
+    seen_meshes = set()
+    for obj in scene.objects:
+        if (obj.type != 'MESH' or not materials_v2.is_high_res(obj)
+                or (Part.PROP_OBJECT_ID not in obj and Group.PROP_GROUP_ID not in obj)):
+            continue
+        if obj.data in seen_meshes:
+            continue
+        seen_meshes.add(obj.data)
+        for image in builder_v2._mesh_texture_images(obj.data):
+            if image.source == 'FILE' and not image.packed_file:
+                if not Path(bpy.path.abspath(image.filepath, library=image.library)).is_file():
+                    return True
+    return False
+
+
+def _repair_saved_hd_textures():
+    """Show simple proxies when a shared file's detailed textures are absent."""
+    from .tools_menu.base_builder_menu_operators import _switch_scene_proxies
+    repaired = False
+    for scene in bpy.data.scenes:
+        if scene.library or not _saved_hd_needs_simple_proxies(scene):
+            continue
+        try:
+            with bpy.context.temp_override(scene=scene, view_layer=scene.view_layers[0]):
+                parts, groups, skipped = _switch_scene_proxies(bpy.context, False)
+            scene.bbe_detailed_proxies = False
+            repaired = repaired or bool(parts or groups)
+            message = (f'Detailed textures missing: showing {parts} part(s) and {groups} group(s) '
+                       'with Simple Proxies.')
+            if skipped:
+                message += f' {skipped} could not switch; install the HD pack.'
+            print('BBE: ' + message)
+        except (ReferenceError, RuntimeError, ValueError) as exc:
+            print(f'BBE: Could not show simple proxies for {scene.name}: {exc}')
+    if repaired and not bpy.app.background and bpy.context.window_manager.windows:
+        def draw(self, _context):
+            self.layout.label(text='This file uses detailed parts with unavailable textures.')
+            self.layout.label(text='BBE switched them to Simple Proxies. Check or install the HD pack.')
+        bpy.context.window_manager.popup_menu(draw, title='Detailed Proxies', icon='INFO')
+    return None
+
+
 @persistent
 def after_load(_unused):
     cancel_activation()
     relink_legacy_textures()
+    if not bpy.app.timers.is_registered(_repair_saved_hd_textures):
+        bpy.app.timers.register(_repair_saved_hd_textures, first_interval=0.0)
     from .part_overrides.fossil_models import refresh_scene
     from .utils import room_glass
     for scene in bpy.data.scenes:
@@ -331,6 +382,8 @@ def unregister():
     bpy.types.VIEW3D_HT_header.remove(draw_status)
     if bpy.app.timers.is_registered(redraw):
         bpy.app.timers.unregister(redraw)
+    if bpy.app.timers.is_registered(_repair_saved_hd_textures):
+        bpy.app.timers.unregister(_repair_saved_hd_textures)
     if after_load in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(after_load)
     del bpy.types.Scene.bbe_detailed_proxies

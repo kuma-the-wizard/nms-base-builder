@@ -3,6 +3,7 @@ import os
 import time
 import mathutils
 import math
+from pathlib import Path
 from . import builder, preset, hd_library, simple_library
 from .part import Part
 from .utils import blend_utils, material, materials_v2, collection_utils
@@ -505,6 +506,38 @@ def correct_hd_display(mesh, object_id):
     mesh['bbe_display_revision'] = '18.1.39'
 
 
+def _mesh_texture_images(mesh):
+    """Only the images used by this mesh, including nested shader groups."""
+    images = set()
+    seen = set()
+    pending = [mat.node_tree for mat in mesh.materials if mat and mat.use_nodes]
+    while pending:
+        tree = pending.pop()
+        if tree in seen:
+            continue
+        seen.add(tree)
+        for node in tree.nodes:
+            if node.type in {'TEX_IMAGE', 'TEX_ENVIRONMENT'} and node.image:
+                images.add(node.image)
+            elif node.type == 'GROUP' and node.node_tree:
+                pending.append(node.node_tree)
+    return images
+
+
+def _relink_mesh_textures(mesh):
+    # Library .blend files carry the pack author's absolute texture paths.
+    # Resolve them before a progress redraw can show this mesh in a scene.
+    images = _mesh_texture_images(mesh)
+    hd_library.relink_texture_images(images)
+    for image in images:
+        if image.source == 'FILE' and not image.packed_file:
+            if not Path(bpy.path.abspath(image.filepath, library=image.library)).is_file():
+                hd_library.STATE['error'] = (
+                    'A detailed texture is missing. Reinstall the HD pack: ' + image.name)
+                return False
+    return True
+
+
 def load_high_res_mesh(object_id, asset_index=None, *, force=False):
     if not force and not getattr(bpy.context.scene, "bbe_detailed_proxies", True):
         return None
@@ -520,7 +553,7 @@ def load_high_res_mesh(object_id, asset_index=None, *, force=False):
     if cached is not None and cached.get(MESH_TAG) == object_id:
         if revision is None or cached.get(MESH_REVISION_TAG) == revision:
             correct_hd_display(cached, object_id)
-            return cached
+            return cached if _relink_mesh_textures(cached) else None
         cached.name = mesh_name + "_legacy"
 
     # A reproducible variant is built out of the mesh it is a variant of rather
@@ -564,7 +597,7 @@ def load_high_res_mesh(object_id, asset_index=None, *, force=False):
     # collapse - see materials_v2.note_appended_data.
     materials_v2.note_appended_data()
     correct_hd_display(mesh, object_id)
-    return mesh
+    return mesh if _relink_mesh_textures(mesh) else None
 
 
 def load_trade_terminal_wall_mesh():
@@ -572,25 +605,7 @@ def load_trade_terminal_wall_mesh():
     path = os.path.join(FILE_PATH, 'resources', 'hd_corrections', 'BUILDTERMINAL.blend')
     # There is no separate low-resolution wall variant. Reuse the native
     # wall mesh in either quality so a switch cannot restore the kiosk.
-    mesh = load_high_res_mesh('BUILDTERMINAL_WALL', {'BUILDTERMINAL_WALL': path}, force=True)
-    if mesh is not None:
-        # Snap bypasses the normal import/dedupe pass that repairs texture
-        # paths. Repair only this model's images, including cached meshes
-        # restored from an older .blend, without modifying object transforms.
-        pending = [mat.node_tree for mat in mesh.materials if mat and mat.use_nodes]
-        seen, images = set(), set()
-        while pending:
-            tree = pending.pop()
-            if tree in seen:
-                continue
-            seen.add(tree)
-            for node in tree.nodes:
-                if node.type == 'TEX_IMAGE' and node.image:
-                    images.add(node.image)
-                elif node.type == 'GROUP' and node.node_tree:
-                    pending.append(node.node_tree)
-        hd_library.relink_texture_images(images)
-    return mesh
+    return load_high_res_mesh('BUILDTERMINAL_WALL', {'BUILDTERMINAL_WALL': path}, force=True)
 
 
 def use_trade_terminal_wall_model(obj):

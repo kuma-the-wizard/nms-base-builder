@@ -35,6 +35,7 @@ def browser_pin_object():
     obj.hide_render = True
     obj.hide_select = True
     obj.use_fake_user = True
+    obj['bbe_asset_browser_pin'] = True
     return obj
 
 
@@ -277,7 +278,7 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
                 left_area, right_area = areas_sorted[0], areas_sorted[1]
 
                 # A primitive-add operator deselects the placement target.
-                # Keep this UI-only object unlinked and reuse it across windows.
+                # Link the UI pin only while a browser uses it, then reuse it.
                 dummy_obj = browser_pin_object()
                 
                 for area, ctx_type in ((left_area, 'CONSTRAINT'), (right_area, 'MODIFIER')):

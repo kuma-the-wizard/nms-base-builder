@@ -1,3 +1,14 @@
+release 18.1.80
+-------------
+
+## Detailed proxy loading and Asset Browser helper
+
+- Resolve each detailed model's texture paths against the local HD pack before the model enters the scene. Progress redraws should no longer show the pack author's missing texture paths as pink materials.
+- If a detailed texture is missing or the optional pack is damaged, reject that model and keep or use its simple proxy. Projects saved on another computer with unavailable detailed textures switch their BBE parts and groups to simple proxies on opening; object identities, transforms and group caches are retained. The original `.blend` is not overwritten.
+- Remove BBE's hidden Asset Browser context helper from the scene after its window closes, while retaining it for the next browser launch.
+
+The detailed-proxy pack remains optional. These changes were tested with the pack installed, with its textures unavailable, and with simple-proxy fallback in Blender 5.1.2 and 5.2.2 LTS. Install **no_mans_sky_base_builder-18.1.80.zip** through Blender's **Install from Disk**, then restart Blender.
+
 release 18.1.79
 -------------
 

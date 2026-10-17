@@ -1,9 +1,9 @@
 # Base Builder Extended
 
-Current standalone release: **18.1.79**. Windows x64, verified with Blender
+Current standalone release: **18.1.80**. Windows x64, verified with Blender
 5.1.2 and 5.2.2 LTS.
 
-[Download the installer and read the release notes](https://github.com/slipperystickers/nms-base-builder/releases/tag/v18.1.79).
+[Download the installer and read the release notes](https://github.com/slipperystickers/nms-base-builder/releases/tag/v18.1.80).
 Install the attached plugin ZIP through Blender's **Install from Disk**, then
 restart Blender. This release adds independent rotating project recovery,
 fixes recovery timer interruptions, improves undo handling and build imports,
@@ -16,6 +16,11 @@ Version 18.1.79 also fixes group default-colour reset and checks for Charon Forg
 before BBE activates. The two add-ons cannot run together; the activation prompt
 lets users keep Charon or disable it and continue with BBE. Automatic update
 checks remain opt-in. Keep the previous installer for rollback.
+
+Version 18.1.80 resolves detailed-proxy texture paths before models enter the
+scene, falls back to simple proxies when a shared project's detailed textures
+are unavailable, and removes the hidden Asset Browser helper from the Outliner
+after its window closes. The optional detailed-proxy pack is not required.
 
 **Base Builder by DjMonkey. Extended by Furiousfurby.** Based on Kuma's 18.0.0
 build; the original guides, Patreon, Discord and Steam Games links are preserved.
