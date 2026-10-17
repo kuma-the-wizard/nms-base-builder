@@ -2,6 +2,7 @@
 import copy
 import json
 import math
+import textwrap
 from pathlib import Path
 import bpy
 import blf
@@ -294,18 +295,40 @@ class BBE_OT_ship_save(Dialog,bpy.types.Operator):
         for p in s['links']:l.label(text=str(p))
         l.label(text='Both save points will receive this draft, based on the latest save.')
         l.label(text='Verified backups are created before replacement.')
+        if any(s.get('link_issues', {}).values()):
+            l.label(text='Existing uncertain ownership records will be preserved exactly.', icon='INFO')
         for ctx in core.contexts(s['root']):
             count=sum(core.occupied(v) for v in core.ships(s['root'],ctx));l.label(text=f'{ctx}: {count} owned ships')
     def execute(self,context):
         try:
             s=state()
-            for ctx in core.contexts(s['root']):core.validate_links(s['root'],ctx)
+            core.validate_draft(s['original'],s['root'])
             if s['root']==s['original']:raise ValueError('No changes to save')
             backups=ship_files.commit(s['root'],s['links'],s['hashes'])
             s['original']=copy.deepcopy(s['root']);s['dirty']=False;_,s['hashes'],s['source']=ship_files.read(s['links'])
             s['error']=f'Saved. {len(backups)} verified backups created.'
             s['source_scene'].nms_save_data.refresh_bases_list()
         except Exception as exc:return self.fail(exc)
+        finish_dialog();return {'FINISHED'}
+
+
+class BBE_OT_ship_link_status(Dialog,bpy.types.Operator):
+    bl_idname='bbe.ship_link_status';bl_label='Corvette Link Status'
+    def invoke(self,context,event):
+        return context.window_manager.invoke_props_dialog(self,width=680,confirm_text='Close')
+    def draw(self,context):
+        s=state();l=self.layout
+        l.label(text='Inventory, technology, class, stats and hyperslot edits remain available.')
+        l.label(text='Contexts with uncertain links keep their saved ownership records unchanged.')
+        l.label(text='Move Up/Down and Add Corvette are locked only in those contexts.')
+        l.label(text='Duplicate Save / Clear Builds requires valid links in all contexts.')
+        for ctx,issues in s.get('link_issues',{}).items():
+            box=l.box();box.label(text='Expedition' if ctx=='Season' else 'Main',icon='ERROR' if issues else 'CHECKMARK')
+            if not issues:box.label(text='All Corvette build links are recognized.')
+            for issue in issues[:8]:
+                for line in textwrap.wrap(issue,90):box.label(text=line)
+            if len(issues)>8:box.label(text=f'{len(issues)-8} additional link warnings in this context.')
+    def execute(self,context):
         finish_dialog();return {'FINISHED'}
 
 
@@ -341,6 +364,7 @@ class BBE_OT_ship_duplicate(Dialog,bpy.types.Operator):
             links=list(dict.fromkeys(p for p in slot['saves'] if p and Path(p).exists()))
             if not links:raise ValueError('Select a save slot containing game save files')
             self._root,self._hashes,self._source=ship_files.read(links)
+            for ctx in core.contexts(self._root):core.validate_links(self._root,ctx)
             self._empty=ship_files.empty_slots(self._source.parent)
             if not self._empty:raise ValueError('No empty game save slots')
             self.slot=self._empty[0]
@@ -440,19 +464,23 @@ def draw_overlay(self):
     region=bpy.context.region;w,h=region.width,region.height
     FRAME={'pos':[],'colour':[],'icon_pos':[],'icon_uv':[],'overlay_pos':[],'overlay_colour':[],'text':[]}
     gpu.state.blend_set('ALPHA');rect(0,0,w,h,(.022,.03,.045,1));self._buttons=[];self._cells=[];self._popup_buttons=[]
-    def button(x,y,bw,title,action,active=False):
-        rect(x,y,bw,27,(.12,.31,.45,1) if active else (.09,.12,.17,1));text(x+7,y+8,title,12,width=bw-10)
-        self._buttons.append((x,y,bw,27,action))
+    def button(x,y,bw,title,action,active=False,enabled=True):
+        rect(x,y,bw,27,(.12,.31,.45,1) if active else (.09,.12,.17,1))
+        text(x+7,y+8,title,12,(.88,.91,.96,1) if enabled else (.4,.44,.5,1),width=bw-10)
+        if enabled:self._buttons.append((x,y,bw,27,action))
     text(18,h-31,'SHIP MANAGEMENT (BETA)',20)
     text(320,h-30,'Inventory & Technology',19)
     dirty=s.get('dirty',False);text(w-185,h-28,'Unsaved draft' if dirty else 'Saved snapshot',13)
     for i,ctx in enumerate(core.contexts(s['root'])):button(18+i*112,h-70,106,'Main' if ctx=='Main' else 'Expedition',('context',ctx),s['context']==ctx)
     owned=core.ships(s['root'],s['context'])
+    restricted=bool(s.get('link_issues',{}).get(s['context']))
+    if any(s.get('link_issues',{}).values()):
+        button(600,h-38,220,'Ownership notice / Link Status',('links',None))
     for i,ship in enumerate(owned):
         label=core.get(ship,'Name') or ('Unnamed ship' if core.occupied(ship) else 'EMPTY')
         button(18,h-110-i*30,216,f'{i+1:02}  {label}',('ship',i),i==s['index'])
-    button(18,h-490,103,'Move Up',('move',-1));button(131,h-490,103,'Move Down',('move',1))
-    button(18,h-526,216,'Add Minimal Corvette',('add',None))
+    button(18,h-490,103,'Move Up',('move',-1),enabled=not restricted);button(131,h-490,103,'Move Down',('move',1),enabled=not restricted)
+    button(18,h-526,216,'Add Minimal Corvette',('add',None),enabled=not restricted)
     cls=core.get(core.get(core.get(owned[s['index']],'Inventory',{}),'Class',{}),'InventoryClass','—')
     button(18,h-562,216,'Ship Class: '+cls,('class',None))
     button(18,75,216,'Save Changes...',('save',None));button(18,38,216,'Close',('close',None))
@@ -460,8 +488,10 @@ def draw_overlay(self):
     for i,(container,label) in enumerate((('Inventory_TechOnly','Technology'),('Inventory','Cargo'))):
         button(255+i*132,h-70,124,label,('container',container),s['container']==container)
     ship=owned[s['index']]
+    if restricted:
+        text(18,105,'Ship links locked — see Link Status',11,(1,.75,.38,1),216)
     if not core.occupied(ship):
-        text(275,h-140,'Empty ship slot - add a minimal Corvette to begin.',16)
+        text(275,h-140,'Empty slot — select an owned ship to edit.' if restricted else 'Empty ship slot - add a minimal Corvette to begin.',16)
         flush_frame();gpu.state.blend_set('NONE');return
     for i,(label,action) in enumerate((('Add item','insert'),('Edit / Roll','edit'),('Remove','remove'),('Unlock All','unlock'),('Move Hyperslot','special'))):
         button(255+i*112,h-108,105,label,(action,None))
@@ -644,6 +674,7 @@ class BBE_OT_ship_management_window(bpy.types.Operator):
                     else:
                         s['busy']=True
                         if op=='class':bpy.ops.bbe.ship_class('INVOKE_DEFAULT')
+                        elif op=='links':bpy.ops.bbe.ship_link_status('INVOKE_DEFAULT')
                         elif op=='stats':bpy.ops.bbe.ship_stats('INVOKE_DEFAULT')
                         elif op=='add':bpy.ops.bbe.ship_add('INVOKE_DEFAULT')
                         elif op=='save':bpy.ops.bbe.ship_save('INVOKE_DEFAULT')
@@ -788,9 +819,16 @@ class BBE_OT_ship_management(bpy.types.Operator):
             if not slot:raise ValueError('Select an account and save slot first')
             links=list(dict.fromkeys(p for p in slot['saves'] if p and Path(p).exists()))
             root,hashes,source=ship_files.read(links)
-            if not core.contexts(root):raise ValueError('No supported ship context')
-            for ctx in core.contexts(root):core.validate_links(root,ctx)
-            SESSION=dict(root=root,original=copy.deepcopy(root),hashes=hashes,source=source,links=links,context=core.contexts(root)[0],index=0,container='Inventory_TechOnly',selected=(0,0),busy=False,error='')
+            issues=core.inspect_links(root)
+            selected=data.get_current_base_identifiers()
+            ctx=getattr(selected,'save_context',None)
+            if ctx not in issues:ctx=next(iter(issues))
+            owned=core.ships(root,ctx);index=getattr(selected,'user_data',None)
+            if type(index) is not int or not 0<=index<12 or not core.occupied(owned[index]):
+                index=core.get(core.player(root,ctx),'PrimaryShip',0)
+            if type(index) is not int or not 0<=index<12 or not core.occupied(owned[index]):
+                index=next((i for i,ship in enumerate(owned) if core.occupied(ship)),0)
+            SESSION=dict(root=root,original=copy.deepcopy(root),hashes=hashes,source=source,links=links,context=ctx,index=index,container='Inventory_TechOnly',selected=(0,0),busy=False,error='',link_issues=issues)
             SOURCE_WINDOW=context.window;SESSION['source_scene']=context.scene
             open_manager_window(context.window_manager)
             return {'FINISHED'}
@@ -798,7 +836,7 @@ class BBE_OT_ship_management(bpy.types.Operator):
             SESSION=None;self.report({'ERROR'},str(exc));return {'CANCELLED'}
 
 
-CLASSES=(BBE_PG_ship_catalog_item,BBE_PG_ship_catalog,BBE_UL_ship_catalog,BBE_PG_ship_keep,BBE_PG_ship_copy,BBE_PG_ship_stat,BBE_OT_ship_class,BBE_OT_ship_stats,BBE_OT_ship_add,BBE_OT_ship_item,BBE_OT_ship_insert,BBE_OT_ship_save,BBE_OT_ship_duplicate,BBE_OT_ship_move_hyperslot,BBE_OT_ship_discard,BBE_OT_ship_lost,BBE_OT_ship_management_window,BBE_OT_ship_management)
+CLASSES=(BBE_PG_ship_catalog_item,BBE_PG_ship_catalog,BBE_UL_ship_catalog,BBE_PG_ship_keep,BBE_PG_ship_copy,BBE_PG_ship_stat,BBE_OT_ship_class,BBE_OT_ship_stats,BBE_OT_ship_add,BBE_OT_ship_item,BBE_OT_ship_insert,BBE_OT_ship_save,BBE_OT_ship_link_status,BBE_OT_ship_duplicate,BBE_OT_ship_move_hyperslot,BBE_OT_ship_discard,BBE_OT_ship_lost,BBE_OT_ship_management_window,BBE_OT_ship_management)
 
 def register():
     for cls in CLASSES:bpy.utils.register_class(cls)

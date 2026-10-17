@@ -1,5 +1,7 @@
-SHIP MANAGEMENT (18.1.27)
+SHIP MANAGEMENT (18.1.81)
 Open beneath Optimize & Export in the Corvette Save Manager, in the sidebar or I/O menu. This opens a separate resizable window and changes a save draft, not Blender scene objects. Save Changes reviews the destination and writes both save points from the latest source snapshot, creating verified backups. Close/Escape confirms before discarding unsaved changes. If the native window X closes with a draft, Cancel on the recovery prompt reopens it.
+
+Ownership notice: existing missing, duplicate or unrecognized Corvette links no longer block opening Ship Management. Link Status explains each affected Main/Expedition context. Inventory, cargo, technology, class, saved stats and existing hyperslots remain editable. Move Up/Down and Add Minimal Corvette are locked only in affected contexts; Duplicate Save / Clear Builds still requires valid links in every context. Saving compares the draft with the source snapshot and preserves all uncertain ownership and build records exactly. No automatic link repair is attempted.
 
 Ships: choose Main or Expedition, select a ship, and move it up/down. Ownership, Corvette build links, ship appearance and active-slot references move together. Add Minimal Corvette only accepts an empty slot. Its starter build can then be replaced using Export to Save. Ship Class offers C/B/A/S and preserves existing rolled base stats.
 

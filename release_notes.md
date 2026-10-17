@@ -1,3 +1,16 @@
+release 18.1.81
+-------------
+
+## Ship Management with uncertain Corvette links
+
+- Open Ship Management when an existing Corvette build link is missing, duplicated, invalid or points to an unrecognized ship. A fresh install no longer makes these existing save conditions look like a failure to open the manager.
+- Keep inventory, cargo, technology, ship class, saved stats and existing hyperslot edits available. Before saving, compare the complete draft with the original snapshot and preserve all uncertain ownership, build and surrounding context records exactly.
+- Lock Move Up/Down and Add Minimal Corvette only in affected Main or Expedition contexts. Healthy contexts remain editable independently. Duplicate Save / Clear Builds still requires valid links in every context.
+- Add an Ownership notice / Link Status dialog explaining the affected context and slots locally. No save upload is required and no ownership link is guessed or automatically rewritten.
+- Start on the selected Corvette and context when available, otherwise the active or first owned ship.
+
+Verified with synthetic English-key and obfuscated saves and Blender 5.1.2 / 5.2.2 LTS operator tests. The notice and disabled controls were also inspected in Blender 5.2.2. This protects existing uncertain links; it does not repair them or claim in-game validation of the reported user's save. The existing verified-backup writer is unchanged.
+
 release 18.1.80
 -------------
 

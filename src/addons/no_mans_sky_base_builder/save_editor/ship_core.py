@@ -13,7 +13,7 @@ def key(obj, name):
 
 
 def get(obj, name, default=None):
-    return obj.get(key(obj, name), default)
+    return obj.get(key(obj, name), default) if isinstance(obj, dict) else default
 
 
 def put(obj, name, value):
@@ -44,35 +44,103 @@ def player(root, context):
 
 def ships(root, context):
     values = get(player(root, context), 'ShipOwnership', [])
-    if len(values) != 12:
+    if not isinstance(values, list) or len(values) != 12 or not all(isinstance(s, dict) for s in values):
         raise ValueError('Expected 12 ship slots; this save format is not supported')
     return values
 
 
 def occupied(ship):
-    return bool(get(get(ship, 'Resource', {}), 'Filename', '').strip())
+    filename = get(get(ship, 'Resource', {}), 'Filename', '')
+    return isinstance(filename, str) and bool(filename.strip())
 
 
 def corvette(ship):
-    return '/BIGGS/' in get(get(ship, 'Resource', {}), 'Filename', '').upper()
+    filename = get(get(ship, 'Resource', {}), 'Filename', '')
+    return isinstance(filename, str) and '/BIGGS/' in filename.upper()
 
 
 def kind(base):
     return get(get(base, 'BaseType', {}), 'PersistentBaseTypes', '')
 
 
-def validate_links(root, context):
+def link_issues(root, context):
+    """Describe uncertain ownership without changing or guessing any links."""
     owned = ships(root, context)
-    seen = set()
-    for base in get(player(root, context), 'PersistentPlayerBases', []):
+    seen = {}
+    issues = []
+    label = 'Expedition' if context == 'Season' else 'Main'
+    bases = get(player(root, context), 'PersistentPlayerBases', [])
+    if not isinstance(bases, list):
+        return [f'{label}: the saved build list has an unsupported format.']
+    for base_number, base in enumerate(bases, 1):
+        if not isinstance(base, dict):
+            issues.append(f'{label}: build record {base_number} has an unsupported format.')
+            continue
         if kind(base) != 'PlayerShipBase':
             continue
         index = get(base, 'UserData')
-        if type(index) is not int or not 0 <= index < 12 or index in seen or not corvette(owned[index]):
-            raise ValueError('Corvette ownership links are ambiguous or broken; no changes were saved')
-        seen.add(index)
-    if any(corvette(s) and i not in seen for i, s in enumerate(owned)):
-        raise ValueError('A Corvette is missing its build; no changes were saved')
+        if type(index) is not int or not 0 <= index < 12:
+            issues.append(f'{label}: Corvette build {base_number} has no valid ship slot (1–12).')
+            continue
+        if index in seen:
+            issues.append(f'{label}: Corvette builds {seen[index]} and {base_number} both reference ship slot {index + 1}.')
+        if not corvette(owned[index]):
+            issues.append(f'{label}: Corvette build {base_number} references slot {index + 1}, which is not recognized as a Corvette.')
+        seen.setdefault(index, base_number)
+    for index, ship in enumerate(owned):
+        if corvette(ship) and index not in seen:
+            issues.append(f'{label}: Corvette in slot {index + 1} has no linked build.')
+    return issues
+
+
+def inspect_links(root):
+    available = contexts(root)
+    if not available:
+        raise ValueError('No supported ship context')
+    return {context: link_issues(root, context) for context in available}
+
+
+def validate_links(root, context):
+    issues = link_issues(root, context)
+    if issues:
+        raise ValueError(issues[0] + ' Reordering, creation and removing builds require valid links. Inventory edits remain available in Ship Management.')
+
+
+def validate_draft(original, draft):
+    """Permit local inventory edits while preserving uncertain save topology.
+
+    A pre-existing link problem must neither prevent independent ship edits nor
+    become permission to rewrite ownership. Compare the complete save against
+    its read snapshot, allowing only existing inventories on occupied slots in
+    affected contexts. Healthy contexts retain strict ownership validation.
+    """
+    if contexts(original) != contexts(draft):
+        raise ValueError('Save contexts changed; reopen Ship Management.')
+    expected = copy.deepcopy(original)
+    for context, issues in inspect_links(original).items():
+        context_key = key(original, 'BaseContext' if context == 'Main' else 'ExpeditionContext')
+        if not issues:
+            validate_links(draft, context)
+            expected[context_key] = copy.deepcopy(draft[context_key])
+            continue
+        before = ships(original, context)
+        after = ships(draft, context)
+        allowed = ships(expected, context)
+        for index, (old_ship, new_ship) in enumerate(zip(before, after)):
+            if not occupied(old_ship):
+                continue
+            for field in ('Inventory', 'Inventory_TechOnly', 'Inventory_Cargo'):
+                field_key = key(old_ship, field)
+                if field_key not in old_ship or field_key not in new_ship:
+                    continue
+                if old_ship[field_key] != new_ship[field_key]:
+                    validate_inventory(translate(new_ship[field_key]))
+                    allowed[index][field_key] = copy.deepcopy(new_ship[field_key])
+        if expected[context_key] != draft[context_key]:
+            label = 'Expedition' if context == 'Season' else 'Main'
+            raise ValueError(f'{label}: uncertain ownership records changed. Only inventory, class and stat edits can be saved in this context.')
+    if expected != draft:
+        raise ValueError('Unexpected data outside the ship draft changed; reopen Ship Management.')
 
 
 def reorder(root, context, order):
