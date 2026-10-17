@@ -258,7 +258,8 @@ class Builder(object):
         return part_object
 
     # Serialising ---
-    def serialise(self, get_presets=False, add_timestamp=False, as_prefab=False, include_groups = True):
+    def serialise(self, get_presets=False, add_timestamp=False, as_prefab=False,
+                  include_groups=True, progress=None, progress_range=(.02, .70)):
         """Return NMS compatible dictionary.
 
         Args:
@@ -270,11 +271,14 @@ class Builder(object):
         # Get all object part data.
         object_list = []
 
-        for item in self.get_all_parts(exclude_presets=get_presets):
+        parts = list(self.get_all_parts(exclude_presets=get_presets))
+        for index, item in enumerate(parts):
             object_id = item["ObjectID"]
             use_class = self.get_part_class(object_id)
             item_obj = use_class.deserialise_from_object(item, builder_object=self)
             object_list.append(item_obj.serialise())
+            if progress and (index % 8 == 0 or index + 1 == len(parts)):
+                progress.batch(index + 1, len(parts), *progress_range, label='Parts')
             
         # Include object groups?
         if include_groups:

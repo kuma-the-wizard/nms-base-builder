@@ -337,7 +337,11 @@ class SaveManager(bpy.types.PropertyGroup):
     def import_base(self, context, base_identifiers, save_links):
         
         #try to import json data from savefile and return error if data was not found
-        newly_imported_base = save_editor_utils.import_paticular_base_from_save(base_identifiers, save_links)
+        with progress_ui.Activity('Reading save for import') as progress:
+            progress.update(.08, 'Loading selected save point')
+            newly_imported_base = save_editor_utils.import_paticular_base_from_save(
+                base_identifiers, save_links, progress=progress)
+            progress.update(1.0, 'Importing models')
         if newly_imported_base is None:
             return "Error Importing base, base data is None"
         
@@ -389,7 +393,8 @@ class SaveManager(bpy.types.PropertyGroup):
         with progress_ui.Activity('Exporting to Save') as progress:
             progress.update(.02, 'Collecting scene parts')
             nms_tools = context.scene.nms_main
-            serialised_base_objects_data = nms_tools.serialise(objects_only=True)
+            serialised_base_objects_data = nms_tools.serialise(
+                objects_only=True, progress=progress, progress_range=(.02, .13))
             prefs = context.scene.nms_base_tool
             new_base_name = prefs.string_base
             if not new_base_name or not new_base_name.strip():
@@ -632,5 +637,9 @@ class SaveManager(bpy.types.PropertyGroup):
     # refresh list of bases/corvettes by importing fresh data form save file
     def refresh_bases_list(self):
         current_slot_data = self.get_current_slot_data()
-        SaveManager.extracted_base_data = save_editor_utils.extract_bases_list_from_save(current_slot_data["saves"])
+        with progress_ui.Activity('Loading save list') as progress:
+            progress.update(.08, 'Reading save points')
+            SaveManager.extracted_base_data = save_editor_utils.extract_bases_list_from_save(
+                current_slot_data["saves"], progress=progress)
+            progress.update(1.0, 'Save list ready')
         self.on_base_type_selected()

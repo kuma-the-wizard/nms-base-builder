@@ -9,6 +9,23 @@ ADDON_ID = __package__
 class NMSAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = ADDON_ID
 
+    bbe_recovery_mode: EnumProperty(
+        name='Project Recovery',
+        description='When to make an independent recovery copy of the current Blender project',
+        items=[('TIME', 'Time interval', 'Back up after the selected number of minutes'),
+               ('PARTS', 'Part placement', 'Back up after the selected number of placed parts'),
+               ('OFF', 'Off', 'Disable automatic recovery copies')],
+        default='TIME',
+    )
+    bbe_recovery_minutes: IntProperty(
+        name='Minutes', default=10, min=1, max=240,
+        description='Minutes between recovery copies while the project has changes',
+    )
+    bbe_recovery_parts: IntProperty(
+        name='Parts placed', default=5, min=1, max=1000,
+        description='New BBE parts between recovery copies',
+    )
+
     bbe_toolbar_order: StringProperty(
         name="Toolbar Order", default="",
         description="Order of the Base Builder toolbar menus",
@@ -27,7 +44,7 @@ class NMSAddonPreferences(bpy.types.AddonPreferences):
 
     nms_backup_folder_path: StringProperty(
         name='Backup Folder',
-        description='Leave blank to store backups beside each account in nms_base_builder_backup',
+        description='Shared folder for project recovery and game-save backups; blank uses NoMansSkyBaseBuilder/Backups in your home folder',
         subtype='DIR_PATH',
         default='',
     )
@@ -165,7 +182,12 @@ class NMSAddonPreferences(bpy.types.AddonPreferences):
         layout.label(text="No Man's Sky Base Builder")
         layout.label(text="Original creator: DjMonkey")
         layout.prop(self, 'nms_save_folder_path')
-        layout.prop(self, 'nms_backup_folder_path')
+        from .save_editor import backup_policy
+        layout.label(text=f'Backup Folder: {backup_policy.root_directory()}', icon='FILE_FOLDER')
+        row = layout.row(align=True)
+        row.operator('bbe.open_backup_root', text='Open Backup Folder', icon='FOLDER_REDIRECT')
+        row.operator_context = 'INVOKE_DEFAULT'
+        row.operator('bbe.backup_settings', text='Change Folder...', icon='PREFERENCES')
         layout.prop(self, 'nms_backup_retention')
         layout.separator()
         from .tools_menu.base_builder_menu import draw_toolbar_settings

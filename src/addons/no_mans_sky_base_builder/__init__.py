@@ -16,12 +16,12 @@ from bpy.props import (BoolProperty, EnumProperty, FloatProperty, IntProperty,
 from bpy.types import Panel, PropertyGroup
 from pathlib import Path
 
-from . import builder, icons, part, preset, group, builder_v2, viewport_overlay, undo_guard, interchange
+from . import builder, icons, part, preset, group, builder_v2, viewport_overlay, undo_guard, interchange, project_recovery, progress_ui
 from .base_properties import NMSBaseProperties
 from .addon_preferences import NMSAddonPreferences
 from .part_overrides import line
 from .save_editor import save_editor_operators, save_editor_utils, station_reference
-from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel, BBE_OT_backup_settings
+from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel, BBE_OT_backup_settings, BBE_OT_refresh_save_counts
 from .save_editor.save_manager import SaveManager
 
 from .tools import batch_tool_operators, build_tool_operators, prooperties_operators, asset_browser_operators
@@ -104,17 +104,6 @@ def ShowMessageBox(message="", title="Message Box", icon="INFO"):
     bpy.context.window_manager.popup_menu(draw, title=title, icon=icon)
 
 
-def part_switch(self, context):
-    """Toggle method for switching between parts and presets."""
-    scene = context.scene
-    part_list = "presets" if self.enum_switch == {"PRESETS"} else "parts"
-
-    if self.enum_switch not in [{"PRESETS"}]:
-        refresh_ui_part_list(scene, part_list, pack=list(self.enum_switch)[0])
-    else:
-        refresh_ui_part_list(scene, part_list)
-
-
 def get_line_type_from_enum(context):
     line_object = "U_POWERLINE"
     scene = context.scene
@@ -133,22 +122,6 @@ def get_line_type_from_enum(context):
 
 # Core Settings Class
 class NMSMain(PropertyGroup):
-    # Build Array of base part types. (Vanilla Parts - Mods - Presets)
-    enum_items = []
-    for pack, _ in BUILDER.available_packs:
-        enum_items.append((pack, pack, "View {0}...".format(pack)))
-    enum_items.append(("PRESETS", "Prefabs", "View Prefabs..."))
-
-    # Blender Properties.
-    enum_switch: EnumProperty(
-        name="enum_switch",
-        description="Toggle to display between parts and presets.",
-        items=enum_items,
-        options={"ENUM_FLAG"},
-        default=None,
-        update=part_switch,
-    )
-
     material_switch: EnumProperty(
         name="Material Palette",
         description="Decide what type of material to apply",
@@ -201,7 +174,8 @@ class NMSMain(PropertyGroup):
         base_props = bpy.context.scene.nms_base_tool
         base_props.deserialise_from_data(nms_data)
 
-    def serialise(self, get_presets=False, objects_only=False):
+    def serialise(self, get_presets=False, objects_only=False, progress=None,
+                  progress_range=(.02, .70)):
         """Export the data in the blender scene to NMS compatible data.
 
         This will slot the data into the clip-board so you can easy copy
@@ -209,7 +183,8 @@ class NMSMain(PropertyGroup):
         """
         
         # Capture Individual Objects
-        objects_data = BUILDER.serialise(get_presets=get_presets)
+        objects_data = BUILDER.serialise(get_presets=get_presets, progress=progress,
+                                         progress_range=progress_range)
         if objects_only:
             return objects_data["Objects"]
         
@@ -229,7 +204,10 @@ class NMSMain(PropertyGroup):
         # Read clipboard data.
         clipboard_data = bpy.context.window_manager.clipboard
         try:
-            nms_import_data = json.loads(clipboard_data)
+            with progress_ui.Activity('Reading clipboard build') as progress:
+                progress.update(.1, 'Parsing parts')
+                nms_import_data = json.loads(clipboard_data)
+                progress.update(1.0, 'Importing models')
         except:
             message = (
                 "Could not import base data, are you sure you copied "
@@ -253,21 +231,21 @@ class NMSMain(PropertyGroup):
         This generates a flat set of individual base parts for NMS to read.
         All preset information is lost in this process.
         """
-        data = self.serialise(objects_only=objects_only)
-        bpy.context.window_manager.clipboard = json.dumps(data, indent=4)
+        with progress_ui.Activity('Exporting to clipboard') as progress:
+            data = self.serialise(objects_only=objects_only, progress=progress,
+                                  progress_range=(.02, .82))
+            progress.update(.86, 'Encoding clipboard data')
+            bpy.context.window_manager.clipboard = json.dumps(data, indent=4)
+            progress.update(1.0, 'Clipboard ready')
 
     def import_build_file(self, file_path, parts_base_type='HomePlanetBase'):
         """Open a standalone build without touching any game save."""
         path = Path(file_path)
-        build_file = interchange.BuildFile.read(path)
-        data = build_file.document
-        if isinstance(data, list):
-            data = {'Objects': data}
-        if build_file.kind == 'parts':
-            data = dict(data)
-            data['Objects'] = build_file.objects
-            data.setdefault('BaseType', {'PersistentBaseTypes': parts_base_type})
-            data.setdefault('Name', path.stem)
+        with progress_ui.Activity('Opening build file') as progress:
+            progress.update(.1, f'Reading {path.name}')
+            build_file = interchange.BuildFile.read(path)
+            progress.update(1.0, 'Importing models')
+        data = build_file.import_document(parts_base_type, path.stem)
         self.deserialise_from_data(data)
         previous_objects = set(bpy.context.scene.objects)
         builder_v2.deserialise_from_data(data)
@@ -276,24 +254,37 @@ class NMSMain(PropertyGroup):
         return len(build_file.objects), build_file.kind
 
     def export_base_file(self, file_path):
-        data = self.serialise()
+        with progress_ui.Activity('Exporting base file') as progress:
+            return self._export_base_file(file_path, progress)
+
+    def _export_base_file(self, file_path, progress):
+        data = self.serialise(progress=progress, progress_range=(.02, .76))
         base_type = data.get('BaseType', {}).get('PersistentBaseTypes')
         if base_type == 'PlayerShipBase':
             raise ValueError('Corvettes use Export Ship Package or Export Build JSON')
         if base_type not in interchange.BASE_TYPES:
             raise ValueError('Choose a supported base type in I/O metadata first')
+        progress.update(.80, 'Preparing base package')
         source = _restore_build_source(bpy.context.scene)
         if source and source.kind == 'base':
             data = source.with_scene(data)
         data.pop('Presets', None)  # Prefabs are a BBE project feature, not a base-file payload.
         interchange.BuildFile.from_bytes(interchange._encode(data), '.nmsbase')
+        progress.update(.92, 'Writing base file')
         interchange.atomic_write(file_path, interchange._encode(data))
+        progress.update(1.0, 'Base file ready')
         return len(data['Objects']), base_type
 
     def export_ship_file(self, file_path, template_path=''):
-        data = self.serialise(objects_only=True)
+        with progress_ui.Activity('Exporting Corvette package') as progress:
+            return self._export_ship_file(file_path, template_path, progress)
+
+    def _export_ship_file(self, file_path, template_path, progress):
+        data = self.serialise(objects_only=True, progress=progress,
+                              progress_range=(.02, .72))
         if bpy.context.scene.nms_base_tool.string_base_type != 'PlayerShipBase':
             raise ValueError('The current scene is not marked as a Corvette')
+        progress.update(.76, 'Reading ship package metadata')
         source = _restore_build_source(bpy.context.scene)
         if source is None or source.kind != 'ship':
             if not template_path:
@@ -302,7 +293,9 @@ class NMSMain(PropertyGroup):
         if source.kind != 'ship':
             raise ValueError('Ship template must be a complete .nmsship package')
         payload = source.ship_bytes(data, bpy.context.scene.nms_base_tool.string_base)
+        progress.update(.92, 'Writing Corvette package')
         interchange.atomic_write(file_path, payload)
+        progress.update(1.0, 'Corvette package ready')
         return len(data)
 
     # Save and Load Methods ---
@@ -314,27 +307,38 @@ class NMSMain(PropertyGroup):
         Args:
             file_path (str): The path to the json file.
         """
-        data = self.serialise(get_presets=True)
+        with progress_ui.Activity('Saving BBE project JSON') as progress:
+            return self._save_nms_data(file_path, progress)
+
+    def _save_nms_data(self, file_path, progress):
+        data = self.serialise(get_presets=True, progress=progress,
+                              progress_range=(.02, .75))
+        progress.update(.78, 'Preparing project data')
         source = _restore_build_source(bpy.context.scene)
         if source and source.kind == 'base':
             data = source.with_scene(data)
         path = Path(file_path)
         if path.suffix.lower() != '.json':
             path = path.with_suffix('.json')
+        progress.update(.91, 'Writing project JSON')
         interchange.atomic_write(path, interchange._encode(data))
+        progress.update(1.0, 'Project JSON ready')
 
     def load_nms_data(self, file_path):
         # First load
-        with open(file_path, "r") as stream:
-            try:
-                save_data = json.load(stream)
-            except BaseException:
-                message = (
-                    "Could not load base data, are you sure you chose the "
-                    "correct file? (.json)"
-                )
-                ShowMessageBox(message=message, title="Import")
-                return
+        with progress_ui.Activity('Opening BBE project JSON') as progress:
+            with open(file_path, "r") as stream:
+                try:
+                    progress.update(.1, 'Reading project data')
+                    save_data = json.load(stream)
+                    progress.update(1.0, 'Importing models')
+                except BaseException:
+                    message = (
+                        "Could not load base data, are you sure you chose the "
+                        "correct file? (.json)"
+                    )
+                    ShowMessageBox(message=message, title="Import")
+                    return
         # Build from Data
         if isinstance(save_data, list):
             save_data = {"Objects": save_data}
@@ -610,7 +614,7 @@ class NMSMain(PropertyGroup):
 # File Buttons Panel ---
 class NMS_PT_hero_panel(Panel):
     bl_idname = "NMS_PT_hero_panel"
-    bl_label = "Base Builder Extended"
+    bl_label = "BBE"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "No Mans Sky Base Builder"
@@ -620,39 +624,23 @@ class NMS_PT_hero_panel(Panel):
     def poll(self, context):
         return True
 
+    def draw_header_preset(self, context):
+        row = self.layout.row()
+        row.alignment = 'RIGHT'
+        row.label(text='V' + ADDON_VERSION)
+
     def draw(self, context):
         scene = context.scene
         nms_tool = scene.nms_main
         layout = self.layout
         
         pcoll = icons.get_icons_pscroll()
-        plugin_icon = pcoll["plugin_icon"]
         pateron_icon = pcoll["patreon"]
         discord_icon = pcoll["discord"]
         steam_icon = pcoll["steam"]
         online_icon = pcoll["online"]
         
-        icon_row = layout.row(align = True)
-        icon_split = icon_row.split(factor = 0.24)
-        icon_holder = icon_split.column(align = True)
-        icon_holder.scale_y = 0.8
-        icon_holder.template_icon(
-            icon_value= plugin_icon.icon_id,
-            scale=4
-        )
-        
-        icon_text_column = icon_split.column(align = True)
-        icon_text_column.scale_y = 0.85
-        icon_text_column.label(text = "")
-        icon_text_column.label(text = "No Man's Sky")
-        icon_text_column.label(text = "Base Builder Extended")
-        icon_text_column.label(text = "Version " + ADDON_VERSION)
-        icon_text_column.separator()
-        icon_text_sec = icon_text_column.column(align = True)
-        icon_text_sec.alert = True
-        #icon_text_sec.scale_y = 0.4
-        icon_text_sec.label(text = "Base Builder: DjMonkey")
-        icon_text_column.label(text = "Extended: Furiousfurby")
+        icons.draw_sidebar_brand(layout, context)
         
         community_row = layout.row(align=True)
         communuity_box = community_row.box()
@@ -676,10 +664,10 @@ class NMS_PT_hero_panel(Panel):
         workspace_column_2 = workspace_column.column(align = True)
         workspace_cleanup_row = workspace_column_2.row(align = True)
         workspace_cleanup_row.enabled = not nms_tool.is_workspace_cleaned
-        workspace_cleanup_row.operator("object.nms_cleanup_workspace", text = "Simplify Blender Workspace", icon = "WORKSPACE")
+        workspace_cleanup_row.operator("object.nms_cleanup_workspace", text = "Simplify Blender Workspace", **icons.ui_icon("WORKSPACE"))
         
         workspace_column_2.separator()
-        workspace_column_2.operator("object.nms_workspace_settings", text = "Workspace Settings", icon = "SETTINGS")
+        workspace_column_2.operator("object.nms_workspace_settings", text = "Workspace Settings", **icons.ui_icon("SETTINGS"))
         
         
         
@@ -687,25 +675,45 @@ class NMS_PT_hero_panel(Panel):
         file_column = file_box.column(align = True)
             
         file_column.label(text="Scene")
-        file_column.operator("object.nms_new_file", text="Clear Build Scene...", icon="FILE_NEW")
+        file_column.operator("object.nms_new_file", text="Clear Build Scene...", **icons.ui_icon("FILE_NEW"))
         file_column.separator()
         file_column.label(text="Build files")
-        file_column.operator("object.nms_save_data", text="Save Project JSON...", icon="FILE_TICK")
-        file_column.operator("bbe.import_build_file", text="Import Build from File...", icon="IMPORT")
+        file_column.operator("object.nms_save_data", text="Save Project JSON...", **icons.ui_icon("FILE_TICK"))
+        file_column.operator("bbe.import_build_file", text="Import Build from File...", **icons.ui_icon("IMPORT"))
 
 
 # File Buttons Panel ---
+class NMS_PT_project_recovery_panel(Panel):
+    bl_idname = 'NMS_PT_project_recovery_panel'
+    bl_label = 'Project Recovery'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'No Mans Sky Base Builder'
+    bl_context = 'objectmode'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw_header(self, context):
+        icons.draw_panel_icon(self.layout, 'recovery')
+
+    def draw(self, context):
+        project_recovery.draw_controls(self.layout, context, boxed=False)
+
+
 class NMS_PT_file_buttons_panel(Panel):
     bl_idname = "NMS_PT_file_buttons_panel"
-    bl_label = "🔄 Import/Export"
+    bl_label = 'Import/Export'
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "No Mans Sky Base Builder"
+    bl_options = {'DEFAULT_CLOSED'}
     bl_context = "objectmode"
 
     @classmethod
     def poll(self, context):
         return True
+
+    def draw_header(self, context):
+        icons.draw_panel_icon(self.layout, 'io')
 
     def draw(self, context):
         
@@ -719,7 +727,7 @@ class NMS_PT_file_buttons_panel(Panel):
         file_box = file_row.box()
         first_column = file_box.column(align=True)
         first_column.scale_x = 0.5 if base_props.string_base_type == "PlayerShipBase" else 1.0
-        first_column.label(text="Metadata", icon = "PROPERTIES")
+        first_column.label(text="Metadata", **icons.ui_icon("PROPERTIES"))
         first_column.label(text="Base Name")
         first_column.prop(base_props, "string_base", text = "")
         first_row = first_column.row(align = True)
@@ -734,12 +742,12 @@ class NMS_PT_file_buttons_panel(Panel):
             fc_2.prop(base_props, "string_userdata", text = "")
 
         clipboard_box = file_row.box()
-        clipboard_box.label(text="Import & Export", icon = "IMPORT")
+        clipboard_box.label(text="Import & Export", **icons.ui_icon("IMPORT"))
         second_column = clipboard_box.column(align=False)
-        second_column.operator("object.nms_import_nms_data", icon="PASTEDOWN")
+        second_column.operator("object.nms_import_nms_data", **icons.ui_icon("PASTEDOWN"))
         second_column.separator()
         second_column.prop(nms_tool,"check_export_objects_only", text = "Objects only") 
-        second_column.operator("object.nms_export_nms_data", icon="COPYDOWN")
+        second_column.operator("object.nms_export_nms_data", **icons.ui_icon("COPYDOWN"))
             
 
 
@@ -765,7 +773,7 @@ class NMS_PT_station_transfer_reference(Panel):
 # Colour Panel ---
 class NMS_PT_colour_panel(Panel):
     bl_idname = "NMS_PT_colour_panel"
-    bl_label = "🎨 Colour & Materials"
+    bl_label = 'Colour & Materials'
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "No Mans Sky Base Builder"
@@ -775,6 +783,9 @@ class NMS_PT_colour_panel(Panel):
     @classmethod
     def poll(self, context):
         return True
+
+    def draw_header(self, context):
+        icons.draw_panel_icon(self.layout, 'color')
 
     def draw(self, context):
         draw_colour_palette(self.layout, context)
@@ -820,7 +831,7 @@ def draw_colour_palette(layout, context, *, horizontal=False):
 # Colour Panel ---
 class NMS_PT_logic_panel(Panel):
     bl_idname = "NMS_PT_logic_panel"
-    bl_label = "⚡ Cables & Logic"
+    bl_label = 'Cables & Logic'
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "No Mans Sky Base Builder"
@@ -830,6 +841,9 @@ class NMS_PT_logic_panel(Panel):
     @classmethod
     def poll(self, context):
         return True
+
+    def draw_header(self, context):
+        icons.draw_panel_icon(self.layout, 'cables')
 
     def draw(self, context):
         layout = self.layout
@@ -846,16 +860,16 @@ class NMS_PT_logic_panel(Panel):
         col.label(text = "Operations")
         row = col.row(align = True)
         operations_col_1 = row.column(align = True)
-        operations_col_1.operator("object.nms_point", icon="EMPTY_DATA")
-        operations_col_1.operator("object.nms_divide", icon="LINCURVE")
+        operations_col_1.operator("object.nms_point", **icons.ui_icon("EMPTY_DATA"))
+        operations_col_1.operator("object.nms_divide", **icons.ui_icon("LINCURVE"))
         
         operations_col_2 = row.column(align = True)
-        operations_col_2.operator("object.nms_connect", icon="PARTICLES")
-        operations_col_2.operator("object.nms_split", icon="MOD_PHYSICS")
+        operations_col_2.operator("object.nms_connect", **icons.ui_icon("PARTICLES"))
+        operations_col_2.operator("object.nms_split", **icons.ui_icon("MOD_PHYSICS"))
         
         operations_col_3 = row.column(align = True)
-        operations_col_3.operator("object.nms_select_connected", icon="RESTRICT_SELECT_OFF")
-        operations_col_3.operator("object.nms_select_floating", icon="RESTRICT_INSTANCED_ON")
+        operations_col_3.operator("object.nms_select_connected", **icons.ui_icon("RESTRICT_SELECT_OFF"))
+        operations_col_3.operator("object.nms_select_floating", **icons.ui_icon("RESTRICT_INSTANCED_ON"))
         logic_col= box.column(align = True)
         logic_col.label(text="Logic")
         logic_row_1 = logic_col.row(align = True)
@@ -871,7 +885,7 @@ class NMS_PT_logic_panel(Panel):
 # Build Panel ---
 class NMS_PT_build_panel(Panel):
     bl_idname = "NMS_PT_build_panel"
-    bl_label = "🏗️ Parts & Prefabs"
+    bl_label = 'Prefabs'
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "No Mans Sky Base Builder"
@@ -881,6 +895,9 @@ class NMS_PT_build_panel(Panel):
     @classmethod
     def poll(self, context):
         return True
+
+    def draw_header(self, context):
+        icons.draw_panel_icon(self.layout, 'parts')
 
     def draw(self, context):
         layout = self.layout
@@ -893,178 +910,101 @@ class NMS_PT_build_panel(Panel):
         presets_box = main_col.column(align = True)
         presets_box.label(text = "Prefabs")
         preset_row = presets_box.row(align = True)
-        preset_row.operator("object.nms_save_as_preset", icon="SCENE_DATA")
-        preset_row.operator("object.nms_split_preset", icon="MOD_EXPLODE")
+        preset_row.operator("object.nms_save_as_preset", **icons.ui_icon("SCENE_DATA"))
+        preset_row.operator("object.nms_split_preset", **icons.ui_icon("MOD_EXPLODE"))
         row = presets_box.row(align=True)
-        row.operator("object.nms_get_more_presets", icon="WORLD_DATA")
-        row.operator("object.nms_open_preset_folder", icon="FILE_FOLDER")
+        row.operator("object.nms_get_more_presets", **icons.ui_icon("WORLD_DATA"))
+        row.operator("object.nms_open_preset_folder", **icons.ui_icon("FILE_FOLDER"))
         
         presets_v2_col = main_col
         presets_v2_col.label(text = "Grouping")
         presets_v2_row = presets_v2_col.row(align = True)
-        presets_v2_row.operator("object.nms_group_objects", text = "Group", icon = "OUTLINER_OB_POINTCLOUD" )
-        presets_v2_row.operator("object.nms_ungroup_objects", text = "Ungroup",  icon = "OUTLINER_DATA_POINTCLOUD")
+        presets_v2_row.operator("object.nms_group_objects", text = "Group", **icons.ui_icon("OUTLINER_OB_POINTCLOUD") )
+        presets_v2_row.operator("object.nms_ungroup_objects", text = "Ungroup",  **icons.ui_icon("OUTLINER_DATA_POINTCLOUD"))
         
-class NMS_PT_nms_legacy_asset_browser(Panel):
-    bl_label = "Legacy Asset Browser";  
-    bl_idname = "NMS_PT_legacy_asset_browser"
-    bl_space_type = 'VIEW_3D';   
-    bl_region_type = 'UI';  
-    bl_category = "No Mans Sky Base Builder"
-    bl_parent_id  = "NMS_PT_build_panel"
-    bl_context = "objectmode"
-    bl_options = {'DEFAULT_CLOSED'}
-    
-    def draw(self, context):
-        layout = self.layout
-        
-        scene = context.scene
-        nms_tool = scene.nms_main
-        
-        lab_col = layout.box().column(align = True)
-        lab_col.label(text = "Parts and Prefabs", icon = "ASSET_MANAGER")
-        lab_col.row(align = True).prop(nms_tool, "enum_switch", expand=True)
-        lab_col.template_list(
-            "NMS_UL_actions_list",
-            "compact",
-            context.scene,
-            "col",
-            context.scene,
-            "col_idx",
-        )
+
+        catalogue = layout.box()
+        heading = catalogue.row(align=True)
+        heading.label(text="Prefab Catalogue")
+        heading.operator("object.nms_refresh_prefabs", text="", **icons.ui_icon("FILE_REFRESH"))
+        wm = context.window_manager
+        if wm.bbe_prefabs:
+            catalogue.template_list("NMS_UL_actions_list", "prefabs", wm,
+                                    "bbe_prefabs", wm, "bbe_prefab_index", rows=6)
+        else:
+            catalogue.label(text="No prefabs found")
 
 
 class NMS_UL_actions_list(bpy.types.UIList):
-    previous_layout = None
-
-    def draw_item(
-        self, context, layout, data, item, icon, active_data, active_propname
-    ):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         self.use_filter_show = True
-        if self.layout_type in {"DEFAULT", "COMPACT"}:
-            # Add a category item if the title is specified.
-            if item.title:
-                layout.label(text=item.title)
-
-            # Draw Parts
-            if item.item_type == "parts" and item.description:
-                all_parts = [x for x in item.description.split(",") if x]
-                part_row = layout.column_flow(columns=3)
-                for part in all_parts:
-                    operator = part_row.operator(
-                        "object.list_build_operator",
-                        text=BUILDER.get_nice_name(part),
-                    )
-                    operator.part_id = part
-                    operator.tooltip = (
-                        f"Name: {BUILDER.get_nice_name(part)}\nID: ({part})"
-                    )
-
-            # Draw Presets
-            if item.item_type == "presets":
-                if item.description in preset.Preset.get_presets():
-                    # Create Sub layuts
-                    build_area = layout.split(factor=0.7)
-                    operator = build_area.operator(
-                        "object.list_build_operator", text=item.description
-                    )
-                    edit_area = build_area.split(factor=0.6)
-                    edit_operator = edit_area.operator(
-                        "object.list_edit_operator", text="Edit"
-                    )
-                    delete_operator = edit_area.operator(
-                        "object.list_delete_operator", text="X"
-                    )
-                    operator.part_id = item.description
-                    edit_operator.part_id = item.description
-                    delete_operator.part_id = item.description
-                    operator.tooltip = "Place this prefab in the scene."
+        if item.title:
+            layout.label(text=item.title)
+        elif item.description:
+            row = layout.row(align=True)
+            place = row.operator("object.list_build_operator", text=item.description)
+            place.part_id = item.description
+            place.prefab_only = True
+            place.tooltip = "Place this prefab in the scene."
+            row.operator("object.list_edit_operator", text="", **icons.ui_icon("GREASEPENCIL")).part_id = item.description
+            row.operator("object.list_delete_operator", text="", **icons.ui_icon("TRASH")).part_id = item.description
 
 
 class PartCollection(bpy.types.PropertyGroup):
     title: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
-    item_type: bpy.props.StringProperty()
 
 
-def create_sublists(input_list, n=3):
-    """Create a list of sub-lists with n elements."""
-    if not input_list:
-        return []
-    total_list = [input_list[x : x + n] for x in range(0, len(input_list), n)]
-    # Fill in any blanks.
-    last_list = total_list[-1]
-    while len(last_list) < n:
-        last_list.append("")
-    return total_list
-
-
-def generate_ui_list_data(item_type="parts", pack=None):
-    """Generate a list of Blender UI friendly data of categories and parts.
-
-    When we retrieve presets we just want an item name.
-
-    For parts I am doing a trick where I am grouping sets of 3 parts in order
-    to make a grid in each UIList entry.
-
-    Args:
-        item_type (str): The type of items we want to retrieve
-            options - "presets", "parts".
-
-    Return:
-        list: tuple (str, str): Label and Description of items for the UIList.
-    """
-    ui_list_data = []
-    # Presets
-    if "presets" in item_type:
-        preset_categories = BUILDER.get_preset_categories()
-        for category in preset_categories:
-            presets = BUILDER.get_presets_from_category(category)
-            if presets:
-                ui_list_data.append((category, ""))
-                for _preset in sorted(presets):
-                    ui_list_data.append(("", _preset))
-        # Uncategorized.
-        presets = BUILDER.get_uncategorized_presets()
-        if presets:
-            ui_list_data.append(("Uncategorized Prefabs", ""))
-            for _preset in sorted(presets):
-                ui_list_data.append(("", _preset))
-    else:
-        # Packs/Parts
-        for category in BUILDER.get_categories(pack=pack):
-            ui_list_data.append((category, ""))
-            category_parts = BUILDER.get_parts_from_category(category, pack=pack)
-            category_parts = sorted(category_parts, key=BUILDER.get_nice_name)
-            new_parts = create_sublists(category_parts)
-            for part in new_parts:
-                joined_list = ",".join(part)
-                ui_list_data.append(("", joined_list))
-    return ui_list_data
-
-
-def refresh_ui_part_list(scene, item_type="parts", pack=None):
-    """Refresh the UI List.
-
-    Args:
-        item_type: The type of items we want to retrieve.
-            options - "presets", "parts".
-    """
-    # Clear the scene col.
+def refresh_prefab_catalogue():
+    """Cache folder contents outside draw callbacks and scene undo data."""
+    entries = []
     try:
-        scene.col.clear()
-    except:
-        pass
+        # Scan once, rather than rescanning the folder for every visible row.
+        grouped = {}
+        for name, filename in preset.Preset.get_presets().items():
+            parent = Path(filename).parent
+            category = ("Uncategorized Prefabs" if parent == Path(preset.Preset.PRESET_PATH)
+                        else parent.name.replace("_", " "))
+            grouped.setdefault(category, []).append(name)
+        for category, names in sorted(grouped.items(), key=lambda pair: pair[0].casefold()):
+            entries.append((category, ""))
+            entries.extend(("", name) for name in sorted(names, key=str.casefold))
+    except OSError as exc:
+        print("BBE: unable to read prefab catalogue:", exc)
+    for wm in bpy.data.window_managers:
+        wm.bbe_prefabs.clear()
+        for title, description in entries:
+            item = wm.bbe_prefabs.add()
+            item.title, item.description = title, description
+            item.name = description or title
+        wm.bbe_prefab_index = min(wm.bbe_prefab_index, max(0, len(entries) - 1))
+        for window in wm.windows:
+            for area in window.screen.areas:
+                if area.type == 'VIEW_3D':
+                    area.tag_redraw()
 
-    # Get part data based on
-    ui_list_data = generate_ui_list_data(item_type=item_type, pack=pack)
-    # Create items with labels and descriptions.
-    for i, (label, description) in enumerate(ui_list_data, 1):
-        item = scene.col.add()
-        item.title = label.title().replace("_", " ")
-        item.description = description
-        item.item_type = item_type
-        item.name = " ".join((str(i), label, description))
+
+def _refresh_prefab_catalogue_deferred():
+    if not undo_guard.history_ready():
+        return 0.5
+    refresh_prefab_catalogue()
+    return None
+
+
+@persistent
+def schedule_prefab_catalogue(_=None):
+    if not bpy.app.timers.is_registered(_refresh_prefab_catalogue_deferred):
+        bpy.app.timers.register(_refresh_prefab_catalogue_deferred, first_interval=0.1)
+
+
+class RefreshPrefabCatalogue(bpy.types.Operator):
+    """Reload the prefab catalogue from the prefab folder"""
+    bl_idname = "object.nms_refresh_prefabs"
+    bl_label = "Refresh Prefab Catalogue"
+
+    def execute(self, context):
+        refresh_prefab_catalogue()
+        return {'FINISHED'}
 
 
 # Operators ---
@@ -1128,8 +1068,8 @@ class ImportBuildFile(bpy.types.Operator):
     filter_glob: bpy.props.StringProperty(
         default='*.nmsship;*.nmsbase;*.nmsprefab;*.json;*.txt', options={'HIDDEN'})
     parts_base_type: bpy.props.EnumProperty(
-        name='If file has parts only',
-        description='Type to use if the file has no BaseType metadata',
+        name='Fallback build type',
+        description='Type to use when base-type metadata is missing, blank, or unsupported',
         items=[('HomePlanetBase', 'Planet Base', ''),
                ('PlayerShipBase', 'Corvette', ''),
                ('FreighterBase', 'Freighter Base', ''),
@@ -1270,8 +1210,7 @@ class SaveAsPreset(bpy.types.Operator):
         # Refresh Preset List.
         scene = context.scene
         nms_tool = scene.nms_main
-        if nms_tool.enum_switch == {"PRESETS"}:
-            refresh_ui_part_list(scene, "presets")
+        refresh_prefab_catalogue()
         # Reset string variable.
         self.preset_name = ""
         return {"FINISHED"}
@@ -1426,6 +1365,7 @@ class ListBuildOperator(bpy.types.Operator):
     bl_options = {"UNDO", "REGISTER"}
     part_id: StringProperty()
     tooltip: StringProperty()
+    prefab_only: BoolProperty(default=False, options={'HIDDEN'})
 
     @classmethod
     def description(cls, context, operator):
@@ -1438,6 +1378,10 @@ class ListBuildOperator(bpy.types.Operator):
         # Build item
         if self.part_id in preset.Preset.get_presets():
             new_item = BUILDER.add_preset(self.part_id)
+        elif self.prefab_only:
+            refresh_prefab_catalogue()
+            self.report({'WARNING'}, "This prefab is no longer in the prefab folder")
+            return {'CANCELLED'}
         else:
             new_item = builder_v2.add_part(self.part_id, builder_object=BUILDER)
             if hasattr(new_item, "build_rig"):
@@ -1493,8 +1437,7 @@ class ListDeleteOperator(bpy.types.Operator):
         nms_tool = context.scene.nms_main
         if self.part_id in preset.Preset.get_presets():
             preset.Preset.delete_preset(self.part_id)
-            if nms_tool.enum_switch == {"PRESETS"}:
-                refresh_ui_part_list(scene, "presets")
+            refresh_prefab_catalogue()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -1983,7 +1926,7 @@ class GroupObjects(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text = "Select Origin of Merged Object", icon = "OUTLINER_OB_POINTCLOUD")
+        layout.label(text = "Select Origin of Merged Object", **icons.ui_icon("OUTLINER_OB_POINTCLOUD"))
         type_row = layout.row(align=True)
         type_row.prop(self, "origin_type", expand = True)
         layout.label(text="This point will act as transformations pivot point")
@@ -2270,17 +2213,19 @@ classes = (
 
     NMS_UL_actions_list,
     NMS_PT_hero_panel,
+    NMS_PT_project_recovery_panel,
     NMS_PT_file_buttons_panel,
     NMS_PT_station_transfer_reference,
     NMS_PT_save_editor_panel,
     BBE_OT_backup_settings,
+    BBE_OT_refresh_save_counts,
     NMS_PT_transformation_panel,
     NMS_PT_colour_panel,
     NMS_PT_logic_panel,
     NMS_PT_tools_panel,
     NMS_PT_batch_tools_panel,
     NMS_PT_build_panel,
-    NMS_PT_nms_legacy_asset_browser,
+    RefreshPrefabCatalogue,
     NMSAddonPreferences,
     
     SwitchWorkspace,
@@ -2328,8 +2273,11 @@ def register():
         bpy.utils.register_class(_class)
     bpy.types.Scene.nms_main = PointerProperty(type=NMSMain)
     bpy.types.Scene.nms_base_tool = PointerProperty(type = NMSBaseProperties)
-    bpy.types.Scene.col = bpy.props.CollectionProperty(type=PartCollection)
-    bpy.types.Scene.col_idx = bpy.props.IntProperty(default=0)
+    bpy.types.WindowManager.bbe_prefabs = bpy.props.CollectionProperty(type=PartCollection, options={'SKIP_SAVE'})
+    bpy.types.WindowManager.bbe_prefab_index = bpy.props.IntProperty(default=0, options={'SKIP_SAVE'})
+    if schedule_prefab_catalogue not in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.append(schedule_prefab_catalogue)
+    schedule_prefab_catalogue()
     bpy.types.Scene.nms_save_data = bpy.props.PointerProperty(type=SaveManager)
     bpy.types.Scene.nms_build_tool = bpy.props.PointerProperty(type=BuildTool)
     bpy.types.Scene.nms_properties = bpy.props.PointerProperty(type=Properties)
@@ -2348,6 +2296,7 @@ def register():
     decals.register()
     hab_windows.register()
     undo_guard.register()
+    project_recovery.register()
     from .save_editor import corvette_optimizer
     corvette_optimizer.register()
     from .save_editor import ship_management
@@ -2362,6 +2311,13 @@ def register():
     bpy.app.timers.register(viewport_overlay.register_draw, first_interval=0.01)
 
 def unregister():
+    if bpy.app.timers.is_registered(_refresh_prefab_catalogue_deferred):
+        bpy.app.timers.unregister(_refresh_prefab_catalogue_deferred)
+    if schedule_prefab_catalogue in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.remove(schedule_prefab_catalogue)
+    del bpy.types.WindowManager.bbe_prefabs
+    del bpy.types.WindowManager.bbe_prefab_index
+    project_recovery.unregister()
     undo_guard.unregister()
     from .tools import asset_browser_grid, asset_browser_sidebar
     asset_browser_sidebar.unregister()

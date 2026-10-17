@@ -2,6 +2,8 @@ import bpy
 import bpy.utils.previews
 import os
 import json
+import array
+import zlib
 
 import sys
 import tempfile
@@ -9,6 +11,7 @@ import importlib
 
 preview_collections = {}
 _ICONS_REGISTERED = False
+_ACTION_ICON_KEYS = {}
 
 def extract_pcoll():
     """Reads the JSON file and loads icons into the Blender preview collection."""
@@ -42,6 +45,31 @@ def extract_pcoll():
         
     icon_dir = os.path.join(os.path.dirname(__file__), "images","plugin_icon.png")
     pcoll.load("plugin_icon", icon_dir, 'IMAGE')
+    toolbar_dir = os.path.join(current_dir, 'images', 'toolbar_icons')
+    for name in ('io', 'color', 'builder', 'transform', 'batch', 'parts',
+                 'cables', 'lighting', 'settings', 'extended_mark',
+                 'support', 'save', 'recovery'):
+        pcoll.load('toolbar_' + name, os.path.join(toolbar_dir, name + '.png'), 'IMAGE')
+
+    # Keep the branding at source resolution instead of Blender's thumbnail
+    # resolution. These preview pixels never become project datablocks.
+    with open(os.path.join(current_dir, 'images', 'bbe_sidebar_brand.rgba.z'), 'rb') as stream:
+        pixels = array.array('i', zlib.decompress(stream.read()))
+    if len(pixels) != 1080 * 1080:
+        raise ValueError('Invalid BBE sidebar branding pixels')
+    brand = pcoll.new('sidebar_brand')
+    brand.image_size = (1080, 1080)
+    brand.image_pixels = pixels
+    pcoll.load('credit_extended', os.path.join(current_dir, 'images',
+                                             'bbe_credit_extended.png'), 'IMAGE')
+    with open(os.path.join(current_dir, 'resources', 'ui_icon_map.json'), encoding='utf-8') as stream:
+        action_map = json.load(stream)
+    for name in sorted(set(action_map['actions'].values())):
+        pcoll.load('action_' + name, os.path.join(current_dir, 'images',
+                                                'action_icons', name + '.png'), 'IMAGE')
+    _ACTION_ICON_KEYS.clear()
+    _ACTION_ICON_KEYS.update({key: 'action_' + value for key, value in action_map['actions'].items()})
+    _ACTION_ICON_KEYS.update({key: 'toolbar_' + value for key, value in action_map['toolbar'].items()})
         
     # Store the collection in our global dictionary under a specific key
     return pcoll
@@ -131,11 +159,67 @@ def get_asset_icons_pcoll():
 def get_icons_pscroll():
     return preview_collections["ui_icons"]
 
+
+def draw_panel_icon(layout, name):
+    layout.label(text='', icon_value=get_icons_pscroll()['toolbar_' + name].icon_id)
+
+
+def ui_icon(name):
+    """Use shared action artwork, retaining native icons for unmapped UI states."""
+    key = _ACTION_ICON_KEYS.get(name)
+    pcoll = preview_collections.get('ui_icons')
+    if key and pcoll is not None and key in pcoll:
+        return {'icon_value': pcoll[key].icon_id}
+    return {'icon': name}
+
+
+def draw_sidebar_brand(layout, context):
+    """Fit the top-aligned native preview to the sidebar's width and zoom."""
+    region = context.region
+    ui_scale = context.preferences.system.ui_scale
+    left = region.view2d.region_to_view(0, 0)[0]
+    right = region.view2d.region_to_view(region.width, 0)[0]
+    scale = max(3.0, min(18.0, abs(right - left) / (20.0 * ui_scale) - 1.8))
+    row = layout.row(align=True)
+    row.alignment = 'LEFT'
+    # The lower part of the square preview is transparent; only reserve the
+    # visible banner height so the following controls sit directly beneath it.
+    row.ui_units_y = scale * (98.0 / 360.0) + 0.3
+    row.template_icon(icon_value=get_icons_pscroll()['sidebar_brand'].icon_id, scale=scale)
+
+    credits = layout.column(align=True)
+    first = credits.split(factor=0.40, align=True)
+    first.scale_y = 0.8
+    prefix = first.row(align=True)
+    prefix.alignment = 'RIGHT'
+    words = prefix.row(align=True)
+    words.ui_units_x = 3.35
+    words.alignment = 'RIGHT'
+    words.label(text='Base Builder')
+    colon = prefix.row(align=True)
+    colon.ui_units_x = 0.55
+    colon.alignment = 'RIGHT'
+    colon.label(text=':')
+    first.label(text='DjMonkey')
+    credit = credits.split(factor=0.40, align=True)
+    prefix = credit.row(align=True)
+    prefix.alignment = 'RIGHT'
+    word = prefix.row(align=True)
+    word.ui_units_y = 1.0
+    word.template_icon(icon_value=get_icons_pscroll()['credit_extended'].icon_id,
+                       scale=3.35)
+    colon = prefix.row(align=True)
+    colon.ui_units_x = 0.55
+    colon.alignment = 'RIGHT'
+    colon.label(text=':')
+    credit.label(text='FuriousFurby')
+
 def check_register_icons():
     if not _ICONS_REGISTERED:
         register_icons()
 
 def register_icons():
+    global _ICONS_REGISTERED
     _ICONS_REGISTERED = True
     
     pcoll = extract_pcoll()
@@ -147,6 +231,9 @@ def register_icons():
 
 
 def unregister_icons():
+    global _ICONS_REGISTERED
     for pcoll in preview_collections.values():
         bpy.utils.previews.remove(pcoll)
     preview_collections.clear()
+    _ACTION_ICON_KEYS.clear()
+    _ICONS_REGISTERED = False

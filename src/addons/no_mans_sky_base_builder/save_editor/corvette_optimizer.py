@@ -2,8 +2,12 @@
 import json
 from pathlib import Path
 import bpy
+from .. import icons
+from .. import progress_ui
 from . import optimizer_core as core, optimizer_export
 from .save_editor_utils import BaseType
+
+_pending_optimizer_exports = {}
 
 
 def settings_file():
@@ -90,11 +94,11 @@ class BBE_OT_swap_corvette_cockpits(bpy.types.Operator):
         layout = self.layout
         objects = placed_cockpits(context)
         if len(objects) < 2:
-            layout.label(text=f'Only {len(objects)} cockpit(s) in this scene; two are needed.', icon='INFO')
+            layout.label(text=f'Only {len(objects)} cockpit(s) in this scene; two are needed.', **icons.ui_icon('INFO'))
             return
         layout.prop(self, 'first')
         layout.prop(self, 'second')
-        layout.label(text='The optimizer preserves this order when exporting.', icon='INFO')
+        layout.label(text='The optimizer preserves this order when exporting.', **icons.ui_icon('INFO'))
 
     def execute(self, context):
         objects = placed_cockpits(context)
@@ -253,24 +257,24 @@ class BBE_OT_optimizer_settings(bpy.types.Operator):
                 row.template_list('BBE_UL_optimizer_parts', '', group, 'parts', group, 'active_part', rows=10)
             arrows = row.column(align=True)
             for direction, icon in ((-1, 'TRIA_UP'), (1, 'TRIA_DOWN')):
-                op = arrows.operator('bbe.optimizer_move', text='', icon=icon)
+                op = arrows.operator('bbe.optimizer_move', text='', **icons.ui_icon(icon))
                 op.group = is_group
                 op.direction = direction
             edits = column.row(align=True)
             edits.operator_context = 'INVOKE_DEFAULT'
-            edits.operator('bbe.optimizer_edit', text='Add', icon='ADD').action = 'ADD_GROUP' if is_group else 'ADD_PART'
-            edits.operator('bbe.optimizer_edit', text='Remove', icon='REMOVE').action = 'REMOVE_GROUP' if is_group else 'REMOVE_PART'
+            edits.operator('bbe.optimizer_edit', text='Add', **icons.ui_icon('ADD')).action = 'ADD_GROUP' if is_group else 'ADD_PART'
+            edits.operator('bbe.optimizer_edit', text='Remove', **icons.ui_icon('REMOVE')).action = 'REMOVE_GROUP' if is_group else 'REMOVE_PART'
             if is_group:
                 column.operator('bbe.optimizer_edit', text='Rename Category').action = 'RENAME_GROUP'
         layout.separator()
         layout.label(text='Order affects which functional parts the game processes first; it can change stats and cockpit roles.')
         layout.label(text='Defaults are a starting point, not a guarantee of maximum stats. Removing entries keeps their objects.')
         layout.prop(state, 'delete_identical')
-        layout.label(text='Every saved field must match exactly. Different rotations, scales or colours are kept.', icon='INFO')
+        layout.label(text='Every saved field must match exactly. Different rotations, scales or colours are kept.', **icons.ui_icon('INFO'))
         layout.label(text='Applies to Optimize & Export only. Unlisted parts follow warning tiers, then names.')
         layout.operator_context = 'INVOKE_DEFAULT'
-        layout.operator('bbe.swap_corvette_cockpits', text='Swap Placed Cockpit Order', icon='ARROW_LEFTRIGHT')
-        layout.operator('bbe.optimizer_reset', icon='LOOP_BACK')
+        layout.operator('bbe.swap_corvette_cockpits', text='Swap Placed Cockpit Order', **icons.ui_icon('ARROW_LEFTRIGHT'))
+        layout.operator('bbe.optimizer_reset', **icons.ui_icon('LOOP_BACK'))
 
     def execute(self, context):
         try:
@@ -296,13 +300,16 @@ def destination(context, pinned):
     return identifier, list(links)
 
 
-def prepare(context, pinned):
+def prepare(context, pinned, progress=None):
     identifier, links = destination(context, pinned)
     context.view_layer.update()
-    objects = context.scene.nms_main.serialise(objects_only=True)
+    objects = context.scene.nms_main.serialise(
+        objects_only=True, progress=progress, progress_range=(.02, .12))
     if not objects:
         raise ValueError('There are no objects to export')
     config = load_settings()
+    if progress:
+        progress.update(.13, 'Ordering and checking parts')
     from .. import BUILDER
     ordered, counts = core.optimize(objects, config, name_for_part=BUILDER.get_nice_name)
     name = context.scene.nms_base_tool.string_base.strip() or None
@@ -317,10 +324,14 @@ class BBE_OT_optimizer_export(bpy.types.Operator):
     bl_label = 'Optimize & Export to Save'
     bl_description = 'Export this scene to the selected Corvette using saved priorities and optional exact duplicate removal, with verified backups'
     pinned: bpy.props.BoolProperty(default=False, options={'HIDDEN'})
+    expected_signature: bpy.props.StringProperty(default='', options={'HIDDEN'})
 
     def invoke(self, context, event):
         try:
-            self._plan = prepare(context, self.pinned)
+            with progress_ui.Activity('Preparing optimized export') as progress:
+                progress.update(.05, 'Collecting scene parts')
+                self._plan = prepare(context, self.pinned, progress)
+                progress.update(1.0, 'Review export details')
         except Exception as exc:
             self.report({'ERROR'}, str(exc))
             return {'CANCELLED'}
@@ -329,31 +340,73 @@ class BBE_OT_optimizer_export(bpy.types.Operator):
     def draw(self, context):
         identifier, links, name, ordered, counts, signature = self._plan
         layout = self.layout
-        layout.label(text=f'Corvette: {identifier.base_name}', icon='OUTLINER_OB_LIGHTPROBE')
+        layout.label(text=f'Corvette: {identifier.base_name}', **icons.ui_icon('OUTLINER_OB_LIGHTPROBE'))
         for link in links:
-            layout.label(text=str(Path(link)), icon='FILE')
+            layout.label(text=str(Path(link)), **icons.ui_icon('FILE'))
         if name and name != identifier.base_name:
             layout.label(text=f'Export name: {name}')
         layout.separator()
         layout.label(text=f"Objects: {counts['before']} → {counts['after']}   •   Reordered: {counts['moved']}")
         layout.label(text=f"Identical objects to remove from export: {counts['removed']}")
-        layout.label(text='Verified backups will be created before saving.', icon='INFO')
+        layout.label(text='Verified backups will be created before saving.', **icons.ui_icon('INFO'))
         layout.label(text='Your Blender objects stay in the scene.')
 
     def execute(self, context):
+        # The confirmation dialog must close before the viewport progress bar
+        # can become visible. Recheck the scene and destination in the timer.
+        if (hasattr(self, '_plan') and not bpy.app.background
+                and context.window is not None and not self.expected_signature):
+            window = context.window
+            scene = context.scene
+            window_id = window.as_pointer()
+            if window_id in _pending_optimizer_exports:
+                self.report({'WARNING'}, 'An optimized export is already starting')
+                return {'CANCELLED'}
+            signature = self._plan[-1]
+            pinned = self.pinned
+
+            def start_export():
+                try:
+                    if not any(w.as_pointer() == window_id
+                               for w in bpy.context.window_manager.windows):
+                        return None
+                    if bpy.data.scenes.get(scene.name) != scene or window.scene != scene:
+                        return None
+                    with bpy.context.temp_override(window=window, scene=scene):
+                        bpy.ops.bbe.optimizer_export('EXEC_DEFAULT', pinned=pinned,
+                                                    expected_signature=signature)
+                except Exception as exc:
+                    print(f'Could not start optimized export: {exc}')
+                finally:
+                    _pending_optimizer_exports.pop(window_id, None)
+                return None
+
+            _pending_optimizer_exports[window_id] = start_export
+            bpy.app.timers.register(start_export, first_interval=0.1)
+            self.report({'INFO'}, 'Optimized export is starting')
+            return {'FINISHED'}
+
         try:
-            current = prepare(context, self.pinned)
-            if hasattr(self, '_plan') and current[-1] != self._plan[-1]:
-                raise ValueError('Scene, settings or destination changed. Review the export again.')
-            identifier, links, name, ordered, counts, signature = current
-            backups = optimizer_export.export(ordered, identifier, links, name)
+            with progress_ui.Activity('Optimizing and exporting') as progress:
+                progress.update(.02, 'Collecting and ordering scene parts')
+                current = prepare(context, self.pinned, progress)
+                expected = self.expected_signature or (
+                    self._plan[-1] if hasattr(self, '_plan') else '')
+                if expected and current[-1] != expected:
+                    raise ValueError('Scene, settings or destination changed. Review the export again.')
+                identifier, links, name, ordered, counts, signature = current
+                progress.update(.15, 'Optimization complete')
+                backups = optimizer_export.export(ordered, identifier, links, name,
+                                                  progress=progress)
+                progress.update(.98, 'Refreshing save list')
+                try:
+                    context.scene.nms_save_data.refresh_bases_list()
+                except Exception as exc:
+                    self.report({'WARNING'}, f'Saved, but the save list could not refresh: {exc}')
+                progress.update(1.0, 'Export complete')
         except Exception as exc:
             self.report({'ERROR'}, f'Optimized export failed: {exc}')
             return {'CANCELLED'}
-        try:
-            context.scene.nms_save_data.refresh_bases_list()
-        except Exception as exc:
-            self.report({'WARNING'}, f'Saved, but the save list could not refresh: {exc}')
         self.report({'INFO'}, f"Exported {counts['after']} objects; removed {counts['removed']} exact duplicates; {len(backups)} backups created")
         return {'FINISHED'}
 
@@ -361,8 +414,8 @@ class BBE_OT_optimizer_export(bpy.types.Operator):
 def draw_row(layout, pinned=False):
     row = layout.row(align=True)
     row.operator_context = 'INVOKE_DEFAULT'
-    row.operator('bbe.optimizer_export', icon='EXPORT').pinned = pinned
-    row.operator('bbe.optimizer_settings', text='', icon='PREFERENCES')
+    row.operator('bbe.optimizer_export', **icons.ui_icon('EXPORT')).pinned = pinned
+    row.operator('bbe.optimizer_settings', text='', **icons.ui_icon('PREFERENCES'))
 
 
 CLASSES = (BBE_PG_optimizer_part, BBE_PG_optimizer_group, BBE_PG_optimizer_settings,

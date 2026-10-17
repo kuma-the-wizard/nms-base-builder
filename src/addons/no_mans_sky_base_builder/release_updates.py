@@ -4,6 +4,7 @@ import os
 import platform
 from pathlib import Path
 import bpy
+from . import icons
 from bpy.props import BoolProperty, StringProperty
 from .furby_updates import ProcessUpdateClient as UpdateClient
 
@@ -52,15 +53,15 @@ def _show_auto_update_prompt(context):
         locked=_online_access_locked()
         if locked:
             layout.separator()
-            layout.label(text='Blender was started in offline mode.', icon='INFO')
+            layout.label(text='Blender was started in offline mode.', **icons.ui_icon('INFO'))
             layout.label(text='Restart without --offline-mode to enable updates.')
         layout.separator()
         row=layout.row(align=True)
         row.operator_context='EXEC_DEFAULT'
         yes=row.row(align=True)
         yes.enabled=not locked
-        yes.operator('furby_'+_client.product+'.auto_update_choice',text='Yes',icon='CHECKMARK').enabled=True
-        row.operator('furby_'+_client.product+'.auto_update_choice',text='No',icon='X').enabled=False
+        yes.operator('furby_'+_client.product+'.auto_update_choice',text='Yes',**icons.ui_icon('CHECKMARK')).enabled=True
+        row.operator('furby_'+_client.product+'.auto_update_choice',text='No',**icons.ui_icon('X')).enabled=False
     context.window_manager.popup_menu(draw, title='Enable auto updates?', icon='QUESTION')
     # Dismissal is a No too: show once, and never silently opt a user in.
     _client.set_auto(False)
@@ -187,22 +188,23 @@ def register(product, installed, category):
         bl_idname=prefix.upper()+'_PT_updates';bl_label='Updates & Support'
         bl_space_type='VIEW_3D';bl_region_type='UI';bl_category=category;bl_options={'DEFAULT_CLOSED'}
         def draw_header(self,context):
-            self.layout.label(text='', icon='COLLECTION_COLOR_05')
+            from . import icons
+            icons.draw_panel_icon(self.layout, 'support')
         def draw(self,context):
             layout=self.layout
             layout.label(text='Installed: '+installed)
             import textwrap
             for line in textwrap.wrap(_client.message,40):layout.label(text=line)
             row=layout.row();row.enabled=not _client.busy
-            row.operator(Check.bl_idname,text='Check now',icon='FILE_REFRESH')
+            row.operator(Check.bl_idname,text='Check now',**icons.ui_icon('FILE_REFRESH'))
             row=layout.row();row.enabled=not _client.busy and bool((_client.result or {}).get('available'))
-            row.operator(Download.bl_idname,icon='IMPORT')
-            layout.operator(Auto.bl_idname,text='Check on startup',icon='CHECKBOX_HLT' if _client.settings.get('auto_check') else 'CHECKBOX_DEHLT')
-            layout.operator(Folder.bl_idname,icon='FILE_FOLDER')
+            row.operator(Download.bl_idname,**icons.ui_icon('IMPORT'))
+            layout.operator(Auto.bl_idname,text='Check on startup',**icons.ui_icon('CHECKBOX_HLT' if _client.settings.get('auto_check') else 'CHECKBOX_DEHLT'))
+            layout.operator(Folder.bl_idname,**icons.ui_icon('FILE_FOLDER'))
             layout.label(text='Install ZIP after saving and restarting Blender.')
-            layout.separator();layout.operator(Report.bl_idname,icon='TEXT')
-            layout.operator(Online.bl_idname,icon='URL')
-            layout.operator(Email.bl_idname,icon='URL')
+            layout.separator();layout.operator(Report.bl_idname,**icons.ui_icon('TEXT'))
+            layout.operator(Online.bl_idname,**icons.ui_icon('URL'))
+            layout.operator(Email.bl_idname,**icons.ui_icon('URL'))
             layout.label(text='Support@furiousfurby.com')
     for kind,cls in [('OT_check',Check),('OT_download',Download),('OT_auto',Auto),('OT_auto_choice',AutoChoice),('OT_folder',Folder),('OT_report',Report),('OT_online',Online),('OT_email',Email),('OT_error_prompt',ErrorPrompt),('PT_updates',Panel)]:
         cls.__name__=prefix.upper()+'_'+kind

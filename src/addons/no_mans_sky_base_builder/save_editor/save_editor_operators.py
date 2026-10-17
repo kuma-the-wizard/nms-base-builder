@@ -227,9 +227,7 @@ class MakeBackupPinned(bpy.types.Operator):
     bl_idname = "object.make_pinned_savefile_backup"
     bl_label = "Backup"
     bl_description = (
-        "Backup save files liked to pinned base\n"
-        "backup folder with name 'nms_base_builder_backup' will be created in folder where save files are located. \n"
-        "To restore, rename the files by remove everything before '.hg.' and pasting them into their parent folder"
+        "Back up the save files linked to the pinned base in the shared Backup Folder"
     )
         
     def execute(self, context):
@@ -245,9 +243,7 @@ class MakeBackup(bpy.types.Operator):
     bl_idname = "object.make_savefile_backup"
     bl_label = "Backup"
     bl_description = (
-        "Backup currently selected save slot\n"
-        "backup folder with name 'nms_base_builder_backup' will be created in folder where save files are located. \n"
-        "To restore, rename the files by remove everything before '.hg.' and pasting them into their parent folder"
+        "Back up the selected save slot in the shared Backup Folder"
     )
         
     def execute(self, context):
@@ -260,11 +256,9 @@ class MakeBackup(bpy.types.Operator):
 class OpenBackupFolder(bpy.types.Operator):
     
     bl_idname = "object.open_backup_folder"
-    bl_label = "Open save folder"
+    bl_label = "Open Save Slot Backups"
     bl_description = (
-        "Backup currently selected save slot\n"
-        "backup folder with name 'nms_base_builder_backup' will be created in folder where save files are located. \n"
-        "To restore, rename the files by remove everything before '.hg.' and pasting them into their parent folder"
+        "Open the selected save slot's subfolder inside the shared Backup Folder"
     )
         
     def execute(self, context):

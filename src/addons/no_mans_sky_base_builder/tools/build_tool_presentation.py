@@ -6,7 +6,7 @@ from .. import icons
 # Snap Panel ---
 class NMS_PT_tools_panel(Panel):
     bl_idname = "NMS_PT_snap_panel"
-    bl_label = "🛠️ Builder Tools"
+    bl_label = 'Builder Tools'
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "No Mans Sky Base Builder"
@@ -16,6 +16,9 @@ class NMS_PT_tools_panel(Panel):
     @classmethod
     def poll(self, context):
         return True
+
+    def draw_header(self, context):
+        icons.draw_panel_icon(self.layout, 'builder')
 
     def draw(self, context):
         layout = self.layout
@@ -57,17 +60,17 @@ class NMS_PT_tools_panel(Panel):
         snap_label_col.label(text="Target")
         snap_label_col.label(text="Source")
         
-        snap_op = snap_button_container.operator("object.nms_snap", icon="SNAP_ON")
+        snap_op = snap_button_container.operator("object.nms_snap", **icons.ui_icon("SNAP_ON"))
 
         target_source_column = snap_button_container.column(align=True)
         source_row = target_source_column.row(align=True)
         target_row = target_source_column.row(align=True)
         
-        snap_target_prev = target_row.operator( "object.nms_snap", icon="TRIA_LEFT", text="Prev" )
-        snap_target_next = target_row.operator( "object.nms_snap", icon="TRIA_RIGHT", text="Next" )
+        snap_target_prev = target_row.operator( "object.nms_snap", **icons.ui_icon("TRIA_LEFT"), text="Prev" )
+        snap_target_next = target_row.operator( "object.nms_snap", **icons.ui_icon("TRIA_RIGHT"), text="Next" )
         
-        snap_source_prev = source_row.operator( "object.nms_snap", icon="TRIA_LEFT", text="Prev")
-        snap_source_next = source_row.operator("object.nms_snap", icon="TRIA_RIGHT", text="Next")
+        snap_source_prev = source_row.operator( "object.nms_snap", **icons.ui_icon("TRIA_LEFT"), text="Prev")
+        snap_source_next = source_row.operator("object.nms_snap", **icons.ui_icon("TRIA_RIGHT"), text="Next")
         
         
         
@@ -77,17 +80,17 @@ class NMS_PT_tools_panel(Panel):
         tools_col.label(text="Common Tools")
         #tools_col.separator()
         tools_dup_row = tools_col.column(align = False)
-        tools_dup_row.operator("object.nms_duplicate", icon="DUPLICATE")
-        tools_dup_row.operator("object.nms_delete", icon="TRASH")
+        tools_dup_row.operator("object.nms_duplicate", **icons.ui_icon("DUPLICATE"))
+        tools_dup_row.operator("object.nms_delete", **icons.ui_icon("TRASH"))
         tools_col.separator()
         #tools_col.label(text="Curve")
-        tools_col.operator("object.nms_duplicate_along_curve", icon="MOD_DASH")
+        tools_col.operator("object.nms_duplicate_along_curve", **icons.ui_icon("MOD_DASH"))
         tools_col.separator()
         #presets_v2_col = tools_box.column(align = True)
         tools_col.label(text = "Grouping")
         presets_v2_row = tools_col.row(align = True)
-        presets_v2_row.operator("object.nms_group_objects", text = "Group", icon = "OUTLINER_OB_POINTCLOUD" )
-        presets_v2_row.operator("object.nms_ungroup_objects", text = "Ungroup",  icon = "OUTLINER_DATA_POINTCLOUD")
+        presets_v2_row.operator("object.nms_group_objects", text = "Group", **icons.ui_icon("OUTLINER_OB_POINTCLOUD") )
+        presets_v2_row.operator("object.nms_ungroup_objects", text = "Ungroup",  **icons.ui_icon("OUTLINER_DATA_POINTCLOUD"))
         # Object orientation for corvette parts, mirror can work for non corvette parts too
         #orientation_box = tools_column.box()
         # mirror_col = orientation_box.column(align=True)
@@ -96,8 +99,8 @@ class NMS_PT_tools_panel(Panel):
         mirror_col = tools_col
         mirror_col.label(text="Orientation") # icon = "ORIENTATION_GIMBAL"
         mirror_col_row = mirror_col.row(align = True)
-        mirror_col_row.operator("object.nms_mirror", icon="ARROW_LEFTRIGHT")
-        mirror_col_row.operator("object.nms_flip", icon="DECORATE_OVERRIDE")
+        mirror_col_row.operator("object.nms_mirror", **icons.ui_icon("ARROW_LEFTRIGHT"))
+        mirror_col_row.operator("object.nms_flip", **icons.ui_icon("DECORATE_OVERRIDE"))
         
                     
         # Mirroring tools
@@ -107,15 +110,15 @@ class NMS_PT_tools_panel(Panel):
         
         if not build_tool.check_show_advanced_options:
             mirroring_box_column_label_row = mirroring_box_column.row(align = True)
-            mirroring_box_column_label_row.label(text = "Mirror", icon = "MOD_MIRROR")
+            mirroring_box_column_label_row.label(text = "Mirror", **icons.ui_icon("MOD_MIRROR"))
             mirroring_box_column.prop(build_tool,"check_show_advanced_options", text = "Show more options") # icon = "OPTIONS"
             mirroring_box_column.separator()
-            mirroring_box_column.operator( "object.nms_universal_mirror_x", icon="ARROW_LEFTRIGHT" , text = "Mirror across X" )
+            mirroring_box_column.operator( "object.nms_universal_mirror_x", **icons.ui_icon("ARROW_LEFTRIGHT") , text = "Mirror across X" )
         
         else :
             mirroring_box_column_label_row = mirroring_box_column.row(align = True)
-            mirroring_box_column_label_row.label(text = "Mirror", icon = "MOD_MIRROR")
-            mirroring_box_column_label_row.prop(build_tool,"check_show_advanced_options", text = "", icon = "TRIA_UP") # icon = "OPTIONS"
+            mirroring_box_column_label_row.label(text = "Mirror", **icons.ui_icon("MOD_MIRROR"))
+            mirroring_box_column_label_row.prop(build_tool,"check_show_advanced_options", text = "", **icons.ui_icon("TRIA_UP")) # icon = "OPTIONS"
             
             mirroring_box_column.separator()
             mirroring_options_col = mirroring_box_column.column(align = True)
@@ -124,7 +127,7 @@ class NMS_PT_tools_panel(Panel):
             
             mirroring_box_column.separator()
             mirroring_box_column.prop(build_tool,"check_auto_duplicate")
-            mirroring_box_column.operator("object.nms_advanced_mirror", icon = "MOD_MIRROR", text = "Perform Mirror")
+            mirroring_box_column.operator("object.nms_advanced_mirror", **icons.ui_icon("MOD_MIRROR"), text = "Perform Mirror")
             
             
 

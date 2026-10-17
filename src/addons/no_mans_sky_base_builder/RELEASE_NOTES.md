@@ -1,3 +1,90 @@
+## 18.1.78 - Independent recovery timer and visible status
+
+- Prevent other add-ons' save-copy operations and normal saves from restarting BBE's recovery countdown or clearing its placement count. Only a project-path change starts a new schedule.
+- Keep the load-time deadline when Blender delays the first safe idle tick.
+- Show the countdown, placement progress, waiting reason, or backup error in Recovery. Retry failed backups after one minute rather than silently waiting another full interval.
+- Wait for active transform/sculpt/paint operations before saving; retain three consecutive independent recovery generations.
+
+## 18.1.77 - Import designs without a base type
+
+- Accept shared JSON/TXT designs with missing, blank, or unsupported base-type metadata using the selected fallback for Blender's scene metadata.
+- Preserve supported base types, all part records, and the original source file. Normalize metadata before changing the current scene.
+- Verify the reported 676-part TXT design imports completely.
+
+## 18.1.76 - Direct prefab catalogue
+
+- Restore the prefab catalogue below the prefab actions in both the top bar and sidebar.
+- Remove the Parts selector/list and nested Legacy Asset Browser panel; rename the sidebar section Prefabs.
+- Cache the catalogue outside scene undo data, refresh on startup/file load and prefab save/delete, and provide a refresh button for externally added files.
+
+## 18.1.75 - Focused Prefabs and compact recovery controls
+
+- Remove the legacy Parts/Prefabs browser block from the top-bar Prefabs dropdown while keeping prefab actions and the separate Asset Browser.
+- Narrow Scene Preview to 14 UI units and Project Recovery to 16.
+- Put the recovery mode and Minutes/Qty value side by side in the top bar and sidebar. Retain the existing time, placement and rotation behavior.
+
+## 18.1.74 - Compact dropdowns and colored action icons
+
+- Reduce individual toolbar dropdown widths by 8-30 percent while retaining the Color palette width and natural header label sizes.
+- Add 43 transparent action icons covering 74 existing symbol names throughout shared toolbar/sidebar controls, Save Manager, recovery, optimizer, and support menus. Keep native state indicators and unmapped icons available through a safe fallback.
+- Reuse the toolbar symbols in toolbar customization.
+
+## 18.1.73 - Compact credits, colored sidebar and Recovery menu
+
+- Give Project Recovery its own top-bar menu beside BBE, sharing the sidebar recovery controls.
+- Tighten the two native-text credit lines and their punctuation spacing while preserving the purple EXTENDED word size.
+- Turn the hammer striking face downward without moving the handle. Reuse colored toolbar symbols in matching sidebar headers; add distinct recovery, save and shield/update symbols.
+- Default Import/Export, Save Manager and Transformations to collapsed, so fresh workspaces start with only BBE expanded. Preserve Blender saved workspace panel states.
+
+## 18.1.72 - Native credit text
+
+- Render creator names, Base Builder and credit punctuation with Blender native text for sharp UI rendering. Keep only the purple EXTENDED credit word as artwork and align both colons with their names on the text baseline.
+
+## 18.1.71 - Hammer, RGB icon and clear BBE branding
+
+- Use a recognizable hammer for Builder and three additive RGB circles with a white center for Color.
+- Replace the cramped branding row with crisp, stacked Base Builder / EXTENDED artwork, the existing logo and smaller creator credits. Keep the sidebar compact at different widths and UI zoom levels using a native preview, without adding project images or textures.
+- Put BBE on the left of its panel header and the short version label on the right.
+
+## 18.1.70 - Clearer toolbar icons and save selection
+
+- Keep the familiar top-bar symbol shapes, draw their colors in the symbols themselves on transparent backgrounds, and strengthen their small-size strokes. Remove the colored circular badges.
+- Label Account and Save Slot as separate steps in both Save Manager views. Until a slot is chosen, explain where ship imports will appear and show their button disabled instead of silently omitting it.
+
+## 18.1.69 - Ship Management loading progress
+
+- Show progress while Ship Management reads, verifies, backs up and writes game save files, including creation of a new save slot. Keep the existing verified write and rollback behavior.
+
+## 18.1.68 - Visible import and export progress
+
+- Show staged progress for Optimize & Export to Save, including part collection, save loading, verification, backup and replacement. Start the confirmed export after the dialog closes so its progress bar is visible.
+- Show progress when reading builds, loading the save list, importing from a game save, and exporting to the clipboard or standalone project, base and Corvette files. The existing model import and proxy loading bars remain in place.
+- Refresh the four corrected B_STR_T NW display meshes when an older BBE project opens, in Detailed or Simple proxy mode. Leave user edited meshes alone. These display meshes do not change the game's native model; the correction makes Blender's preview match it.
+
+## 18.1.67 - Fuel pod rim proxies and BBE navigation
+
+- Load the four authored NW fuel-pod cover rim meshes instead of rebuilding them from the NE rim. The rebuilt meshes disagreed with the individual assets. Switching Simple Proxies to Detailed Proxies refreshes these parts in existing projects.
+- Move Project Recovery from I/O to the BBE top-bar menu and its own panel in the BBE sidebar category. Keep backup folder controls with recovery.
+- Compact the sidebar brand block, show BBE and the version in its panel header, and retain DjMonkey and FuriousFurby credits and support links. Add a purple Extended badge.
+- Add distinct colored symbol icons to the top toolbar menus for faster visual scanning.
+
+## 18.1.66 - One configurable backup folder
+
+- Store new project recovery copies and game-save backups under one shared backup folder, separated into Projects and Game Saves subfolders. The default is NoMansSkyBaseBuilder/Backups in the user home folder.
+- Add Open Backup Folder and Change Folder controls to both I/O menus and add-on preferences. Folder changes apply to both backup types; earlier backups stay in their original locations. Recovery copies in the prior Blender configuration location remain available in the recovery menu.
+- Keep the save-slot backup shortcut scoped to that slot's subfolder, and update its labels and help text.
+
+## 18.1.65 - Three rotating recovery slots
+
+- Use three fixed recovery slots for each project. The first, second, and third backup fill them in order; the fourth atomically replaces the first, then the fifth replaces the second.
+- Convert the newest three timestamped recovery copies from 18.1.64 to rotating slots on the next backup. Ignore incomplete temporary copies in the recovery menu.
+
+## 18.1.64 - Undo stability and project recovery
+
+- Keep generated hab-window display meshes available to Blender undo; pause decal, window, and lighting refresh while undo/redo settles. Preserve the original undo preference settings during rapid history operations.
+- Add independent `.blend` recovery copies with a default 10-minute interval, an optional 5-part trigger, and a limit of three copies per project. Recovery controls and recent copies appear in both I/O menus. Copies do not overwrite the open project or NMS game saves.
+- Clarify Save Manager counts: the save-slot total covers owned builds in that slot, while the selected Corvette count covers one saved build. Show the current Blender scene count and source save point, with a read-only refresh button.
+
 ## 18.1.63 - First-run update consent
 
 - Ask once whether to enable automatic update checks. Yes enables and saves Blender Online Access and the startup-update setting, then checks for updates.

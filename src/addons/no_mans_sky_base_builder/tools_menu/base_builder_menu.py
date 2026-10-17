@@ -4,12 +4,14 @@ import bpy
 from bpy.app.handlers import persistent
 
 from .base_builder_menu_presentation import (
-    VIEW3D_PT_nms_base_builder, VIEW3D_PT_nms_io_panel, TOOLBAR_GROUPS,
+    VIEW3D_PT_nms_base_builder, VIEW3D_PT_nms_io_panel,
+    VIEW3D_PT_bbe_project_recovery, TOOLBAR_GROUPS,
 )
 from .. import icons
 
 TOOLBAR_ITEMS = (
     ('proxies', 'BBE', VIEW3D_PT_nms_base_builder.bl_idname, 'MESH_MONKEY'),
+    ('recovery', 'Recovery', VIEW3D_PT_bbe_project_recovery.bl_idname, 'RECOVER_LAST'),
     ('io', 'I/O', VIEW3D_PT_nms_io_panel.bl_idname, 'IMPORT'),
     ('color', 'Color', 'VIEW3D_PT_bbe_toolbar_color', 'COLOR'),
     ('builder', 'Builder', 'VIEW3D_PT_bbe_toolbar_builder_tools', 'TOOL_SETTINGS'),
@@ -36,6 +38,9 @@ def toolbar_state(context):
     for key in (prefs.bbe_toolbar_order.split(',') if prefs else []):
         if key in _ITEMS and key not in order:
             order.append(key)
+    # Introduce the new menu beside BBE without reordering saved menu choices.
+    if 'recovery' not in order and 'proxies' in order:
+        order.insert(order.index('proxies') + 1, 'recovery')
     order.extend(key for key in _ITEMS if key not in order)
     hidden = set(prefs.bbe_toolbar_hidden.split(',')) & _ITEMS.keys() if prefs else set()
     return order, hidden
@@ -102,21 +107,22 @@ def draw_toolbar_settings(layout, context):
         row = layout.row(align=True)
         _, label, _, icon = _ITEMS[key]
         op = row.operator('bbe.toolbar_menu', text='',
-                          icon='CHECKBOX_DEHLT' if key in hidden else 'CHECKBOX_HLT')
+                          **icons.ui_icon('CHECKBOX_DEHLT' if key in hidden else 'CHECKBOX_HLT'))
         op.menu, op.action = key, 'TOGGLE'
-        row.label(text=label, icon=icon)
+        key_name = 'plugin_icon' if key == 'proxies' else 'toolbar_' + key
+        row.label(text=label, icon_value=icons.get_icons_pscroll()[key_name].icon_id)
         for action, arrow, available in (
             ('UP', 'TRIA_UP', index > 0),
             ('DOWN', 'TRIA_DOWN', index < len(order) - 1),
         ):
             move = row.row(align=True)
             move.enabled = available
-            op = move.operator('bbe.toolbar_menu', text='', icon=arrow)
+            op = move.operator('bbe.toolbar_menu', text='', **icons.ui_icon(arrow))
             op.menu, op.action = key, action
     layout.separator()
     row = layout.row(align=True)
-    row.operator('bbe.toolbar_menu', text='Reset Layout', icon='LOOP_BACK').action = 'RESET'
-    row.operator('wm.save_userpref', text='Save Layout', icon='FILE_TICK')
+    row.operator('bbe.toolbar_menu', text='Reset Layout', **icons.ui_icon('LOOP_BACK')).action = 'RESET'
+    row.operator('wm.save_userpref', text='Save Layout', **icons.ui_icon('FILE_TICK'))
 
 
 class VIEW3D_PT_bbe_toolbar_settings(bpy.types.Panel):
@@ -125,7 +131,7 @@ class VIEW3D_PT_bbe_toolbar_settings(bpy.types.Panel):
     bl_description = 'Choose which Base Builder menus are visible and reorder them'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'HEADER'
-    bl_ui_units_x = 20
+    bl_ui_units_x = 18
 
     def draw(self, context):
         draw_toolbar_settings(self.layout, context)
@@ -148,7 +154,7 @@ class VIEW3D_PT_bbe_toolbar_lighting(bpy.types.Panel):
     bl_label = 'Lighting & Scenes'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'HEADER'
-    bl_ui_units_x = 24
+    bl_ui_units_x = 14
 
     def draw(self, context):
         from ..stages import BBE_PT_stage
@@ -164,16 +170,19 @@ def draw_toolbar(self, context):
     layout.separator_spacer()
     order, hidden = toolbar_state(context)
     row = layout.row(align=True)
+    ui_icons = icons.get_icons_pscroll()
     for key in order:
         if key in hidden:
             continue
         _, label, panel, icon = _ITEMS[key]
         if key == 'proxies':
             row.popover(panel=panel, text=label,
-                        icon_value=icons.get_icons_pscroll()['plugin_icon'].icon_id)
+                        icon_value=ui_icons['plugin_icon'].icon_id)
         else:
-            row.popover(panel=panel, text=label, icon=icon)
-    row.popover(panel=VIEW3D_PT_bbe_toolbar_settings.bl_idname, text='', icon='PREFERENCES')
+            row.popover(panel=panel, text=label,
+                        icon_value=ui_icons['toolbar_' + key].icon_id)
+    row.popover(panel=VIEW3D_PT_bbe_toolbar_settings.bl_idname, text='',
+                icon_value=ui_icons['toolbar_settings'].icon_id)
 
 
 def _draw_tool_settings(self, context):
@@ -209,7 +218,7 @@ def _load_toolbar(_dummy):
 
 
 classes = (
-    VIEW3D_PT_nms_base_builder, VIEW3D_PT_nms_io_panel,
+    VIEW3D_PT_nms_base_builder, VIEW3D_PT_nms_io_panel, VIEW3D_PT_bbe_project_recovery,
     *(panel for panel, _icon in TOOLBAR_GROUPS),
     BBE_OT_toolbar_menu, VIEW3D_PT_bbe_toolbar_settings, VIEW3D_PT_bbe_toolbar_color,
     VIEW3D_PT_bbe_toolbar_lighting,

@@ -7,10 +7,16 @@ Use Blender's full restore only during undo/redo involving these meshes. Never
 push a synthetic undo step: doing so would discard the user's redo history.
 """
 import bpy
+import time
 from bpy.app.handlers import persistent
 
 restoring = False
 _preferences = None
+_resume_at = 0.0
+
+
+def history_ready():
+    return not restoring and time.monotonic() >= _resume_at
 
 
 def _release():
@@ -28,6 +34,8 @@ def _release():
 @persistent
 def before_history(_):
     global restoring, _preferences
+    if restoring:
+        return
     restoring = True
     # Include unused meshes: undo can restore a decal that was just deleted.
     # This is one scan per undo/redo, with no additional idle polling.
@@ -45,10 +53,12 @@ def before_history(_):
 
 @persistent
 def after_history(_):
+    global _resume_at
     try:
         from . import reset_curve_tracking
         reset_curve_tracking()
     finally:
+        _resume_at = time.monotonic() + 1.5
         _release()
 
 

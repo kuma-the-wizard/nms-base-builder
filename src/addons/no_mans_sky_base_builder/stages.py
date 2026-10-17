@@ -10,7 +10,7 @@ import bpy
 from mathutils import Vector
 from bpy.app.handlers import persistent
 from bpy.props import BoolProperty, EnumProperty, FloatProperty, PointerProperty
-from . import stage_effects, hd_library
+from . import stage_effects, hd_library, icons
 
 TAG = 'bbe_stage_owned'
 STATE = 'bbe_stage_restore'
@@ -345,14 +345,17 @@ class BBE_PT_stage(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = 'No Mans Sky Base Builder'
     bl_options = {'DEFAULT_CLOSED'}
+    def draw_header(self, context):
+        icons.draw_panel_icon(self.layout, 'lighting')
+
     def draw(self, context):
         layout = self.layout
         s = context.scene.bbe_stage
         if hd_library.scenes_root() is None:
             layout.label(text='Scenes and effects are included with HD proxies.')
-            layout.operator('bbe.hd_library', text='Download & Enable HD', icon='IMPORT')
+            layout.operator('bbe.hd_library', text='Download & Enable HD', **icons.ui_icon('IMPORT'))
             return
-        layout.prop(s,'enabled',toggle=True,icon='SHADING_RENDERED')
+        layout.prop(s,'enabled',toggle=True,**icons.ui_icon('SHADING_RENDERED'))
         if not s.enabled:
             return
         layout.prop(s,'environment',text='')
@@ -371,8 +374,8 @@ class BBE_PT_stage(bpy.types.Panel):
             layout.label(text='Pad surface fixed at Z = 0')
         if any(abs(getattr(s, p) - stage_effects.preview_value(context.scene, p)) > 1e-5
                for p in SLIDERS):
-            layout.label(text='Slider changes ready to apply', icon='INFO')
-        layout.operator('bbe.stage_refresh',icon='FILE_REFRESH')
+            layout.label(text='Slider changes ready to apply', **icons.ui_icon('INFO'))
+        layout.operator('bbe.stage_refresh',**icons.ui_icon('FILE_REFRESH'))
 
 
 @persistent
@@ -393,6 +396,10 @@ def on_load(_):
                     builder_v2.use_trade_terminal_wall_model(obj)
         if getattr(scene, 'bbe_detailed_proxies', True) and hd_library.scenes_root():
             with bpy.context.temp_override(scene=scene):
+                revised = {'SET_CLASS_A', 'SET_CLASS_B', 'SET_CLASS_S',
+                           *builder_v2.CABLE_CORRECTIONS}
+                rim_variants = {'B_STR_T_NWTB', 'B_STR_T_NWTB1',
+                                'B_STR_T_NWTB2', 'B_STR_T_NWTB3'}
                 for obj in list(scene.objects):
                     pid = obj.get('ObjectID')
                     if (obj.type == 'MESH' and pid in {'SET_CLASS_A','SET_CLASS_B','SET_CLASS_S'}
@@ -405,11 +412,31 @@ def on_load(_):
                                 bpy.data.meshes.remove(old)
                     if obj.type == 'MESH' and obj.data.get(builder_v2.MESH_TAG):
                         builder_v2.correct_hd_display(obj.data, pid)
-                    if obj.type == 'MESH' and pid in {'SET_CLASS_A','SET_CLASS_B','SET_CLASS_S', *builder_v2.CABLE_CORRECTIONS}:
+                    if (obj.type == 'MESH' and pid in revised | rim_variants
+                            and (pid in revised or obj.data.get(builder_v2.MESH_TAG) == pid)):
                         if obj.data.get(builder_v2.MESH_REVISION_TAG) != builder_v2.MESH_REVISIONS[pid]:
+                            old = obj.data
                             mesh = builder_v2.load_high_res_mesh(pid)
                             if mesh:
                                 obj.data = mesh
+                                if old.users == 0:
+                                    bpy.data.meshes.remove(old)
+        elif not getattr(scene, 'bbe_detailed_proxies', True):
+            rim_variants = {'B_STR_T_NWTB', 'B_STR_T_NWTB1',
+                            'B_STR_T_NWTB2', 'B_STR_T_NWTB3'}
+            cache = {}
+            with bpy.context.temp_override(scene=scene):
+                for obj in list(scene.objects):
+                    pid = obj.get('ObjectID')
+                    if (obj.type != 'MESH' or pid not in rim_variants
+                            or not obj.data.get(builder_v2.PROXY_PLACEMENT_TAG)):
+                        continue
+                    if obj.data.get(builder_v2.MESH_REVISION_TAG) == builder_v2.MESH_REVISIONS[pid]:
+                        continue
+                    old = obj.data
+                    if builder_v2.apply_proxy_mesh(
+                            obj, pid, obj.get('UserData'), cache=cache) and old.users == 0:
+                        bpy.data.meshes.remove(old)
         if scene.bbe_stage.enabled:
             # Older previews have no compositor backup yet.
             saved = json.loads(scene.get(STATE, '{}'))
@@ -432,6 +459,9 @@ def part_signature(scene):
 def refresh_parts():
     # Parent transforms move lamps immediately; only changed part membership,
     # visibility or proxy meshes need a rebuild. No per-frame mesh traversal.
+    from . import undo_guard
+    if not undo_guard.history_ready():
+        return 1.0
     for scene in bpy.data.scenes:
         if scene.bbe_stage.enabled and hd_library.scenes_root():
             signature = part_signature(scene)

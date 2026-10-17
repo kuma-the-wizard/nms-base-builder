@@ -563,7 +563,8 @@ def request_refresh():
 def refresh(scene=None, force=False):
     global _signature, _busy, _refresh_requested, _solid_signature
     scene = scene or bpy.context.scene
-    if _busy or _undoing or bpy.context.mode != 'OBJECT':
+    from . import undo_guard
+    if _busy or _undoing or not undo_guard.history_ready() or bpy.context.mode != 'OBJECT':
         return 0
     _refresh_requested = False
     _solid_signature = None

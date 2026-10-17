@@ -258,11 +258,19 @@ def _extract_context_bases(save_slot, save_context, save_file=None):
     }
     
     
-def extract_bases_list_from_save(save_slot):
+def extract_bases_list_from_save(save_slot, progress=None):
     sf = get_save_file(save_slot)
+    if progress:
+        progress.update(.1, f'Loading {sf.path.name}')
     sf.load()
-    result = {'corvettes': [], 'bases': [], 'external': [], 'space': [], 'spacestation': [], 'freighters': [], 'freighter': None, 'total_parts_count': 0}
+    if progress:
+        progress.update(.65, 'Reading bases and Corvettes')
+    result = {'corvettes': [], 'bases': [], 'external': [], 'space': [], 'spacestation': [], 'freighters': [], 'freighter': None, 'total_parts_count': 0,
+              'source_file': sf.path.name, 'source_mtime': sf.path.stat().st_mtime}
     for context, key in (('Main', SaveTranslation.base_context), ('Season', SaveTranslation.expedition_context)):
+        if progress:
+            progress.update(.70 if context == 'Main' else .85,
+                            f'Indexing {context} save')
         player = sf.json_data.get(key, {}).get(SaveTranslation.player_state_data, {})
         if not player.get(SaveTranslation.persistent_player_bases):
             continue
@@ -299,9 +307,13 @@ def get_save_file(save_slot):
 
 
 # impart a base from save file
-def import_paticular_base_from_save(base_identifier,  save_slot):
+def import_paticular_base_from_save(base_identifier, save_slot, progress=None):
     save_file = get_save_file(save_slot)
+    if progress:
+        progress.update(.1, 'Loading selected save point')
     save_file.load()
+    if progress:
+        progress.update(.72, 'Finding selected build')
     
     # fist see if base actially exists or not
     searched_base = save_file.search_base_with_identifier(base_identifier)
@@ -314,6 +326,8 @@ def import_paticular_base_from_save(base_identifier,  save_slot):
         
     #return bases after translating it to engish
     searched_base = save_translation.translate_to_eng_data(searched_base)
+    if progress:
+        progress.update(.95, 'Build data ready')
 
     return searched_base
     
@@ -371,7 +385,7 @@ def save_base_to_save_file(objects_data, base_identifier, save_slot, base_name=N
         progress.update(.94, 'Save export finished')
     return "Base/Corvette saved sucessfully"
 
-# a folder within save_directory , where backups will be stored
+# The selected save slot's folder within the shared backup root.
 def get_backups_folder(save_links):
     backup_folder = backup_policy.directory(save_links)
     backup_folder.mkdir(parents=True, exist_ok=True)

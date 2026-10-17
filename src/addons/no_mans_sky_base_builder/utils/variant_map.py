@@ -41,6 +41,12 @@ META_PREFIX = "_"
 # table is 1.2%, and that one is a genuine mirror pair.
 TIER_SUFFIX = re.compile(r"\((BASE|MID|TOP)\)\s*$")
 
+# The four NW fuel-pod rim assets have their own correctly oriented HD meshes.
+# Their historical root transforms do not reproduce those meshes, so loading
+# the asset is safer than rebuilding it from the NE part.
+OWN_ASSET_VARIANTS = {'B_STR_T_NWTB', 'B_STR_T_NWTB1',
+                      'B_STR_T_NWTB2', 'B_STR_T_NWTB3'}
+
 
 def _tier(nice_name):
     match = TIER_SUFFIX.search(nice_name or "")
@@ -75,6 +81,8 @@ def _build_table():
         if object_id.startswith(META_PREFIX):
             continue
         if not record.get("is_variant") or not record.get("reproducible"):
+            continue
+        if object_id in OWN_ASSET_VARIANTS:
             continue
 
         # recreate_from, not variant_of: where a variant is a variant of a

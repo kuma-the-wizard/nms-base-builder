@@ -1,3 +1,35 @@
+release 18.1.78
+-------------
+
+## Recovery, stability and a clearer interface
+
+### Automatic project recovery
+- Fix recovery timers being repeatedly restarted by other add-ons' save-copy operations or normal saves. BBE now keeps its own schedule, including after a delayed first idle tick.
+- Choose a time interval (10 minutes by default) or placement count (5 parts by default). Keep the latest three consecutive recovery saves per project; each new save replaces only the oldest generation.
+- See the live countdown, placement progress, waiting reason, and backup errors. Failed backups retry after one minute.
+- Use the dedicated Recovery menu or sidebar panel to back up now, open a recovery copy, or open/change the shared backup folder. Project copies and game-save backups use separate subfolders.
+- Recovery copies do not overwrite the original project. Saving waits while undo/redo settles or an active editing operation makes saving unsafe.
+
+### Stability and importing
+- Harden rapid undo/redo handling around generated window meshes, decals and lighting refresh.
+- Import JSON/TXT designs with missing or blank base-type metadata using the selected fallback, including designs that have never been assigned to a ship or base.
+- Add visible staged progress across import/export workflows, including Optimize & Export and Ship Management save operations.
+- Correct the four B_STR_T NW fuel-pod cover rim display meshes and refresh recognized older proxies without replacing custom edited meshes.
+- Clarify scene, selected-build and save-slot part counts, and the Account/Save Slot selection steps.
+
+### Interface improvements
+- Restore the direct prefab catalogue in both toolbar and sidebar; remove the obsolete Parts list and nested Legacy Asset Browser section.
+- Add transparent colored symbols across the toolbar, sidebar and action controls, with RGB Color and hammer Builder icons.
+- Tighten dropdown widths and place recovery Minutes/Qty beside its mode selector. Preserve the Color palette width.
+- Clean up BBE branding and sharp native creator credits. Fresh workspaces start with only BBE expanded; saved workspace panel states remain respected.
+
+### Install
+Download **no_mans_sky_base_builder-18.1.78.zip** below. In Blender, use **Install from Disk**, select the intact ZIP, then restart Blender. Keep the previous installer for rollback. The GitHub source archives are not the installer.
+
+Windows x64. Recovery timer regression checks passed in Blender **5.1.2** and **5.2.2 LTS**, including real save-copy callbacks, three-generation rotation, source-file preservation, failure/retry behavior and placement triggers. The countdown and automatic backup were also checked in the Blender UI. The reported 676-part TXT design imported completely in both versions.
+
+Includes all changes since 18.1.63; automatic update checks remain opt-in. Base Builder by DjMonkey. Extended by FuriousFurby.
+
 release 18.1.63
 -------------
 

@@ -10,6 +10,7 @@ import numpy as np
 from mathutils import Matrix
 from bpy.app.handlers import persistent
 from .utils import materials_v2
+from . import undo_guard
 
 SOURCE = 'bbe_hab_closed_mesh'
 OPEN = 'bbe_hab_open_slots'
@@ -71,7 +72,7 @@ def open_mesh(source, pid, slots):
 
 def refresh(scene=None, force=False):
     global _busy
-    if _busy:
+    if _busy or not undo_guard.history_ready():
         return
     scene = scene or bpy.context.scene
     parts = [o for o in scene.objects if o.type == 'MESH' and o.get('ObjectID') in set(table())|WINDOWS]
@@ -110,9 +111,7 @@ def refresh(scene=None, force=False):
             if hab.data != wanted:
                 hab.data = wanted
         _signatures[key] = signature
-        for mesh in list(bpy.data.meshes):
-            if mesh.get(OPEN) and mesh.users == 0:
-                bpy.data.meshes.remove(mesh)
+        # Keep unused display meshes: older undo steps can still own them.
     finally:
         _busy = False
 
@@ -129,8 +128,7 @@ def tick():
 @persistent
 def loaded(_):
     _signatures.clear()
-    for scene in bpy.data.scenes:
-        refresh(scene, force=True)
+    # The timer refreshes after the load/undo settle period.
 
 
 @persistent

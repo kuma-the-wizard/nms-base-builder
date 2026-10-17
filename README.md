@@ -1,15 +1,18 @@
 # Base Builder Extended
 
-Current standalone release: **18.1.63**. Windows x64, verified with Blender
+Current standalone release: **18.1.78**. Windows x64, verified with Blender
 5.1.2 and 5.2.2 LTS.
 
-[Download the installer and read the release notes](https://github.com/slipperystickers/nms-base-builder/releases/tag/v18.1.63).
+[Download the installer and read the release notes](https://github.com/slipperystickers/nms-base-builder/releases/tag/v18.1.78).
 Install the attached plugin ZIP through Blender's **Install from Disk**, then
-restart Blender. On first use, **Enable auto updates?** offers one Yes/No choice.
-Yes saves Blender internet access and automatic update checks; No keeps checks
-off and remembers your choice. The complete **Colour & Materials** sidebar
-section is restored, and all 18.1.61 fixes are retained.
-Keep the previous installer ZIP for rollback.
+restart Blender. This release adds independent rotating project recovery,
+fixes recovery timer interruptions, improves undo handling and build imports,
+and refreshes the toolbar, sidebar and prefab catalogue.
+
+Recovery defaults to every 10 minutes, with an optional placement-count trigger.
+The latest three consecutive recovery copies are kept without overwriting the
+original project. The Recovery menu shows its countdown and backup status.
+Automatic update checks remain opt-in. Keep the previous installer for rollback.
 
 **Base Builder by DjMonkey. Extended by Furiousfurby.** Based on Kuma's 18.0.0
 build; the original guides, Patreon, Discord and Steam Games links are preserved.

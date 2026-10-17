@@ -42,7 +42,7 @@ def _base_type(document):
     value = document.get('BaseType')
     if isinstance(value, dict):
         value = value.get('PersistentBaseTypes')
-    return value if value in BASE_TYPES else None
+    return value if isinstance(value, str) and value in BASE_TYPES else None
 
 
 def _safe_name(name):
@@ -127,6 +127,21 @@ class BuildFile:
             result.update(scene_data)
             return result
         return dict(scene_data)
+
+    def import_document(self, fallback_type='HomePlanetBase', fallback_name=''):
+        """Normalize optional metadata before Blender touches the current scene."""
+        if fallback_type not in BASE_TYPES:
+            raise ValueError('Choose a supported fallback build type')
+        data = copy.deepcopy(self.document) if isinstance(self.document, dict) else {}
+        data['Objects'] = copy.deepcopy(self.objects)
+        base_type = _base_type(data) or fallback_type
+        metadata = data.get('BaseType')
+        metadata = dict(metadata) if isinstance(metadata, dict) else {}
+        metadata['PersistentBaseTypes'] = base_type
+        data['BaseType'] = metadata
+        if not data.get('Name'):
+            data['Name'] = fallback_name
+        return data
 
     def ship_bytes(self, objects, name=None):
         if self.kind != 'ship':

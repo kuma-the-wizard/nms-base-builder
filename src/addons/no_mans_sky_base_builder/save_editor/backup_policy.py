@@ -14,8 +14,10 @@ _MARKER = '.bbe-backup.json'
 def preferences():
     try:
         import bpy
-        return bpy.context.preferences.addons['no_mans_sky_base_builder'].preferences
-    except (ImportError, AttributeError, KeyError, RuntimeError):
+        addon_id = __package__.rsplit('.', 1)[0]
+        addon = bpy.context.preferences.addons.get(addon_id)
+        return addon.preferences if addon else None
+    except (ImportError, AttributeError, RuntimeError):
         return None
 
 
@@ -24,6 +26,19 @@ def settings():
     if prefs is None:
         return '', 20
     return prefs.nms_backup_folder_path.strip(), prefs.nms_backup_retention
+
+
+def root_directory(backup_root=None):
+    """Shared root for project recovery and NMS save backup subfolders."""
+    configured = settings()[0] if backup_root is None else str(backup_root).strip()
+    if configured:
+        try:
+            import bpy
+            configured = bpy.path.abspath(configured)
+        except ImportError:
+            pass
+        return Path(configured).expanduser().resolve()
+    return (Path.home() / 'NoMansSkyBaseBuilder' / 'Backups').resolve()
 
 
 def _slot(path):
@@ -42,16 +57,7 @@ def directory(paths, backup_root=None):
     slots = {_slot(path) for path in paths}
     if len(slots) != 1:
         raise ValueError('Backup inputs must belong to one save slot')
-    configured = settings()[0] if backup_root is None else backup_root
-    if configured:
-        try:
-            import bpy
-            configured = bpy.path.abspath(str(configured))
-        except ImportError:
-            pass
-        root = Path(configured).expanduser().resolve()
-    else:
-        root = paths[0].parent / 'nms_base_builder_backup'
+    root = root_directory(backup_root) / 'Game Saves'
     account = paths[0].parent
     identity = hashlib.sha256(str(account).casefold().encode('utf8')).hexdigest()[:10]
     return root / f'{account.name}-{identity}' / f'slot-{slots.pop():02}'
@@ -147,4 +153,3 @@ def finish(generation):
         prune(generation)
     except OSError as exc:
         print(f'BBE: save backup retained; old backup cleanup failed: {exc}')
-

@@ -60,6 +60,10 @@ MESH_REVISIONS.update(dict.fromkeys(
      for suffix in (("", "1", "2", "3") if side in ("NE", "NW") else ("",))),
     "18.1.1",
 ))
+MESH_REVISIONS.update(dict.fromkeys(
+    ('B_STR_T_NWTB', 'B_STR_T_NWTB1', 'B_STR_T_NWTB2', 'B_STR_T_NWTB3'),
+    '18.1.67',
+))
 
 MESH_REVISIONS.update(dict.fromkeys(('SET_CLASS_A', 'SET_CLASS_B', 'SET_CLASS_S'), '18.1.11'))
 MESH_REVISIONS.update(dict.fromkeys(('PIPE','FRE_FACE_WALL','FRE_ROOM_IND1','SET_LZ'), '18.1.9'))

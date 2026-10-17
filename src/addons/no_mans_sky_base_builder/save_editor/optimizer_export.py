@@ -21,19 +21,23 @@ def replace_file(source, target):
     source.replace(target)
 
 
-def export(objects, identifier, links, base_name=None):
+def export(objects, identifier, links, base_name=None, progress=None):
     from .save_file import SaveFile
     if identifier.base_type != BaseType.CORVETTE:
         raise ValueError('Optimize & Export is only available for Corvettes')
     paths = list(dict.fromkeys(Path(p).resolve() for p in links if p))
     if not paths:
         raise ValueError('No save files selected')
+    if progress:
+        progress.update(.18, 'Preparing save files')
     prepared = []
     staged = []
     replaced = []
     try:
         # Resolve every destination before touching any save file.
-        for path in paths:
+        for index, path in enumerate(paths):
+            if progress:
+                progress.update(.20 + .34 * index / len(paths), f'Loading {path.name}')
             original = path.read_bytes()
             save = SaveFile(path)
             save.load()
@@ -52,18 +56,30 @@ def export(objects, identifier, links, base_name=None):
             temp = Path(filename)
             staged.append(temp)
             save.save(output_path=temp)
+            if progress:
+                progress.update(.20 + .34 * (index + .7) / len(paths),
+                                f'Verifying {path.name}')
             check = SaveFile(temp)
             if check.load() != save.json_data:
                 raise ValueError(f'Save verification failed for {path.name}')
             prepared.append((path, original, temp))
+        if progress:
+            progress.update(.56, 'Backing up original saves')
         generation, backups = backup_policy.snapshot(paths, 'optimizer')
+        if progress:
+            progress.update(.73, 'Checking original saves')
         for path, original, temp in prepared:
             if path.read_bytes() != original:
                 raise ValueError(f'{path.name} changed during export; try again')
-        for path, original, temp in prepared:
+        for index, (path, original, temp) in enumerate(prepared):
+            if progress:
+                progress.update(.80 + .14 * index / len(prepared),
+                                f'Writing {path.name}')
             replace_file(temp, path)
             replaced.append((path, original))
         backup_policy.finish(generation)
+        if progress:
+            progress.update(.96, 'Save files verified')
         return backups
     except Exception:
         # If a later replacement fails, restore any files already replaced.
