@@ -183,6 +183,10 @@ def draw_base_picker(container, save_data):
     if not save_data.check_plugin_enabled:
         return
 
+    if save_data.session_status:
+        for line in textwrap.wrap(save_data.session_status, 58):
+            sf_column.label(text=line, icon='INFO')
+
     if not save_data.validate_save_folder(save_folder_path):
         sf_column.separator()
         select_folder_info_col = sf_column.column(align=True)
@@ -210,6 +214,8 @@ def draw_base_picker(container, save_data):
     slot_row.alert = save_data.nms_account_selected != 'Default' and save_data.nms_save_slot == 'Default'
     slot_row.enabled = save_data.nms_account_selected != 'Default'
     slot_row.prop(save_data, "nms_save_slot", **icons.ui_icon("LINENUMBERS_ON"))
+    if save_data.get_current_slot_data() is not None and not save_data.is_base_data_loaded():
+        slot_row.operator('bbe.refresh_save_counts', text='', **icons.ui_icon('FILE_REFRESH'))
     if save_data.nms_account_selected != 'Default' and save_data.nms_save_slot == 'Default':
         if len(type(save_data).enum_save_slots_list) <= 1:
             sf_column.label(text="No readable save slots found in this account.", **icons.ui_icon("ERROR"))
@@ -272,15 +278,21 @@ def draw_base_picker(container, save_data):
         corvette_io.draw_picker(base_index_row, save_data)
     else:
         base_index_row.prop(save_data, "nms_base_index", text="", **icons.ui_icon("GEOMETRY_SET"))
-    if selected:
-        selected_data = save_data.get_current_base_identifiers()
+    selected_data = save_data.get_current_base_identifiers() if selected else None
+    if save_data.nms_base_type == BaseType.CORVETTE:
         if selected_data is not None:
-            if save_data.nms_base_type == BaseType.CORVETTE:
-                se_column.label(text=corvette_io.label(selected_data))
-            else:
-                se_column.label(text=f"Selected {base_type} in save: {selected_data.parts_count} parts")
-            if selected_data.base_type != BaseType.EXTERNAL_BASE:
-                se_column.label(text=f"Other owned builds in save: {slot_total - selected_data.parts_count} parts")
+            slot = selected_data.user_data
+            position = f'Slot {slot + 1}' if type(slot) is int and 0 <= slot < 12 else 'Unlinked build'
+            se_column.label(text=f'{position}: {selected_data.parts_count} parts')
+        # Edit the existing scene metadata used by both export paths. The saved
+        # name is only a placeholder; choosing a destination must not rename
+        # the current Blender design or write anything into the game save.
+        se_column.prop(bpy.context.scene.nms_base_tool, 'string_base', text='Ship Name',
+                       placeholder=selected_data.base_name if selected_data else 'Name for exported Corvette')
+    elif selected_data is not None:
+        se_column.label(text=f"Selected {base_type} in save: {selected_data.parts_count} parts")
+    if selected_data is not None and selected_data.base_type != BaseType.EXTERNAL_BASE:
+        se_column.label(text=f"Other owned builds in save: {slot_total - selected_data.parts_count} parts")
 
     # Display buttons when a base is selected from the list.
     if selected and save_data.nms_base_type != BaseType.EXTERNAL_BASE:
@@ -317,10 +329,8 @@ def draw_base_picker(container, save_data):
     # Standalone file export uses the build currently in Blender, independent
     # of save-slot selection and never writes the game save.
     file_export = se_column.column(align=True)
-    if bpy.context.scene.nms_base_tool.string_base_type == BaseType.CORVETTE:
-        file_export.operator('bbe.export_ship_file', text='Export Scene to .nmsship...', **icons.ui_icon('EXPORT'))
-    else:
-        file_export.operator('bbe.export_base_file', text='Export Scene to .nmsbase...', **icons.ui_icon('EXPORT'))
+    file_export.operator('bbe.export_ship_file', text='Export Scene to .nmsship...', **icons.ui_icon('EXPORT'))
+    file_export.operator('bbe.export_base_file', text='Export Scene to .nmsbase...', **icons.ui_icon('EXPORT'))
 
     if save_data.nms_base_type == BaseType.STATION:
         station_reference.draw(se_column, bpy.context)

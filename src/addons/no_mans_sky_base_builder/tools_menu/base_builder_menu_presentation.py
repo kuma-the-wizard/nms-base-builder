@@ -21,13 +21,9 @@ class VIEW3D_PT_nms_io_panel(bpy.types.Panel):
         files = layout.column(align=True)
         files.label(text='Standalone build files', **icons.ui_icon('FILE_FOLDER'))
         files.operator('bbe.import_build_file', text='Import Build from File...', **icons.ui_icon('IMPORT'))
-        base_type = context.scene.nms_base_tool.string_base_type
-        if base_type == 'PlayerShipBase':
-            files.operator('bbe.export_ship_file', text='Export Corvette (.nmsship)...', **icons.ui_icon('EXPORT'))
-            files.operator('object.nms_save_data', text='Export Build JSON...', **icons.ui_icon('FILE_TICK'))
-        else:
-            files.operator('bbe.export_base_file', text='Export Base (.nmsbase)...', **icons.ui_icon('EXPORT'))
-            files.operator('object.nms_save_data', text='Save BBE Project JSON...', **icons.ui_icon('FILE_TICK'))
+        files.operator('bbe.export_ship_file', text='Export Corvette (.nmsship)...', **icons.ui_icon('EXPORT'))
+        files.operator('bbe.export_base_file', text='Export Base (.nmsbase)...', **icons.ui_icon('EXPORT'))
+        files.operator('object.nms_save_data', text='Save BBE Project JSON...', **icons.ui_icon('FILE_TICK'))
         layout.separator()
         layout.label(text="Save Manager", **icons.ui_icon("FILE_TICK"))
         save_editor_presentation.draw_save_manager(layout, context)

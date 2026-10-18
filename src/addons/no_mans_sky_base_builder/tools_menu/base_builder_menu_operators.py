@@ -156,7 +156,7 @@ def _switch_scene_parts(context, target_high_res, proxy_cache, progress=None):
     return switched, missing
 
 
-def _switch_scene_proxies(context, target_high_res):
+def _switch_scene_proxies(context, target_high_res, *, show_progress=True):
     """Switch every part and group in the scene to the requested quality.
 
     Runs with the addon's depsgraph handler detached and the selection held, so
@@ -179,7 +179,7 @@ def _switch_scene_proxies(context, target_high_res):
     # forth does not cut a fresh set every time - see builder_v2.apply_proxy_mesh.
     from .. import progress_ui
     title = 'Loading detailed models' if target_high_res else 'Loading simple proxies'
-    with progress_ui.Activity(title) as progress:
+    with progress_ui.Activity(title, visible=show_progress) as progress:
         return _switch_scene_proxies_with_progress(context, target_high_res, progress)
 
 

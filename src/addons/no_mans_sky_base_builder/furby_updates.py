@@ -189,7 +189,16 @@ class UpdateClient:
             elif kind == 'done': self.busy = False
 
     def maybe_check(self):
-        if self.settings.get('auto_check', True) and time.time() - max(self.settings.get('last_checked', 0), self.settings.get('last_attempt', 0)) > 86400:
+        # Retry a failed check after 15 minutes, not after a whole day. A
+        # successful check is remembered for this session, including file loads.
+        def timestamp(key):
+            value = self.settings.get(key, 0)
+            return value if isinstance(value, (int, float)) and 0 <= value <= time.time() else 0
+        if (not self.busy and self.settings.get('auto_check', True)
+                and (not self.require_consent or self.settings.get('auto_update_consent') == 'accepted')
+                and (self.result is None or time.time() - timestamp('last_checked') > 86400)
+                and (timestamp('last_checked') >= timestamp('last_attempt')
+                     or time.time() - timestamp('last_attempt') > 900)):
             self.start()
 
     def close(self):
@@ -200,6 +209,7 @@ class ProcessUpdateClient(UpdateClient):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.worker=None;self.job=None;self.staging=None
+        self.started=0;self.last_progress=0;self.progress_stamp=None;self.action='check'
 
     def start(self,action='check',destination=None):
         import subprocess,sys,tempfile
@@ -211,7 +221,10 @@ class ProcessUpdateClient(UpdateClient):
         if not python:
             self.message='The bundled Python runtime was not found.';return
         if action=='check':
-            self.settings['last_attempt']=time.time();self.save()
+            self.settings['last_attempt']=time.time()
+            try:self.save()
+            except OSError:
+                self.message='Could not save update preferences. Check folder permissions and retry.';return
         self.job=Path(tempfile.mkdtemp(prefix='furby-update-'))
         folder=Path(destination) if destination else Path.home()/'Downloads/Furby App Updates'
         token=os.urandom(6).hex()
@@ -224,14 +237,25 @@ class ProcessUpdateClient(UpdateClient):
                 stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
                 creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
             self.busy=True;self.message='Checking…' if action=='check' else 'Downloading…'
+            self.action=action;self.started=self.last_progress=time.monotonic();self.progress_stamp=None
         except Exception as exc:
             self.message=f'{type(exc).__name__}: {exc}';self.close()
 
     def poll(self):
         if self.worker is None:return
-        try:self.message=json.loads((self.job/'progress.json').read_text(encoding='utf-8'))['message']
-        except (OSError,ValueError):pass
-        if self.worker.poll() is None:return
+        try:
+            progress=self.job/'progress.json'
+            stamp=progress.stat().st_mtime_ns
+            value=json.loads(progress.read_text(encoding='utf-8'))['message']
+            if isinstance(value,str):self.message=value
+            if stamp!=self.progress_stamp:
+                self.progress_stamp=stamp;self.last_progress=time.monotonic()
+        except (OSError,ValueError,KeyError,TypeError):pass
+        if self.worker.poll() is None:
+            if (self.action=='check' and time.monotonic()-self.started>45
+                    or self.action=='download' and time.monotonic()-self.last_progress>120):
+                self.close();self.message='Update request timed out. Check your connection, then choose Check now to retry.'
+            return
         try:
             outcome=json.loads((self.job/'result.json').read_text(encoding='utf-8'))
             if 'error' in outcome:self.message=outcome['error']
@@ -240,8 +264,9 @@ class ProcessUpdateClient(UpdateClient):
                 self.settings['last_checked']=time.time();self.save()
             else:
                 self.downloaded=Path(outcome['download']);self.message='Verified ZIP downloaded. Install after closing this app.'
-        except (OSError,ValueError) as exc:self.message='Update helper did not complete: '+str(exc)
-        self.close()
+        except (OSError,ValueError,KeyError,TypeError,AttributeError):
+            self.message='Update helper did not complete. Choose Check now to retry.'
+        finally:self.close()
 
     def close(self):
         import subprocess,shutil

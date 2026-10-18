@@ -381,7 +381,9 @@ class BBE_PT_stage(bpy.types.Panel):
 @persistent
 def on_load(_):
     _signatures.clear()
+    from .utils import roof_alignment
     for scene in bpy.data.scenes:
+        roof_alignment.refresh_scene(scene)
         migrate(scene)
         # Preserve the previous quality-dependent setting in existing files.
         if not scene.bbe_stage.is_property_set('ray_tracing'):

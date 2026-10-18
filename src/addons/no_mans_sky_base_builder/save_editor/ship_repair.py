@@ -5,6 +5,10 @@ import json
 import math
 from . import ship_core as core
 
+# Cable At vectors encode endpoint displacement, including coincident ends.
+# They are not the unit facing direction used by ordinary build parts.
+CABLE_IDS = frozenset({'U_POWERLINE', 'U_PIPELINE', 'U_PORTALLINE', 'U_BYTEBEATLINE'})
+
 
 def fingerprint(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':'),
@@ -81,7 +85,7 @@ def require_objects_destination(root, context, base):
 def validate_parts(objects):
     if not isinstance(objects, list) or not objects:
         raise ValueError('The replacement contains no build objects.')
-    for part in objects:
+    for number, part in enumerate(objects, 1):
         if not isinstance(part, dict) or not isinstance(part.get('ObjectID'), str) or not part['ObjectID'].strip('^'):
             raise ValueError('Every replacement part needs an ObjectID.')
         for field in ('Position', 'Up', 'At'):
@@ -89,8 +93,11 @@ def validate_parts(objects):
             if (not isinstance(vector, list) or len(vector) != 3
                     or any(type(v) not in (int, float) or not math.isfinite(v) for v in vector)):
                 raise ValueError(f'A replacement part has an invalid {field} vector.')
-        if any(sum(v*v for v in part[field]) < 1e-12 for field in ('Up', 'At')):
-            raise ValueError('Replacement part directions cannot be zero.')
+        for field in ('Up', 'At'):
+            if not any(part[field]):
+                if field == 'At' and part['ObjectID'].lstrip('^') in CABLE_IDS:
+                    continue
+                raise ValueError(f"Part {number} ({part['ObjectID'].lstrip('^')}) has a zero {field} direction. Check its scale before exporting.")
 
 
 def read_replacement(path, mode):

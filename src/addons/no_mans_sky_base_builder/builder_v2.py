@@ -415,8 +415,9 @@ def refresh_bytebeat_proxies(scene):
 # get the shared mesh datablock for an object id, appending it on first use
 def correct_hd_display(mesh, object_id):
     """Upgrade HD display data only; placement and export records stay intact."""
-    from .utils import room_glass
+    from .utils import room_glass, roof_alignment
     room_glass.correct(mesh, object_id)
+    roof_alignment.correct(mesh, object_id)
     if object_id == 'U_BYTEBEATLINE' and not mesh.get('bbe_beat_glow_revision'):
         # Native crossed ribbons already span local Z=0..1. Feather their
         # width in local coordinates so cable length and endpoints stay exact.

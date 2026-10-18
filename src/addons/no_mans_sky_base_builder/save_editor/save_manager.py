@@ -1,5 +1,6 @@
 import bpy
 import json
+from bpy.app.handlers import persistent
 from .. import builder, builder_v2, progress_ui
 from . import save_editor_dependencies
 from . import save_editor_utils, station_reference
@@ -7,19 +8,102 @@ from .save_editor_utils import BaseType, BaseData
 
 BUILDER = builder.get_builder()
 
+# A game-save destination belongs to this Blender session, not to a .blend
+# received from another user. Keep only values here: RNA dies on file load.
+_project_session = None
+_restoring_session = False
+
+
+def _build_identity(base):
+    if base is None:
+        return None
+    return (base.save_context, base.base_type, base.user_data,
+            base.galactic_address, base.base_name)
+
+
+@persistent
+def capture_before_load(_dummy=None):
+    global _project_session
+    _project_session = None
+    data = getattr(bpy.context.scene, 'nms_save_data', None)
+    if data is not None and data.check_plugin_enabled:
+        _project_session = dict(account=data.nms_account_selected,
+                                slot=data.nms_save_slot, kind=data.nms_base_type,
+                                build=_build_identity(data.get_current_base_identifiers()))
+
+
+def restore_after_load():
+    """Re-read the local destination after loading project geometry and UI."""
+    global _project_session, _restoring_session
+    previous, _project_session = _project_session, None
+    _restoring_session = True
+    try:
+        SaveManager.enum_accounts_list = [('Default', 'Select Account', '')]
+        SaveManager.enum_save_slots_list = [('Default', 'Select Save Slot', '')]
+        SaveManager.data_save_slot = []
+        SaveManager.extracted_base_data = {}
+        SaveManager.save_data_loaded = False
+        SaveManager.is_base_selected = False
+        SaveManager.selected_base_type_tabs = dict.fromkeys(SaveManager.selected_base_type_tabs, 'Default')
+        SaveManager.enum_base_list = [('Default', 'Select Corvette', '')]
+        for scene in bpy.data.scenes:
+            data = scene.nms_save_data
+            data.check_plugin_enabled = False
+            data.nms_account_selected = data.nms_save_slot = data.nms_base_index = 'Default'
+            data.last_account_selected = data.last_slot_selected = 'Default'
+            data.nms_base_type = BaseType.CORVETTE
+            data.session_status = ''
+        if not previous:
+            return
+        data = bpy.context.scene.nms_save_data
+        data.check_plugin_enabled = True
+        try:
+            SaveManager.enum_accounts_list = data.get_accounts_enum_list(bpy.context)
+            if previous['account'] not in {item[0] for item in SaveManager.enum_accounts_list}:
+                data.session_status = 'Choose a local account and save slot to continue.'
+                return
+            data.nms_account_selected = data.last_account_selected = previous['account']
+            SaveManager.enum_save_slots_list = data.get_save_slots_list()
+            if previous['slot'] not in {item[0] for item in SaveManager.enum_save_slots_list}:
+                data.session_status = 'Previous save slot is unavailable. Choose a save slot.'
+                return
+            data.nms_save_slot = data.last_slot_selected = previous['slot']
+            slot = data.get_current_slot_data()
+            SaveManager.extracted_base_data = save_editor_utils.extract_bases_list_from_save(slot['saves'])
+            SaveManager.save_data_loaded = True
+            data.nms_base_type = previous['kind']
+            SaveManager.enum_base_list = data.get_bases_enum_list(SaveManager.extracted_base_data)
+            # Index ordinals may change. Only restore an unambiguous match to
+            # the same build; never choose a different ship as a fallback.
+            matches = [base for base in SaveManager.extracted_base_data.get(data.get_base_type_key(), [])
+                       if previous['build'] is not None and _build_identity(base) == previous['build']]
+            if len(matches) == 1:
+                base = matches[0]
+                data.nms_base_index = f'Season:{base.base_index}' if base.save_context == 'Season' else str(base.base_index)
+                SaveManager.selected_base_type_tabs[data.nms_base_type] = data.nms_base_index
+                SaveManager.is_base_selected = True
+            elif previous['build'] is not None:
+                data.session_status = 'Previous build changed or is unavailable. Select the destination again.'
+        except Exception as exc:
+            data.reset_base_list()
+            data.session_status = 'Could not reload the save. Choose the save slot again or refresh.'
+            print(f'BBE Save Manager: project-load refresh failed: {exc}')
+    finally:
+        _restoring_session = False
+
 #save data to persist within blend files.
 class SaveManager(bpy.types.PropertyGroup):
     
     #array to populate accounts list
-    enum_accounts_list = []
+    enum_accounts_list = [('Default', 'Select Account', '')]
     #enum property list to display cave slots list
     
-    enum_save_slots_list = []
+    enum_save_slots_list = [('Default', 'Select Save Slot', '')]
     #this stores data related to save slot like paths
     data_save_slot = []
     
     #this stores data for displaying list
-    enum_base_list = []
+    enum_base_list = [('Default', 'Select Corvette', '')]
     #this stores list of bases, in seperate arrays for both corvetets and normal bases 
     extracted_base_data = {}
     
@@ -102,12 +186,13 @@ class SaveManager(bpy.types.PropertyGroup):
 
     #these properties will store data of changes made in account and save slot
     last_account_selected:bpy.props.StringProperty(
-        name="acocount_selected", default = "Default"
+        name="acocount_selected", default = "Default", options={'SKIP_SAVE'}
     )
     
     last_slot_selected:bpy.props.StringProperty(
-        name="slot_selected", default = "Default"
+        name="slot_selected", default = "Default", options={'SKIP_SAVE'}
     )
+    session_status: bpy.props.StringProperty(default='', options={'SKIP_SAVE'})
     
     # this section stores parameters for pinned base which will persist within a blend file
     
@@ -165,7 +250,7 @@ class SaveManager(bpy.types.PropertyGroup):
     
     #this is called after clicking enable save editor button
     def on_check_plugin_enabled(self,context):
-        if not self.check_plugin_enabled:
+        if _restoring_session or not self.check_plugin_enabled:
             return
         save_editor_dependencies.installDependencies()
         if self.nms_base_type != BaseType.CORVETTE:
@@ -181,6 +266,9 @@ class SaveManager(bpy.types.PropertyGroup):
 
     #function runs after an account is selected
     def on_account_list_change(self):
+        if _restoring_session:
+            return
+        self.session_status = ''
         #store save slots list for easy access
         SaveManager.enum_save_slots_list = self.get_save_slots_list()
         
@@ -217,6 +305,9 @@ class SaveManager(bpy.types.PropertyGroup):
     # Called when an update happens Save Slots list UI
     # Extraction of base list from save file happens here
     def on_save_slot_list_change(self):
+        if _restoring_session:
+            return
+        self.session_status = ''
         self.reset_base_list()
         # Start each selected save on the Corvette tab, without selecting a
         # Corvette from the list or enabling its import/export controls.
@@ -258,14 +349,17 @@ class SaveManager(bpy.types.PropertyGroup):
         return enum_save_slots_list
     
     # Called when radio buttons that represent base type are clicked
-    def on_base_type_selected(self):        
-        # change bases list accourding to type of base in UI
-        if not self.nms_save_slot == "Default":
-            SaveManager.enum_base_list = self.get_bases_enum_list(SaveManager.extracted_base_data)
-            
-        if len(SaveManager.enum_base_list) > 0:
-            if len(SaveManager.enum_base_list[0][0]) > 0:
-                self.nms_base_index = SaveManager.selected_base_type_tabs[self.nms_base_type]
+    def on_base_type_selected(self):
+        if _restoring_session:
+            return
+        cache = SaveManager.extracted_base_data if self.get_current_slot_data() is not None else {}
+        SaveManager.enum_base_list = self.get_bases_enum_list(cache)
+        # Rebuilds can remove the remembered build or leave a tab empty.
+        # Restore its identifier only when it is still a selectable item;
+        # inheriting an enum ordinal could silently select a different build.
+        remembered = SaveManager.selected_base_type_tabs.get(self.nms_base_type, "Default")
+        available = {item[0] for item in SaveManager.enum_base_list if item[0]}
+        self.nms_base_index = remembered if remembered in available else "Default"
             
 
     # called either after base type is selected or save slot is changed
@@ -296,6 +390,8 @@ class SaveManager(bpy.types.PropertyGroup):
     # this is called when a base is selected from UI
     # this updates state values accourding to which element of list is selected
     def on_base_selected(self):
+        if _restoring_session:
+            return
         SaveManager.selected_base_type_tabs[self.nms_base_type] = self.nms_base_index
         SaveManager.is_base_selected = self.has_selected_base()
 
@@ -458,7 +554,6 @@ class SaveManager(bpy.types.PropertyGroup):
     def reset_base_list(self):
         SaveManager.is_base_selected = False
         SaveManager.save_data_loaded = False
-        SaveManager.enum_base_list = []
         SaveManager.extracted_base_data = {}
         SaveManager.selected_base_type_tabs = {
             BaseType.CORVETTE: "Default",
@@ -468,10 +563,8 @@ class SaveManager(bpy.types.PropertyGroup):
             BaseType.STATION: "Default"
         }
         
-        if SaveManager.enum_base_list is not None:
-            if len(SaveManager.enum_base_list) > 0:
-                if len(SaveManager.enum_base_list[0][0]) > 0:
-                    self.nms_base_index = "Default"
+        SaveManager.enum_base_list = self.get_bases_enum_list({})
+        self.nms_base_index = "Default"
     
     #called by ui to display type of base
     def get_base_type_string(self,base_type = None):
@@ -644,9 +737,14 @@ class SaveManager(bpy.types.PropertyGroup):
     # refresh list of bases/corvettes by importing fresh data form save file
     def refresh_bases_list(self):
         current_slot_data = self.get_current_slot_data()
+        if current_slot_data is None:
+            self.reset_base_list()
+            return
         with progress_ui.Activity('Loading save list') as progress:
             progress.update(.08, 'Reading save points')
             SaveManager.extracted_base_data = save_editor_utils.extract_bases_list_from_save(
                 current_slot_data["saves"], progress=progress)
             progress.update(1.0, 'Save list ready')
+        SaveManager.save_data_loaded = True
+        self.session_status = ''
         self.on_base_type_selected()

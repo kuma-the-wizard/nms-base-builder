@@ -1,15 +1,30 @@
 # Base Builder Extended
 
-Current standalone release: **18.1.84**. Windows x64, verified with Blender
+Current standalone release: **18.1.86**. Windows x64, verified with Blender
 5.1.2 and 5.2.2 LTS.
 
-This update adds early Corvette warnings and reviewed keep-build repairs,
+Fixes save exports containing
+zero-length cables, initializes the `.nmsship` filename correctly, and lets
+designs started in Blender export using new Corvette defaults. Imported ship
+metadata and the 18.1.85 Objects-only clipboard correction are preserved.
+Also fixes a shutdown crash when closing Blender with a file browser open.
+Corrects the offset detailed roof-gable previews, including saved projects.
+Keeps update checks working after opening a project and reports stalled requests.
+Adds an editable Ship Name directly below the Corvette selector in I/O and the sidebar.
+Clears unavailable saved selections when refreshing the list or switching tabs.
+Keeps the local save/Corvette selection when opening another project, restores
+older Asset Browser layouts with missing pins, and shows the selected Corvette
+on the picker button.
+Repairs missing HD textures before the first viewport redraw when opening shared projects.
+See [release notes](release_notes.md) for validation and open reports.
+
+Includes early Corvette warnings and reviewed keep-build repairs,
 one-step export to a new ship slot, saved ship metadata, optional WASD navigation,
 cockpit-order controls, restored Asset Browser layouts, faster export validation,
 and opt-in diagnostic tickets. The Corvette picker closes after selection and
 excludes freighters. The website diagnostic service is deployed and verified.
 
-[Download the installer and read the release notes](https://github.com/slipperystickers/nms-base-builder/releases/tag/v18.1.84).
+[Download the installer and read the release notes](https://github.com/slipperystickers/nms-base-builder/releases/tag/v18.1.86).
 Install the attached plugin ZIP through Blender's **Install from Disk**, then
 restart Blender. This release adds independent rotating project recovery,
 fixes recovery timer interruptions, improves undo handling and build imports,

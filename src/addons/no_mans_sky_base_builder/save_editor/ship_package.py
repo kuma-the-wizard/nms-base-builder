@@ -1,8 +1,20 @@
 """Capture a selected save Corvette as a standalone, self-contained package."""
 import io
+import json
 import zipfile
 from . import ship_core as core, ship_repair
 from ..interchange import BuildFile, _encode
+
+
+def new_corvette_source():
+    """Supply ship records for a new design; template build parts never enter it."""
+    template = json.loads((core.RES / 'minimal_corvette.json').read_text(encoding='utf8'))
+    stream = io.BytesIO()
+    with zipfile.ZipFile(stream, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
+        for name, value in (('objects.json', []), ('so.json', template['ship']),
+                            ('ccd.json', template['custom'])):
+            archive.writestr(name, _encode(value))
+    return BuildFile.from_bytes(stream.getvalue(), '.nmsship')
 
 
 def from_save(root, context, base_index):

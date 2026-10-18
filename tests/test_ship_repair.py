@@ -20,6 +20,21 @@ def payload():
 
 
 class RepairTests(unittest.TestCase):
+    def test_zero_length_cables_preserved_without_allowing_invalid_solids(self):
+        part = copy.deepcopy(TEMPLATE['base']['Objects'][0])
+        for cable_id in repair.CABLE_IDS:
+            cable = dict(part, ObjectID='^' + cable_id, At=[0, 0, 0])
+            before = copy.deepcopy(cable)
+            repair.validate_parts([cable])
+            self.assertEqual(cable, before)
+        for field in ('Up', 'At'):
+            with self.assertRaisesRegex(ValueError, 'BUILDWALL.*' + field):
+                repair.validate_parts([dict(part, ObjectID='^BUILDWALL', **{field: [0, 0, 0]})])
+        repair.validate_parts([dict(part, Up=[0, 1e-8, 0], At=[0, 0, 1e-8])])
+        for invalid in (float('nan'), float('inf'), True):
+            with self.assertRaises(ValueError):
+                repair.validate_parts([dict(part, ObjectID='^U_POWERLINE', At=[invalid, 0, 0])])
+
     def test_inventory_comparison_is_read_only_and_covers_unknown_data(self):
         for raw in (False, True):
             root=fixture('wrong_ship')

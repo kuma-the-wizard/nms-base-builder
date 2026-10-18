@@ -76,7 +76,7 @@ class Range:
 class Activity:
     """Context-managed progress with cleanup on success and failure."""
 
-    def __init__(self, title, detail='Preparing…'):
+    def __init__(self, title, detail='Preparing…', *, visible=True):
         self.title = title
         self.detail = detail
         self.fraction = 0.0
@@ -84,10 +84,11 @@ class Activity:
         self._wm = None
         self._owns_ui = False
         self._last_draw = 0.0
+        self._visible = visible
 
     def __enter__(self):
         global _active
-        if bpy.app.background or _active is not None:
+        if not self._visible or bpy.app.background or _active is not None:
             return self
         wm = bpy.context.window_manager
         if wm is None or not wm.windows:

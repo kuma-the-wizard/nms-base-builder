@@ -24,6 +24,7 @@ from .part_overrides import line
 from .save_editor import save_editor_operators, save_editor_utils, station_reference
 from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel, BBE_OT_backup_settings, BBE_OT_refresh_save_counts
 from .save_editor.save_manager import SaveManager
+from .save_editor import save_manager
 
 from .tools import batch_tool_operators, build_tool_operators, prooperties_operators, asset_browser_operators
 from .tools_menu import base_builder_menu, base_builder_menu_operators
@@ -196,14 +197,15 @@ class NMSMain(PropertyGroup):
         return data
 
     # Import and Export Methods ---
-    def import_nms_data(self):
+    def import_nms_data(self, clipboard_data=None):
         """Import and build a base based on the contents of user clipboard.
 
         The clipboard should contain a copy of the base data found in the
         No Man's Sky Save Editor.
         """
         # Read clipboard data.
-        clipboard_data = bpy.context.window_manager.clipboard
+        if clipboard_data is None:
+            clipboard_data = bpy.context.window_manager.clipboard
         try:
             with progress_ui.Activity('Reading clipboard build') as progress:
                 progress.update(.1, 'Parsing parts')
@@ -220,7 +222,28 @@ class NMSMain(PropertyGroup):
         # Start a new file
         if isinstance(nms_import_data, list):
             nms_import_data = {"Objects": nms_import_data}
+        # An Objects-only paste replaces the parts, not the destination build's
+        # identity. In particular, keep the Corvette package stored in the
+        # .blend so the new parts can still be exported as a .nmsship.
+        parts_only = (isinstance(nms_import_data, dict)
+                      and 'Objects' in nms_import_data
+                      and 'BaseType' not in nms_import_data)
+        if parts_only:
+            scene = bpy.context.scene
+            previous_metadata = scene.nms_base_tool.serialise()
+            source_name = scene.get('bbe_build_source_text')
+            source_suffix = scene.get('bbe_build_source_suffix')
+            source_error = scene.get('bbe_ship_source_error')
         self.deserialise_from_data(nms_import_data)
+        if parts_only:
+            scene.nms_base_tool.deserialise_from_data(previous_metadata)
+            source_block = bpy.data.texts.get(source_name) if source_name else None
+            if source_block and source_suffix:
+                source_block.use_fake_user = True
+                scene['bbe_build_source_text'] = source_block.name
+                scene['bbe_build_source_suffix'] = source_suffix
+            if source_error:
+                scene['bbe_ship_source_error'] = source_error
         previous_objects = set(bpy.context.scene.objects)
         builder_v2.deserialise_from_data(nms_import_data)
         station_reference.finish_transfer_import(bpy.context, nms_import_data, previous_objects)
@@ -283,18 +306,19 @@ class NMSMain(PropertyGroup):
     def _export_ship_file(self, file_path, template_path, progress, use_selected_save=False, warnings=None):
         data = self.serialise(objects_only=True, progress=progress,
                               progress_range=(.02, .72))
-        if bpy.context.scene.nms_base_tool.string_base_type != 'PlayerShipBase':
-            raise ValueError('The current scene is not marked as a Corvette')
         progress.update(.76, 'Reading ship package metadata')
-        source = _restore_build_source(bpy.context.scene)
-        if use_selected_save:
-            from .save_editor import ship_package
-            source = ship_package.selected_save_source(bpy.context)
+        from .save_editor import ship_package
+        source = (ship_package.selected_save_source(bpy.context) if use_selected_save
+                  else _restore_build_source(bpy.context.scene))
         if source is None or source.kind != 'ship':
-            if not template_path:
-                reason = bpy.context.scene.get('bbe_ship_source_error')
-                raise ValueError(reason or 'Ship metadata is missing. Re-import this Corvette from Save with this version, or choose its complete .nmsship as the ship package template.')
-            source = interchange.BuildFile.read(template_path)
+            if template_path:
+                source = interchange.BuildFile.read(template_path)
+            else:
+                if bpy.context.scene.get('bbe_build_source_suffix') == '.nmsship':
+                    raise ValueError('The imported ship metadata is unavailable. Re-import its .nmsship or choose a complete ship template to preserve its inventory and stats.')
+                source = ship_package.new_corvette_source()
+                if warnings is not None:
+                    warnings.append('Used new Corvette defaults for class, inventory, technology and appearance.')
         if source.kind != 'ship':
             raise ValueError('Ship template must be a complete .nmsship package')
         payload = source.ship_bytes(data, bpy.context.scene.nms_base_tool.string_base)
@@ -751,7 +775,7 @@ class NMS_PT_file_buttons_panel(Panel):
         first_column = file_box.column(align=True)
         first_column.scale_x = 0.5 if base_props.string_base_type == "PlayerShipBase" else 1.0
         first_column.label(text="Metadata", **icons.ui_icon("PROPERTIES"))
-        first_column.label(text="Base Name")
+        first_column.label(text="Ship Name" if base_props.string_base_type == "PlayerShipBase" else "Base Name")
         first_column.prop(base_props, "string_base", text = "")
         first_row = first_column.row(align = True)
         first_row.enabled = False
@@ -1143,18 +1167,30 @@ class ExportBaseFile(bpy.types.Operator):
 class ExportShipFile(bpy.types.Operator):
     bl_idname = 'bbe.export_ship_file'
     bl_label = 'Export Corvette Package (.nmsship)...'
-    bl_description = 'Keep ship class, inventory, technology, and appearance from the imported package or template'
+    bl_description = 'Save current parts as .nmsship; retain imported ship metadata, choose a saved ship or template, or use new Corvette defaults'
     filepath: bpy.props.StringProperty(subtype='FILE_PATH')
+    filename_ext = '.nmsship'
     template_path: bpy.props.StringProperty(
         name='Ship package template', subtype='FILE_PATH',
-        description='Required for a new Corvette that was not imported from .nmsship')
+        description='Optional: copy class, inventory, technology and appearance from a complete .nmsship; leave empty for new Corvette defaults')
     filter_glob: bpy.props.StringProperty(default='*.nmsship', options={'HIDDEN'})
     use_selected_save: bpy.props.BoolProperty(name='Use selected save Corvette', default=False,
         description='Use class, inventory, technology and appearance from the Corvette selected in I/O; export current Blender parts')
 
+    def check(self, context):
+        if not self.filepath:
+            return False
+        path = str(Path(self.filepath).with_suffix('.nmsship'))
+        changed = path != self.filepath
+        self.filepath = path
+        return changed
+
     def draw(self, context):
         source = context.scene.get('bbe_build_source_suffix')
-        if source != '.nmsship':
+        source_text = bpy.data.texts.get(context.scene.get('bbe_build_source_text', ''))
+        if context.scene.nms_base_tool.string_base_type != 'PlayerShipBase':
+            self.layout.label(text='This export creates a Corvette package from your scene parts.', icon='INFO')
+        if source != '.nmsship' or source_text is None:
             self.layout.prop(self, 'use_selected_save')
             if self.use_selected_save:
                 selected = context.scene.nms_save_data.get_current_base_identifiers()
@@ -1164,7 +1200,12 @@ class ExportShipFile(bpy.types.Operator):
                 else:
                     self.layout.label(text='Select the original Corvette in I/O first.', icon='ERROR')
             else:
-                self.layout.label(text='Or choose a complete .nmsship template:')
+                if source == '.nmsship':
+                    self.layout.label(text='Imported ship metadata is missing.', icon='ERROR')
+                    self.layout.label(text='Choose a saved Corvette or a complete template.')
+                else:
+                    self.layout.label(text='Empty template uses new Corvette defaults.')
+                    self.layout.label(text='No cockpit or template parts are added.')
                 self.layout.prop(self, 'template_path')
         else:
             self.layout.label(text='Class, inventory and appearance come from imported ship.')
@@ -1182,6 +1223,16 @@ class ExportShipFile(bpy.types.Operator):
 
     def invoke(self, context, event):
         self.use_selected_save = False
+        if context.scene.get('bbe_build_source_suffix') != '.nmsship':
+            selected = context.scene.nms_save_data.get_current_base_identifiers()
+            self.use_selected_save = bool(
+                selected and selected.base_type == 'PlayerShipBase'
+                and type(selected.user_data) is int and 0 <= selected.user_data < 12)
+        name = context.scene.nms_base_tool.string_base.strip()
+        if not name:
+            name = Path(bpy.data.filepath).stem if bpy.data.filepath else 'Corvette'
+        filename = bpy.path.clean_name(name) + '.nmsship'
+        self.filepath = str(Path(bpy.data.filepath).parent / filename) if bpy.data.filepath else filename
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
@@ -2051,13 +2102,11 @@ def reset_plugin_state(dummy):
     curve.update_curves(known_curves, children_by_curve=curve.get_curve_children_map())
     
     
-    # reset save editor's state to closed
+    # Rebind project UI, then restore this session's local save destination.
     for scene in bpy.data.scenes:
-        save_data = scene.nms_save_data
-        save_data.check_plugin_enabled = False
-        
         asset_browser = scene.nms_asset_browser
         asset_browser.initialise_asset_browser()
+    save_manager.restore_after_load()
 
             
 # Whenever a curve is modified, automatically update whatever child objects that are associated with that curve.
@@ -2360,6 +2409,8 @@ def register_core():
     
     if reset_plugin_state not in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.append(reset_plugin_state)
+    if save_manager.capture_before_load not in bpy.app.handlers.load_pre:
+        bpy.app.handlers.load_pre.append(save_manager.capture_before_load)
     
     if udpates_handler not in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.append(udpates_handler)
@@ -2429,6 +2480,8 @@ def unregister():
     
     if reset_plugin_state in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(reset_plugin_state)
+    if save_manager.capture_before_load in bpy.app.handlers.load_pre:
+        bpy.app.handlers.load_pre.remove(save_manager.capture_before_load)
         
     if udpates_handler in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.remove(udpates_handler)

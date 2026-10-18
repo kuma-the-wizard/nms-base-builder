@@ -349,6 +349,7 @@ class BBE_OT_corvette_export(bpy.types.Operator):
         if self._error:
             l.label(text=self._error, icon='ERROR'); return
         l.label(text=f"Destination: {self.context_name} / Slot {self._index+1}")
+        l.label(text=f"Ship Name: {core.get(self._payload['ship'], 'Name')}")
         if len(self._records) > 1:
             l.label(text='Duplicate builds to replace: ' + ', '.join(str(n+1) for n in self._records), icon='ERROR')
             l.prop(self, 'confirm_duplicates')

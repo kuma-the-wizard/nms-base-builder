@@ -244,7 +244,7 @@ def register(product, installed, category):
             row.operator(Check.bl_idname,text='Check now',**icons.ui_icon('FILE_REFRESH'))
             row=layout.row();row.enabled=not _client.busy and bool((_client.result or {}).get('available'))
             row.operator(Download.bl_idname,**icons.ui_icon('IMPORT'))
-            layout.operator(Auto.bl_idname,text='Check on startup',**icons.ui_icon('CHECKBOX_HLT' if _client.settings.get('auto_check') else 'CHECKBOX_DEHLT'))
+            layout.operator(Auto.bl_idname,text='Automatically check for updates',**icons.ui_icon('CHECKBOX_HLT' if _client.settings.get('auto_check') else 'CHECKBOX_DEHLT'))
             layout.operator(Folder.bl_idname,**icons.ui_icon('FILE_FOLDER'))
             layout.label(text='Install ZIP after saving and restarting Blender.')
             layout.separator();layout.operator(Report.bl_idname,**icons.ui_icon('TEXT'))
@@ -261,7 +261,7 @@ def register(product, installed, category):
         bpy.utils.register_class(cls);_classes.append(cls)
     _restore_errors=guard_blender(_reporter,__package__)
     if not bpy.app.background and getattr(bpy.app,'online_access',True):_client.maybe_check()
-    bpy.app.timers.register(poll,first_interval=.5)
+    bpy.app.timers.register(poll,first_interval=.5,persistent=True)
 
 def poll():
     if _client is None:return None
@@ -292,6 +292,8 @@ def poll():
             if not shown:_reporter.queue.put(payload)
     before=_client.message
     _client.poll()
+    if not bpy.app.background and bool(getattr(bpy.app,'online_access',False)):
+        _client.maybe_check()
     if _client.busy or before!=_client.message or diagnostic_before!=_diagnostics.message:
         for window in bpy.context.window_manager.windows:
             for area in window.screen.areas:

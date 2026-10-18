@@ -23,7 +23,8 @@ ADDON_ID = asset_browser_utils.ADDON_ID
 
 def browser_pin_object():
     """Provide Properties with a context without touching scene selection."""
-    obj = bpy.data.objects.get("Asset Browser Window")
+    from .asset_browser_grid import _is_browser_pin
+    obj = next((item for item in bpy.data.objects if _is_browser_pin(item)), None)
     if obj is None:
         mesh = bpy.data.meshes.new("Asset Browser Window")
         obj = bpy.data.objects.new("Asset Browser Window", mesh)

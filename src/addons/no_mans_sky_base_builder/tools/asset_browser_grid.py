@@ -136,6 +136,8 @@ class BBE_OT_asset_grid(bpy.types.Operator):
         key = context.area.as_pointer()
         if key in _sessions:
             return {'CANCELLED'}
+        if _saved_browser_target(context.window) == context.area:
+            context.window.screen['bbe_asset_browser'] = True
         self._window, self._area, self._key = context.window, context.area, key
         self._offset, self._hover, self._drag = 0, None, False
         self._pressed = None
@@ -372,13 +374,33 @@ def _close_all(_dummy=None):
 
 def _saved_browser_target(window):
     areas = sorted(window.screen.areas, key=lambda area: area.x)
-    if len(areas) < 2 or areas[0].type != 'PROPERTIES':
+    if len(areas) != 2 or areas[0].type != 'PROPERTIES':
         return None
     pinned = areas[0].spaces.active.pin_id
-    if not (_is_browser_pin(pinned) or _is_legacy_browser_layout(areas)):
+    tagged = getattr(window.screen, 'get', lambda *args: False)('bbe_asset_browser', False)
+    if not (_is_browser_pin(pinned) or _is_legacy_browser_layout(areas)
+            or (pinned is None and tagged) or _is_unpinned_browser_layout(areas)):
         return None
     right = areas[1]
     return right if right.type in {'PROPERTIES', 'IMAGE_EDITOR'} else None
+
+
+def _is_unpinned_browser_layout(areas):
+    """Migrate the old pop-out layout when its object was omitted from a file.
+
+    Require its complete hidden-chrome, empty-image, side-by-side layout. A
+    normal Properties/Image Editor workspace or a pinned model is not ours.
+    """
+    if len(areas) != 2 or [area.type for area in areas] != ['PROPERTIES', 'IMAGE_EDITOR']:
+        return False
+    left, right = areas
+    props, image = left.spaces.active, right.spaces.active
+    return (props.pin_id is None and props.context == 'CONSTRAINT'
+            and not props.show_region_header and not image.show_region_header
+            and image.image is None and not image.show_region_ui
+            and not image.show_region_toolbar and not image.show_region_tool_header
+            and left.y == right.y and left.height == right.height
+            and left.width < right.width)
 
 
 def _is_legacy_browser_layout(areas):
@@ -448,6 +470,13 @@ def _restore_saved_windows(window_manager):
             continue
         if right.as_pointer() in _sessions:
             continue
+        from .asset_browser_operators import browser_pin_object
+        left = min(window.screen.areas, key=lambda area: area.x)
+        with bpy.context.temp_override(window=window, area=left):
+            left.spaces.active.pin_id = browser_pin_object()
+            left.spaces.active.use_pin_id = True
+            left.spaces.active.context = 'CONSTRAINT'
+        window.screen['bbe_asset_browser'] = True
         if right.type == 'PROPERTIES':
             right.type = 'IMAGE_EDITOR'
         space = right.spaces.active

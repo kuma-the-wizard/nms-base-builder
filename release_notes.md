@@ -1,3 +1,33 @@
+release 18.1.86 - October 18, 2026
+--------------------------------
+
+- Preserve the current session's local account, save slot and selected build when opening another `.blend`, without importing that ship's parts. Re-read the destination save and match the selected build by identity; unavailable or ambiguous targets remain unselected. Discard another author's saved account/slot choices and stale runtime caches. Save choices remain accessible after refresh failures.
+- Restore Asset Browser grids in older dedicated pop-out layouts whose helper object was omitted from the project. Recreate and pin the hidden browser helper without changing the active model or repurposing a similarly named user object. New layouts retain an explicit browser marker.
+- Complete missing-HD-texture fallback during file loading, before the viewport can draw unresolved materials. The automatic conversion uses no intermediate progress redraw; its explanation appears after loading. With the HD pack present, TestBed's 165 texture images resolve and decode. With it absent, all 293 parts keep their identity and transforms while switching to simple proxies with no missing texture references.
+- Show the selected Corvette's slot, name and part count on the picker button. Keep Select Corvette as the empty prompt, automatic menu closing and existing warning/repair controls.
+- Verified the exact select-save/Corvette -> open TestBed -> refresh -> export sequence in isolated Blender 5.1.2 and 5.2.2 GUI processes, both loading and retaining window layouts. Browser thumbnails restore; ordinary and optimized fixture exports pass. The source project and real game saves are unchanged. The warning when opening a 5.2 file in 5.1 is Blender's version-compatibility warning and remains visible.
+- Fix refresh and tab switches failing with `enum "9" not found` (or another previous build index). Restore a remembered selection only when that identifier still exists in the new list; otherwise show Select Corvette/Base. Clearing or changing the save also clears stale selections without changing scene metadata or game-save data.
+- Edit Ship Name directly below Select Corvette in both I/O and the sidebar Save Manager. The field shares the existing project metadata, applies to ordinary, optimized and `.nmsship` exports, and explains when the name is saved. A blank field previews the selected saved name; the export review shows the final name before confirmation.
+- Keep update polling alive when opening a Blender file. Automatic checks also resume when Online Access is enabled later, with retry after failures, bounded helper timeouts, and a clear up-to-date result. The checkbox is labeled Automatically check for updates; installation remains a separate user action.
+- Fix Export to Save and Optimize & Export rejecting coincident cable endpoints as invalid part directions. Preserve the zero-length cable data. Invalid solid-part directions still stop export and now identify the part and field.
+- Start the Corvette package file browser with a `.nmsship` filename and correct the extension as the filename is edited.
+- Allow a design started in Blender to export a complete `.nmsship` without first importing a ship. Reuse the existing minimal Corvette ship records when no imported source, selected save or explicit template is supplied. No cockpit or template build parts are inserted.
+- Retain imported ship inventory, technology, stats, appearance and additional package entries; explicit selected-save and template choices remain available.
+- Add Feature Help for package export and inverse palette finishes.
+- Correct the detailed Timber, Alloy, Stone and Builder roof gables and quarter-gables (`*_ROOF_E_CAP` / `*_ROOF_E_Q`). Their HD meshes had an extra local Z=1.333333 placement-locator translation. Recognised library meshes now match the native LOD0 coordinates, including meshes embedded in saved projects without the optional pack. Custom-edited meshes and exported object transforms are preserved.
+- Verified a supplied 291-part project in Blender 5.1.2 and 5.2.2: all four affected gables migrate, all exported object records stay identical, and the original file is unchanged. Checked all eight variants against native game vertices (maximum error below 0.000002 units), repeated quality switches, saved-file reopen, UVs and custom normals. Live in-game confirmation is pending.
+- Fix a reproduced native shutdown crash with the file browser still open: toolbar cleanup no longer changes region visibility after Blender clears the active window. Overlay cleanup also tolerates an absent screen. The exact quit sequence exits successfully in Blender 5.1.2 and 5.2.2, and ordinary disable/re-enable still restores toolbar visibility.
+- Verified the supplied 293-part TestBed through ordinary and optimized export into temporary game-save fixtures in Blender 5.1.2 and 5.2.2. Both zero-length wires, inventory, stats and appearance survived; backups were created and the supplied `.blend` was unchanged. In-game validation is pending.
+- B_CON2 color mapping is unchanged. Inverse finishes swap palette slots; the reporter says the same behavior occurs in-game.
+- The reported bubble-duct undo crash remains open pending the reporter's crash log. Isolated placement tests did not reproduce a native crash. A separate real-click test found that modal browser placements did not create individual undo steps; this is recorded for the follow-up investigation and is not claimed fixed here.
+- Two diagnostic GUI runs with automatic window screenshots encountered a native NVIDIA `nvoglv64.dll` access violation; its cause is unconfirmed. Subsequent normal project-load/export GUI tests passed in both Blender versions and the installed profile. This release does not claim to fix that graphics crash.
+
+release 18.1.85
+--------------
+
+- Objects-only clipboard imports keep the destination scene's build type, name and retained ship metadata.
+- Keep both `.nmsship` and `.nmsbase` export commands available and allow an explicit saved-ship source for metadata.
+
 release 18.1.84
 -------------
 

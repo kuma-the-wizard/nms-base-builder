@@ -19,9 +19,19 @@ TOPICS = {
     )),
     'EXPORT': ('Export Corvette to Save', (
         ('Source and destination', 'Exports the current Blender scene into the chosen game save, in Main or Expedition. Review the ship slot before confirming. Exporting a .nmsship file is separate and does not write a game save.'),
+        ('Ship Name', 'Type the name below Select Corvette in I/O or the sidebar Save Manager. This is the same name as the Metadata field and stays with the Blender project. Both Export to Save and Optimize & Export apply it when you confirm; .nmsship export uses it too. Leave it blank to keep the destination ship name when overwriting. A gray placeholder shows that saved name when the field is blank.'),
         ('Overwrite Selected Ship', 'Replaces that ship’s build with your scene parts. Readable inventory, technology, hyperslots, class, stats and appearance are retained. A non-Corvette destination is converted to a Corvette.'),
         ('New Empty Ship Slot', 'Creates a Corvette with minimal default inventory, technology and stats, then uses exactly your scene parts. No template parts are added. Occupied slots and slots reserved by orphan builds are unavailable.'),
         ('Warnings and recovery', 'A missing cockpit warns that the ship will be unflyable; export is still allowed and no cockpit is inserted. Any unreadable data reset needs separate confirmation. Verified backups are made before writing; Blender Undo cannot undo a game-save write.'),
+    )),
+    'SHIP_FILE': ('Export Corvette Package (.nmsship)', (
+        ('What is saved', 'Writes your current Blender parts into a standalone .nmsship file. The file browser starts with the .nmsship extension. This operation does not write a game save.'),
+        ('Ship data', 'An imported ship keeps its inventory, technology, stats and appearance. Otherwise, choose Use selected save Corvette to copy those fields from the Corvette selected in I/O, or choose a complete .nmsship template in the file browser options.'),
+        ('Designs started in Blender', 'With no imported ship, selected-save option or template, BBE uses new Corvette defaults. Your exact scene parts are kept. No cockpit or template parts are added; a missing cockpit warns that the exported ship is unflyable.'),
+    )),
+    'COLOUR': ('Palette Colors and Inverse Finishes', (
+        ('Where colors appear', 'A part’s model and color mask determine which surfaces use each palette color. Choosing red does not make every surface red; some surfaces use the secondary color or retain their original texture.'),
+        ('Inverse finishes', 'Inverse Gloss and other inverse finishes swap primary with secondary, and tertiary with the fourth palette color. Use an inverse finish when the color you want is on the wrong surface. This finish choice is included in exported part data.'),
     )),
     'REPAIR': ('Repair — Keep My Build', (
         ('What is repaired', 'Repairs the selected saved build’s Corvette record and ship-slot link. It uses the objects already in the game save, not the current Blender scene.'),

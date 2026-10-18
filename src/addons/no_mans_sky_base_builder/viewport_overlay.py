@@ -162,7 +162,7 @@ def register_draw():
             draw_callback_px, (None, None), 'WINDOW', 'POST_PIXEL'
         )
         # Force a redraw of the viewport to see the changes immediately
-        for area in bpy.context.screen.areas:
+        for area in getattr(bpy.context.screen, 'areas', ()):
             if area.type == 'VIEW_3D':
                 area.tag_redraw()
 
@@ -172,7 +172,7 @@ def unregister_draw():
         bpy.types.SpaceView3D.draw_handler_remove(draw_handler, 'WINDOW')
         draw_handler = None
         
-        # Force redraw to clear the text
-        for area in bpy.context.screen.areas:
+        # Shutdown can clear the screen before add-ons are unregistered.
+        for area in getattr(bpy.context.screen, 'areas', ()):
             if area.type == 'VIEW_3D':
                 area.tag_redraw()

@@ -255,7 +255,16 @@ def _saved_hd_needs_simple_proxies(scene):
     return False
 
 
-def _repair_saved_hd_textures():
+def _show_texture_fallback():
+    if not bpy.app.background and bpy.context.window_manager.windows:
+        def draw(self, _context):
+            self.layout.label(text='This file uses detailed parts with unavailable textures.')
+            self.layout.label(text='BBE switched them to Simple Proxies. Check or install the HD pack.')
+        bpy.context.window_manager.popup_menu(draw, title='Detailed Proxies', icon='INFO')
+    return None
+
+
+def _repair_saved_hd_textures(*, before_draw=False):
     """Show simple proxies when a shared file's detailed textures are absent."""
     from .tools_menu.base_builder_menu_operators import _switch_scene_proxies
     repaired = False
@@ -264,7 +273,7 @@ def _repair_saved_hd_textures():
             continue
         try:
             with bpy.context.temp_override(scene=scene, view_layer=scene.view_layers[0]):
-                parts, groups, skipped = _switch_scene_proxies(bpy.context, False)
+                parts, groups, skipped = _switch_scene_proxies(bpy.context, False, show_progress=not before_draw)
             scene.bbe_detailed_proxies = False
             repaired = repaired or bool(parts or groups)
             message = (f'Detailed textures missing: showing {parts} part(s) and {groups} group(s) '
@@ -274,11 +283,12 @@ def _repair_saved_hd_textures():
             print('BBE: ' + message)
         except (ReferenceError, RuntimeError, ValueError) as exc:
             print(f'BBE: Could not show simple proxies for {scene.name}: {exc}')
-    if repaired and not bpy.app.background and bpy.context.window_manager.windows:
-        def draw(self, _context):
-            self.layout.label(text='This file uses detailed parts with unavailable textures.')
-            self.layout.label(text='BBE switched them to Simple Proxies. Check or install the HD pack.')
-        bpy.context.window_manager.popup_menu(draw, title='Detailed Proxies', icon='INFO')
+    if repaired and not bpy.app.background:
+        if before_draw:
+            if not bpy.app.timers.is_registered(_show_texture_fallback):
+                bpy.app.timers.register(_show_texture_fallback, first_interval=0.0)
+        else:
+            _show_texture_fallback()
     return None
 
 
@@ -286,8 +296,10 @@ def _repair_saved_hd_textures():
 def after_load(_unused):
     cancel_activation()
     relink_legacy_textures()
-    if not bpy.app.timers.is_registered(_repair_saved_hd_textures):
-        bpy.app.timers.register(_repair_saved_hd_textures, first_interval=0.0)
+    # A deferred conversion (or progress redraw during it) exposes unresolved
+    # materials to the viewport. Complete the data repair before the first draw;
+    # only the informational popup needs to wait for the UI event loop.
+    _repair_saved_hd_textures(before_draw=True)
     from .part_overrides.fossil_models import refresh_scene
     from .utils import room_glass
     for scene in bpy.data.scenes:
@@ -385,6 +397,8 @@ def unregister():
         bpy.app.timers.unregister(redraw)
     if bpy.app.timers.is_registered(_repair_saved_hd_textures):
         bpy.app.timers.unregister(_repair_saved_hd_textures)
+    if bpy.app.timers.is_registered(_show_texture_fallback):
+        bpy.app.timers.unregister(_show_texture_fallback)
     if after_load in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(after_load)
     del bpy.types.Scene.bbe_detailed_proxies

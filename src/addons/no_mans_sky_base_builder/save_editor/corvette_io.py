@@ -98,7 +98,7 @@ class BBE_MT_corvette_picker(bpy.types.Menu):
 def draw_picker(layout, data):
     selected = data.get_current_base_identifiers()
     layout.alert = bool(selected and selected.issues) or selected is None
-    layout.menu('BBE_MT_corvette_picker', text='Select Corvette',
+    layout.menu('BBE_MT_corvette_picker', text=label(selected) if selected else 'Select Corvette',
                 icon='ERROR' if selected and selected.issues else 'DOWNARROW_HLT')
 
 

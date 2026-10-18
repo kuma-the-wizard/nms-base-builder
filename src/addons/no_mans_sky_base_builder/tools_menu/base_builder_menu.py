@@ -254,9 +254,15 @@ def unregister_menu():
     header = bpy.types.VIEW3D_HT_tool_header
     if header.draw_tool_settings is _draw_tool_settings:
         header.draw_tool_settings = _original_tool_settings
-    # During disable Blender may restrict bpy.data as it does during enable.
-    # Do not touch scene data in that case or fail extension cleanup.
-    for screen in getattr(bpy.data, 'screens', ()):
+    # Region visibility invokes native area/workspace initialization. During
+    # Blender shutdown _on_exit disables add-ons after the active window has
+    # been cleared (notably when a file browser is still open). Updating a
+    # region then dereferences a null window in WM_window_get_active_workspace;
+    # a Python try/except cannot catch that access violation. Restore the UI
+    # only while a live window context exists, as on ordinary add-on disable.
+    window = getattr(bpy.context, 'window', None)
+    can_restore = window is not None and window.workspace is not None and window.screen is not None
+    for screen in getattr(bpy.data, 'screens', ()) if can_restore else ():
         for area in screen.areas:
             if area.type == 'VIEW_3D':
                 space = area.spaces.active

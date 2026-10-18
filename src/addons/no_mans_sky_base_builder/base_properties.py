@@ -13,7 +13,9 @@ class NMSBaseProperties(PropertyGroup):
     
     string_base: StringProperty(
         name="Base Name",
-        description="The name of the base set in game.",
+        description=("Name for the current Blender ship or base, saved with the project and applied when exporting. "
+                     "Editing this field does not write to the game save. "
+                     "Leave blank to keep the destination's saved name when overwriting it"),
         default="",
         maxlen=1024,
     )
