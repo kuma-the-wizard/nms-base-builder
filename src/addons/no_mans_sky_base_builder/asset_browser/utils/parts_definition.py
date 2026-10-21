@@ -63,7 +63,8 @@ def get_parts_from_categories(category, sub_category):
                     "id": item[0][1:],
                     "showInDrawer": item[8],
                     "variantOf": item[9],
-                    "nice_name": item[7],
+                    "nice_name": ('Curved Bubble Duct'
+                                  if item[0] == '^BASE_BUBPIPE_L' else item[7]),
                 }
             )
     return sorted(parts, key=lambda part: part["id"])

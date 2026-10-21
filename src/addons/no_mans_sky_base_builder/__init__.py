@@ -378,6 +378,9 @@ class NMSMain(PropertyGroup):
         previous_objects = set(bpy.context.scene.objects)
         BUILDER.deserialise_from_data(save_data)
         station_reference.finish_transfer_import(bpy.context, save_data, previous_objects)
+        from . import bubble_preview
+        bubble_preview.refresh(bpy.context.scene)
+        bubble_preview.lock_scene_shapes(bpy.context.scene)
 
     def new_file(self):
         """Reset's the entire Blender scene to default.
@@ -701,6 +704,7 @@ class NMS_PT_hero_panel(Panel):
         draw_cockpit_controls(layout)
         from .save_editor.function_help import help_button
         help_button(layout, text='BBE Feature Help')
+        layout.operator('bbe.join_bubble_ducts', text='Join Selected Bubble Ducts', icon='SNAP_ON')
 
         workspace_row = layout.row(align=True)
         workspace_box = workspace_row.box()
@@ -2106,13 +2110,16 @@ def reset_plugin_state(dummy):
     for scene in bpy.data.scenes:
         asset_browser = scene.nms_asset_browser
         asset_browser.initialise_asset_browser()
+        from . import bubble_preview
+        bubble_preview.refresh(scene)
+        bubble_preview.lock_scene_shapes(scene)
     save_manager.restore_after_load()
 
             
 # Whenever a curve is modified, automatically update whatever child objects that are associated with that curve.
 @persistent
 def udpates_handler(scene, depsgraph):
-    if undo_guard.restoring:
+    if not undo_guard.curve_tracking_ready():
         return
     
     global known_curve_names
@@ -2135,8 +2142,11 @@ def udpates_handler(scene, depsgraph):
 
     # Collect curves that have recieved updates by user
     updated_curve_names = set()
+    native_bubble_changed = False
     for update in depsgraph.updates:
         if isinstance(update.id, bpy.types.Object):
+            if update.id.get('ObjectID') == 'BASE_BUBPIPE':
+                native_bubble_changed = True
             # validate each object
             orig_obj = bpy.data.objects.get(update.id.name)
             # the object can already be gone by the time we look it up
@@ -2217,6 +2227,10 @@ def udpates_handler(scene, depsgraph):
         curve.update_curves(
             curves_to_update, children_by_curve=curve.get_curve_children_map()
         )
+
+    if native_bubble_changed:
+        from . import bubble_preview
+        bubble_preview.refresh(scene)
 
 
     
@@ -2398,6 +2412,8 @@ def register_core():
     wasd_navigation.register()
     from .save_editor import corvette_optimizer
     from .save_editor import function_help
+    from . import bubble_preview
+    bubble_preview.register()
     function_help.register()
     corvette_optimizer.register()
     from .save_editor import ship_management
@@ -2446,6 +2462,8 @@ def unregister():
     corvette_optimizer.unregister()
     from .save_editor import function_help
     function_help.unregister()
+    from . import bubble_preview
+    bubble_preview.unregister()
     from . import release_updates
     release_updates.unregister()
     from . import hd_library_ui, stages, decals, hab_windows

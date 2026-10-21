@@ -1,3 +1,27 @@
+# Base Builder Extended 18.2
+
+## Bubble tube building
+- Build straight tubes, elbows, T and + junctions, three-way and four-way corners, five-way and six-way junctions with controls beside the selected tube.
+- Add one new pathway at a time. Finish its straight or attached elbow before adding another opening. Redirect or remove an unused opening from the same panel.
+- Offer T and draft + when an elbow reaches the side of a straight. Highlight the tube that will change and preserve existing connected arms.
+- Show distinct draft previews until their required openings connect. Hide tube controls during multiple selection so they do not interfere with moving a structure.
+- Keep rotation, direction previews and part icons beside the workpiece. Improve placement undo/redo and refresh restored curve state after history operations settle.
+- Load the Asset Browser with its loading surface and show elbow help in context.
+
+## Export and warning fixes
+- Remove false proximity warnings caused solely by two closed tube sides. The 30-tube layout confirmed working in game now has no such warnings, with exactly the same exported placement frames.
+- Bubble connection warnings are advisory. Clipboard, file and save exports remain available for in-game testing, including unfinished layouts.
+- Retain checks for actual visible openings and incomplete branches. Legacy Blender-only curved proxies still have an explicit conversion workflow.
+
+## Installation
+Windows x64; Blender 5.1 or newer. Download `no_mans_sky_base_builder-18.2.0.zip`, install it through Blender's **Install from Disk**, then restart Blender. The optional HD pack remains separate. Existing settings, projects and save backups are preserved.
+
+**Base Builder by DjMonkey. Extended by Furiousfurby.**
+
+Validation: Blender 5.1.2 and 5.2.2 LTS. Includes a regression fixture for the user-confirmed in-game layout. Individual regression checks are Blender/serialization tests, not a claim that every possible junction layout was tested in game.
+
+---
+
 release 18.1.86 - October 18, 2026
 --------------------------------
 

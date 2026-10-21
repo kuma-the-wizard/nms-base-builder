@@ -422,6 +422,8 @@ def build_category_tree(favourite_ids=None, nice_names=None):
             continue
 
         nice_name = dictionary.to_title_case(nice_name)
+        if object_id == 'BASE_BUBPIPE_L':
+            nice_name = 'Curved Bubble Duct'
 
         sub_cat = categories_list.setdefault(category, {}).setdefault(sub_category, {})
 

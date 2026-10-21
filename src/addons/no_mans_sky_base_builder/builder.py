@@ -18,6 +18,23 @@ from .part_overrides import parts_override
 from .utils import blend_utils, dictionary
 
 
+def native_placeable_objects(objects, bubble_hints=None):
+    """Reject Blender-only corner proxies until a native duct layout is proven.
+
+    Renaming BASE_BUBPIPE_L to BASE_BUBPIPE produced straight tubes in-game.
+    The game selects an elbow from occupied native snap points, so preserving
+    the preview transform while swapping IDs silently changes the build.
+    """
+    if any(item.get("ObjectID") == "^BASE_BUBPIPE_L" for item in objects):
+        raise ValueError(
+            "Curved Bubble Duct cannot export at its Blender preview position: "
+            "No Man's Sky displays it as a straight tube. Save this .blend and "
+            "convert the route to connected native bubble-duct placements first."
+        )
+    from . import bubble_export
+    return bubble_export.compile_objects(objects, bubble_hints or {})
+
+
 class Builder(object):
 
     # Tool Level Paths ---
@@ -270,22 +287,43 @@ class Builder(object):
         """
         # Get all object part data.
         object_list = []
+        bubble_hints = {}
 
         parts = list(self.get_all_parts(exclude_presets=get_presets))
         for index, item in enumerate(parts):
             object_id = item["ObjectID"]
             use_class = self.get_part_class(object_id)
             item_obj = use_class.deserialise_from_object(item, builder_object=self)
-            object_list.append(item_obj.serialise())
+            record = item_obj.serialise()
+            if item.get('bbe_bubble_shape') and object_id == 'BASE_BUBPIPE':
+                if get_presets:
+                    record['bbe_bubble_shape'] = item['bbe_bubble_shape']
+                else:
+                    scale = item.matrix_world.to_scale()
+                    if min(scale) <= 0 or max(scale) - min(scale) > max(scale) * 1e-4:
+                        raise ValueError(f'{item.name}: bubble ducts need the same positive scale on X, Y and Z before exporting.')
+                    bubble_hints[len(object_list)] = {'shape': item['bbe_bubble_shape'], 'name': item.name}
+            object_list.append(record)
             if progress and (index % 8 == 0 or index + 1 == len(parts)):
                 progress.batch(index + 1, len(parts), *progress_range, label='Parts')
             
         # Include object groups?
         if include_groups:
             for item in self.get_all_groups():
-                group_objects = group.Group.serialise(item)
+                group_hints = {}
+                group_objects = group.Group.serialise(item, bubble_hints=group_hints)
                 if group_objects is not None:
+                    if get_presets:
+                        for i, hint in group_hints.items():
+                            group_objects[i]['bbe_bubble_shape'] = hint['shape']
+                    else:
+                        bubble_hints.update({len(object_list) + i: hint for i, hint in group_hints.items()})
                     object_list += group_objects
+
+        # BBE project JSON keeps the curved preview ID for later editing.
+        # Game-facing clipboard, save and standalone exports use vanilla IDs.
+        if not get_presets:
+            object_list = native_placeable_objects(object_list, bubble_hints)
 
         # Create full dictionary.
         key = "Prefab" if as_prefab else "Objects"

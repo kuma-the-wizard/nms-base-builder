@@ -59,6 +59,7 @@ class VIEW3D_PT_nms_base_builder(bpy.types.Panel):
         from ..save_editor.function_help import help_button
         draw_cockpit_controls(layout)
         help_button(layout, text='BBE Feature Help')
+        layout.operator('bbe.join_bubble_ducts', text='Join Selected Bubble Ducts', icon='SNAP_ON')
         layout.separator()
         proxy_box = layout.column(align=True)
         proxy_box.label(text="Switch Proxy Quality")
@@ -197,3 +198,4 @@ TOOLBAR_GROUPS = tuple(
     
     
     
+

@@ -25,6 +25,11 @@ class NMS_PT_tools_panel(Panel):
         scene = context.scene
         nms_tool = scene.nms_main
         build_tool = context.scene.nms_build_tool
+        selected_tube = context.active_object
+        is_tube = selected_tube is not None and selected_tube.get('ObjectID') == 'BASE_BUBPIPE'
+        is_popover = getattr(self, 'toolbar_group', '') == 'builder_tools'
+        if is_popover:
+            layout.ui_units_x = 20
 
         # Split into two columns of equal widths.
         #split = layout.split(factor=0.5)
@@ -71,10 +76,6 @@ class NMS_PT_tools_panel(Panel):
         
         snap_source_prev = source_row.operator( "object.nms_snap", **icons.ui_icon("TRIA_LEFT"), text="Prev")
         snap_source_next = source_row.operator("object.nms_snap", **icons.ui_icon("TRIA_RIGHT"), text="Next")
-        
-        
-        
-
         tools_box = snap_column.box()
         tools_col = tools_box.column(align = True)
         tools_col.label(text="Common Tools")
@@ -157,3 +158,4 @@ class NMS_PT_tools_panel(Panel):
         snap_source_next.next_source = True
         snap_source_next.prev_target = False
         snap_source_next.next_target = False
+

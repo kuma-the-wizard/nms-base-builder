@@ -332,6 +332,12 @@ def draw_base_picker(container, save_data):
     file_export.operator('bbe.export_ship_file', text='Export Scene to .nmsship...', **icons.ui_icon('EXPORT'))
     file_export.operator('bbe.export_base_file', text='Export Scene to .nmsbase...', **icons.ui_icon('EXPORT'))
 
+    if any(obj.get('ObjectID') == 'BASE_BUBPIPE_L' for obj in bpy.context.scene.objects):
+        warning = se_column.column(align=True)
+        warning.alert = True
+        warning.label(text='Old bubble corners must be converted before export.', icon='ERROR')
+        warning.operator('bbe.convert_legacy_bubble_corners', text='Convert Old Bubble Corners...', icon='MODIFIER')
+
     if save_data.nms_base_type == BaseType.STATION:
         station_reference.draw(se_column, bpy.context)
     elif save_data.nms_base_type == BaseType.CORVETTE:

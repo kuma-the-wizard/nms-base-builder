@@ -199,6 +199,12 @@ def _deserialise_from_data(data, progress):
         collection_utils.set_collection_visibility(import_collection.name, visible=True)
         bpy.context.view_layer.update()
 
+    # A native BASE_BUBPIPE is one placement node. Its visible straight or
+    # elbow is chosen by the connected nodes, not by a different save ID.
+    from . import bubble_preview
+    bubble_preview.refresh(bpy.context.scene)
+    bubble_preview.lock_scene_shapes(bpy.context.scene)
+
     # Reconstruct presets.
     progress.update(.94, 'Building presets and connections')
     for preset_data in data.get("Presets", []):

@@ -21,6 +21,46 @@ _sessions = {}
 _resources = {}
 _pending_windows = set()
 _enabled = False
+_loading_handler = None
+
+
+def _draw_loading():
+    """Cover only our saved browser surface while its grid is being restored."""
+    context=bpy.context
+    if (not context.window or not context.area or context.area.as_pointer() in _sessions
+            or _saved_browser_target(context.window) != context.area):
+        return
+    region=context.region
+    shader=gpu.shader.from_builtin('UNIFORM_COLOR')
+    shader.bind()
+    shader.uniform_float('color',(.075,.085,.10,1))
+    batch_for_shader(shader,'TRI_FAN',{'pos':((0,0),(region.width,0),
+        (region.width,region.height),(0,region.height))}).draw(shader)
+    blf.size(0,16*context.preferences.system.ui_scale)
+    blf.color(0,.8,.84,.9,1)
+    blf.position(0,24,region.height-42,0)
+    blf.draw(0,'Loading assets…')
+
+
+def _restore_soon():
+    if not _enabled or bpy.app.background:
+        return None
+    try:
+        _restore_saved_windows(bpy.context.window_manager)
+        pending=any((area:=_saved_browser_target(window)) is not None
+                    and area.as_pointer() not in _sessions
+                    for window in bpy.context.window_manager.windows)
+        return .05 if pending else None
+    except (ReferenceError,RuntimeError,TypeError,AttributeError):
+        return .05
+
+
+@persistent
+def _load_ready(_dummy=None):
+    # Saved windows have no modal handlers until we restore them. Run on the
+    # first UI tick rather than waiting for the one-second cleanup interval.
+    if not bpy.app.background and not bpy.app.timers.is_registered(_restore_soon):
+        bpy.app.timers.register(_restore_soon,first_interval=.01)
 
 
 def mark_window_pending(window):
@@ -124,6 +164,13 @@ def tile_action(tile, x, y, scale=1):
     return 'place'
 
 
+def bubble_notice(context, hover=None):
+    from ..bubble_preview import ELBOW_HELP
+    if hover and hover[0] == 'BASE_BUBPIPE_L':
+        return ELBOW_HELP
+    return ()
+
+
 class BBE_OT_asset_grid(bpy.types.Operator):
     bl_idname = 'bbe.asset_grid'
     bl_label = 'Asset Browser Grid'
@@ -160,6 +207,10 @@ class BBE_OT_asset_grid(bpy.types.Operator):
     def refresh(self, context):
         scene = self._window.scene
         browser = scene.nms_asset_browser
+        notice = bubble_notice(context, self._hover)
+        if getattr(self, '_notice_signature', None) != notice:
+            self._notice_signature = notice
+            self._area.tag_redraw()
         size, columns = get_grid_settings(context, 'asset_browser_icon_size_other',
                                          'asset_browser_number_of_columns_other')
         # Contents change through the browser's mutation methods. A revision
@@ -235,10 +286,13 @@ class BBE_OT_asset_grid(bpy.types.Operator):
                         self.show_options(context, tile)
                     else:
                         object_id, data = tile[4:]
-                        bpy.ops.object.nms_asset_browser_object_selected(
-                            'EXEC_DEFAULT', object_id=object_id, is_preset=bool(data.get('is_preset')),
-                            has_variants=action == 'variants',
-                            variants=json.dumps([object_id, *(data.get('variants') or [])]))
+                        try:
+                            bpy.ops.object.nms_asset_browser_object_selected(
+                                'EXEC_DEFAULT', True, object_id=object_id, is_preset=bool(data.get('is_preset')),
+                                has_variants=action == 'variants',
+                                variants=json.dumps([object_id, *(data.get('variants') or [])]))
+                        except RuntimeError as error:
+                            self.report({'WARNING'}, str(error))
                     self.refresh(context)
                 return {'RUNNING_MODAL'}
             # Keep Blender's image zoom/pan shortcuts from taking over the grid.
@@ -320,8 +374,22 @@ class BBE_OT_asset_grid(bpy.types.Operator):
         width, height = region.width, region.height
         scale = max(.75, context.preferences.system.ui_scale)
         self._scale = scale
-        self._view_height = max(1, height - 30 * scale)
-        key = (width, height, scale, self._size, self._columns, self._signature)
+        notice = bubble_notice(context, self._hover)
+        lines = []
+        blf.size(0, 13 * scale)
+        for paragraph in notice:
+            line = ''
+            for word in paragraph.split():
+                candidate = (line + ' ' + word).strip()
+                if line and blf.dimensions(0, candidate)[0] > width - 40 * scale:
+                    lines.append(line)
+                    line = word
+                else:
+                    line = candidate
+            lines.append(line)
+        footer = (30 + (len(lines) * 21 + 22 if lines else 0)) * scale
+        self._view_height = max(1, height - footer)
+        key = (width, height, scale, self._size, self._columns, self._signature, footer)
         if key != self._geometry_key:
             self._titles, self._tiles, self._total = grid_geometry(
                 self._groups, width - 14 * scale, self._size, self._columns, scale)
@@ -333,11 +401,11 @@ class BBE_OT_asset_grid(bpy.types.Operator):
             self.rectangle(0, 0, width, height, (.19, .19, .19, 1))
             for x, top, title in self._titles:
                 y = height - top + self._offset - 18 * scale
-                if 30 * scale <= y <= height:
+                if footer <= y <= height:
                     self.label(x, y, title, width - 30 * scale)
             for x, top, w, h, object_id, data in self._tiles:
                 y = height - top - h + self._offset
-                if y + h < 30 * scale or y > height:
+                if y + h < footer or y > height:
                     continue
                 hovered = self._hover and self._hover[0] == object_id
                 self.rectangle(x, y, w, h, (.19, .25, .30, 1) if hovered else (.155, .155, .155, 1))
@@ -361,6 +429,12 @@ class BBE_OT_asset_grid(bpy.types.Operator):
             item = next((t for t in self._tiles if self._hover and t[4] == self._hover[0]), None)
             hint = item[5]['name'] + '  |  ' + item[4] if item else 'Click an image to place  |  Right-click for favourites and options'
             self.label(10*scale, 10*scale, hint, width-20*scale, 11)
+            if lines:
+                self.rectangle(0, 30*scale, width, footer-30*scale, (.12, .17, .23, 1))
+                self.rectangle(0, 30*scale, 5*scale, footer-30*scale, (.95, .62, .2, 1))
+                for i, line in enumerate(lines):
+                    self.label(16*scale, footer-(23+i*21)*scale, line, width-32*scale,
+                               13, (.99, .72, .32, 1) if i == 0 else (.9, .93, .97, 1))
         finally:
             gpu.state.blend_set('NONE')
 
@@ -485,6 +559,7 @@ def _restore_saved_windows(window_manager):
         space.show_region_header = False
         space.show_region_tool_header = False
         space.show_region_hud = False
+        space.show_gizmo = False
         region = next((region for region in right.regions if region.type == 'WINDOW'), None)
         if region is None:
             continue  # The editor's region is created on the next UI update.
@@ -509,16 +584,26 @@ def _cleanup_closed():
 
 
 def register():
-    global _enabled
+    global _enabled, _loading_handler
     bpy.utils.register_class(BBE_OT_asset_grid)
     _enabled = True
     bpy.app.handlers.load_pre.append(_close_all)
+    bpy.app.handlers.load_post.append(_load_ready)
+    _loading_handler=bpy.types.SpaceImageEditor.draw_handler_add(
+        _draw_loading,(), 'WINDOW','POST_PIXEL')
+    _load_ready()
     bpy.app.timers.register(_cleanup_closed, first_interval=1, persistent=True)
 
 
 def unregister():
-    global _enabled
+    global _enabled, _loading_handler
     _enabled = False
+    if bpy.app.timers.is_registered(_restore_soon):
+        bpy.app.timers.unregister(_restore_soon)
+    if _loading_handler is not None:
+        bpy.types.SpaceImageEditor.draw_handler_remove(_loading_handler,'WINDOW')
+        _loading_handler=None
+    bpy.app.handlers.load_post.remove(_load_ready)
     if bpy.app.timers.is_registered(_cleanup_closed):
         bpy.app.timers.unregister(_cleanup_closed)
     bpy.app.handlers.load_pre.remove(_close_all)

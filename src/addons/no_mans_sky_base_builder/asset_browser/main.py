@@ -174,7 +174,8 @@ Right click on a tab to pin it to the left of the tab bar.""",
                 continue
             item_widget = Item(
                 item_id=favourite,
-                label=NICE_NAME_DATA.get(favourite, favourite),
+                label=('Curved Bubble Duct' if favourite == 'BASE_BUBPIPE_L'
+                       else NICE_NAME_DATA.get(favourite, favourite)),
                 parent=self.favourites_frame,
             )
             self.favourites_frame.addWidget(item_widget)
@@ -551,6 +552,7 @@ Right click on a tab to pin it to the left of the tab bar.""",
 
     def send_part_command_to_blender(self, item_id):
         import sys
+        import bpy
         from .. import builder_v2
 
         path = os.path.join(FILE_DIR, "..", "..").replace("\\", "/")
@@ -565,11 +567,39 @@ Right click on a tab to pin it to the left of the tab bar.""",
 
         selection = blend_utils.get_current_selection()
 
+        if (item_id == 'BASE_BUBPIPE' and selection is not None
+                and selection.get('ObjectID') == 'BASE_BUBPIPE_L'):
+            QtWidgets.QMessageBox.warning(
+                self, 'Old Bubble Corner',
+                'This is a preview-only corner. Convert the route before extending it.')
+            return
+        if (item_id == 'BASE_BUBPIPE' and selection is not None
+                and selection.get('ObjectID') == 'BASE_BUBPIPE'):
+            from .. import bubble_preview
+            problem = bubble_preview.placement_error(selection, bpy.context.scene)
+            if problem:
+                QtWidgets.QMessageBox.warning(
+                    self, 'Bubble Duct', problem)
+                return
+
+        if item_id == 'BASE_BUBPIPE_L':
+            import bpy
+            from .. import bubble_preview
+            try:
+                item = bubble_preview.add_native_bend_point(
+                    BUILDER, target=selection, cursor=bpy.context.scene.cursor.location)
+                item.select()
+            except ValueError as error:
+                QtWidgets.QMessageBox.warning(self, 'Bubble Elbow', str(error))
+            return
+
         # Build item
         if item_id in preset.Preset.get_presets():
             new_item = BUILDER.add_preset(item_id)
         else:
             new_item = builder_v2.add_part(item_id, builder_object=BUILDER)
+            if item_id == 'BASE_BUBPIPE':
+                new_item.object['bbe_bubble_shape'] = 'STRAIGHT:Y'
             if hasattr(new_item, "build_rig"):
                 new_item.build_rig()
 
@@ -580,7 +610,13 @@ Right click on a tab to pin it to the left of the tab bar.""",
         if selection:
             builder_selection = BUILDER.get_builder_object_from_bpy_object(selection)
             if builder_selection:
-                new_item.snap_to(builder_selection)
+                if (new_item.snap_to(builder_selection) is False
+                        and item_id == 'BASE_BUBPIPE'
+                        and selection.get('ObjectID') == 'BASE_BUBPIPE'):
+                    bpy.data.objects.remove(new_item.object, do_unlink=True)
+                    QtWidgets.QMessageBox.warning(
+                        self, 'Bubble Duct',
+                        'No safe straight duct placement here. Move nearby ducts farther apart first.')
 
     def send_edit_preset_command_to_blender(self, item_id):
         import sys

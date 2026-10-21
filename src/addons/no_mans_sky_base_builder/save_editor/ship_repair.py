@@ -97,7 +97,11 @@ def validate_parts(objects):
             if not any(part[field]):
                 if field == 'At' and part['ObjectID'].lstrip('^') in CABLE_IDS:
                     continue
-                raise ValueError(f"Part {number} ({part['ObjectID'].lstrip('^')}) has a zero {field} direction. Check its scale before exporting.")
+                axis = 'Y' if field == 'Up' else 'Z'
+                raise ValueError(
+                    f"Part {number} ({part['ObjectID'].lstrip('^')}) has a zero {field} direction. "
+                    f"In Blender, find that part and check Scale {axis} on it and its parent/group before exporting."
+                )
 
 
 def read_replacement(path, mode):

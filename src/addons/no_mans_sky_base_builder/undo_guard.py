@@ -13,10 +13,32 @@ from bpy.app.handlers import persistent
 restoring = False
 _preferences = None
 _resume_at = 0.0
+_curve_reseed_pending = False
 
 
 def history_ready():
     return not restoring and time.monotonic() >= _resume_at
+
+
+def curve_tracking_ready():
+    return history_ready() and not _curve_reseed_pending
+
+
+def _reseed_curves_when_idle():
+    """Read restored Blender IDs only after the undo callback has returned."""
+    global _curve_reseed_pending
+    if not _curve_reseed_pending:
+        return None
+    if not history_ready():
+        return max(.1, _resume_at - time.monotonic())
+    from . import reset_curve_tracking
+    try:
+        reset_curve_tracking()
+    except (ReferenceError, RuntimeError):
+        # A new restore can invalidate an RNA wrapper while the timer is due.
+        return .25
+    _curve_reseed_pending = False
+    return None
 
 
 def _release():
@@ -53,12 +75,13 @@ def before_history(_):
 
 @persistent
 def after_history(_):
-    global _resume_at
+    global _resume_at, _curve_reseed_pending
     try:
-        from . import reset_curve_tracking
-        reset_curve_tracking()
-    finally:
+        _curve_reseed_pending = True
         _resume_at = time.monotonic() + 1.5
+        if not bpy.app.timers.is_registered(_reseed_curves_when_idle):
+            bpy.app.timers.register(_reseed_curves_when_idle, first_interval=1.5)
+    finally:
         _release()
 
 
@@ -74,6 +97,10 @@ def register():
 
 
 def unregister():
+    global _curve_reseed_pending
+    _curve_reseed_pending = False
+    if bpy.app.timers.is_registered(_reseed_curves_when_idle):
+        bpy.app.timers.unregister(_reseed_curves_when_idle)
     _release()
     for handlers, callback in (
             (bpy.app.handlers.undo_pre, before_history),

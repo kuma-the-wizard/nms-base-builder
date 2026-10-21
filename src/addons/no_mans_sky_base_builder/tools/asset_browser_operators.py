@@ -298,6 +298,7 @@ class LaunchAssetBrowserWindow(bpy.types.Operator):
                 right_area.spaces.active.show_region_header = False
                 right_area.spaces.active.show_region_tool_header = False
                 right_area.spaces.active.show_region_hud = False
+                right_area.spaces.active.show_gizmo = False
                 region = next((r for r in right_area.regions if r.type == 'WINDOW'), None)
                 if region is None:
                     return get_timeout()
@@ -416,6 +417,10 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
     
     @classmethod
     def description(cls, context, properties):
+        if properties.object_id == 'BASE_BUBPIPE_L':
+            return ('DRAFT ELBOW: Keep it selected and add a tube to its free end. '
+                    'Grey-blue bands disappear when both ends connect correctly. '
+                    'An unfinished elbow appears straight in game. Use the controls beside the selected tube to rotate.')
         if properties.has_variants:
             return f"Choose a variant of {properties.object_id}"
         return f"Place {properties.object_id} in the scene"
@@ -453,6 +458,25 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
                 report_error(self,{'ERROR'}, f"Could not add {self.object_id} to scene")
                 return {'CANCELLED'}
 
+            if self.object_id == 'BASE_BUBPIPE_L':
+                from .. import bubble_preview
+                try:
+                    with placement_view(context):
+                        selected_target = bpy.context.active_object
+                        if selected_target is not None and not selected_target.select_get():
+                            selected_target = None
+                        item = bubble_preview.add_native_bend_point(
+                            BUILDER, target=selected_target,
+                            cursor=context.scene.cursor.location)
+                    blend_utils.select(item.object)
+                    asset_browser.add_to_recents_list(self.object_id)
+                    bubble_preview._sync_joint_rotation_guard()
+                    self.report({'INFO'}, 'Draft elbow added. Keep it selected and add a tube to its free end.')
+                    return {'FINISHED'}
+                except Exception as error:
+                    report_error(self, {'ERROR'}, f'Could not add native bubble elbow: {error}')
+                    return {'CANCELLED'}
+
             # A part can fail to build - a missing asset, or one of the override
             # classes throwing. This used to go straight to item.object and turn
             # that into an unhandled AttributeError in the operator.
@@ -462,9 +486,22 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
                     selected_target = bpy.context.active_object
                     if selected_target is not None and not selected_target.select_get():
                         selected_target = None
+                    if (self.object_id == 'BASE_BUBPIPE'
+                            and selected_target is not None
+                            and selected_target.get('ObjectID') == 'BASE_BUBPIPE_L'):
+                        raise ValueError('This is an old preview-only corner. Convert the route before extending it')
+                    if (self.object_id == 'BASE_BUBPIPE'
+                            and selected_target is not None
+                            and selected_target.get('ObjectID') == 'BASE_BUBPIPE'):
+                        from .. import bubble_preview
+                        problem = bubble_preview.placement_error(selected_target, context.scene)
+                        if problem:
+                            raise ValueError(problem)
                     placement_matrix = (selected_target.matrix_world.copy()
                                         if selected_target is not None else None)
                     item = builder_v2.add_part(self.object_id, builder_object=BUILDER)
+                    if self.object_id == 'BASE_BUBPIPE':
+                        item.object['bbe_bubble_shape'] = 'STRAIGHT:Y'
             except Exception as error:
                 report_error(self,{'ERROR'}, f"Could not add {self.object_id}: {error}")
                 return {'CANCELLED'}
@@ -484,12 +521,16 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
 
             # Pipe placement uses the same endpoint frames and continuation
             # history as the sidebar Snap button, rather than copying the origin.
-            pipe_ids = {"PIPE", "PIPESHAPE", "CURVEPIPESHAPE", "BASE_BUBPIPE", "BASE_BUBPIPE_L"}
+            pipe_ids = {"PIPE", "PIPESHAPE", "CURVEPIPESHAPE", "BASE_BUBPIPE"}
             if (self.object_id in pipe_ids and selected_target is not None
                     and selected_target.get("ObjectID") in pipe_ids):
                 target = BUILDER.get_builder_object_from_bpy_object(selected_target)
                 if target is not None:
-                    item.snap_to(target)
+                    if item.snap_to(target) is False and self.object_id == 'BASE_BUBPIPE':
+                        bpy.data.objects.remove(bpy_obj, do_unlink=True)
+                        report_error(self, {'ERROR'},
+                                     'No safe straight duct placement here. Move nearby ducts farther apart first.')
+                        return {'CANCELLED'}
             blend_utils.select(bpy_obj)
             asset_browser.add_to_recents_list(self.object_id)
             self.report({'INFO'}, f"Added {self.object_id} to scene")

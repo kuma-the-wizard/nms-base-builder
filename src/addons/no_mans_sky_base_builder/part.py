@@ -10,6 +10,7 @@ from .utils import blend_utils, material, materials_v2
 from .utils import python as python_utils
 
 z_compensate = mathutils.Matrix.Rotation(math.radians(-90.0), 4, "X")
+_CABLE_IDS = frozenset({'U_POWERLINE', 'U_PIPELINE', 'U_PORTALLINE', 'U_BYTEBEATLINE'})
 
 class Part(object):
 
@@ -369,6 +370,17 @@ class Part(object):
         
         # Get Matrix Data
         world_matrix = self.matrix_world
+        for field, axis, column in (('Up', 'Y', 1), ('At', 'Z', 2)):
+            if field == 'At' and self.object_id in _CABLE_IDS:
+                continue  # A coincident cable's endpoint displacement can be zero.
+            if not any(world_matrix.col[column].to_3d()):
+                scale = getattr(self.object, 'scale', None)
+                if scale is not None and scale[column] == 0:
+                    detail = f'Scale {axis} is zero. Set it to the intended nonzero value'
+                else:
+                    detail = (f'exported {field} direction is zero. '
+                              f'Check Scale {axis} on this object and its parent or group')
+                raise ValueError(f'{self.object.name} ({self.object_id}): {detail} before exporting.')
         # Bring the matrix from Blender Z-Up space into standard Y-up space.
         world_matrix_offset = z_compensate @ world_matrix
         
@@ -422,6 +434,10 @@ class Part(object):
         part.time_stamp = str(data.get("Timestamp", int(time.time())))
         part.user_data = data.get("UserData", 0)
         part.message = data.get("Message", "")
+        if object_id == 'BASE_BUBPIPE' and data.get('bbe_bubble_shape'):
+            from .bubble_export import sockets
+            if sockets(str(data['bbe_bubble_shape'])):
+                part.object['bbe_bubble_shape'] = data['bbe_bubble_shape']
         return part
     
     SUFFIX_COMPASS_ID_PAIRS = [
@@ -601,6 +617,17 @@ class Part(object):
         # Unsupported pairs must leave the source and its snap history untouched.
         if self.object == target.object:
             return False
+        if (self.object_id == 'BASE_BUBPIPE'
+                and target.object_id == 'BASE_BUBPIPE'):
+            from . import bubble_preview
+            socket = bubble_preview.snap_native(
+                self.object, target.object,
+                next_target=next_target, prev_target=prev_target,
+                next_source=next_source, prev_source=prev_source)
+            if not socket:
+                return False
+            self.select()
+            return True
         target_key = source_key = None
 
         # Get Pairing options.

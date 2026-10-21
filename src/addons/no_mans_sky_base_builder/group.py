@@ -84,6 +84,8 @@ class Group:
             }
             if Group.PROP_MESSAGE in obj:
                 cache[Group.PROP_MESSAGE] = obj[Group.PROP_MESSAGE]
+            if obj.get('bbe_bubble_shape'):
+                cache['bbe_bubble_shape'] = obj['bbe_bubble_shape']
 
             cache_data[obj.name] = cache
 
@@ -323,6 +325,8 @@ class Group:
                 continue
 
             new_obj.matrix_world = Group.restore_matrix_world(parent_obj, cache_data)
+            if cache_data.get('bbe_bubble_shape'):
+                new_obj['bbe_bubble_shape'] = cache_data['bbe_bubble_shape']
             restored_objects.append(new_obj)
 
         # Delete parent object
@@ -331,7 +335,7 @@ class Group:
 
 
     @staticmethod
-    def serialise(parent_obj):
+    def serialise(parent_obj, bubble_hints=None):
         """
         Converts grouped objects to serialized format for No Man's Sky savefile.
 
@@ -362,6 +366,15 @@ class Group:
             matrix_world = Group.restore_matrix_world(parent_obj, cache_data)
             if matrix_world is None:
                 continue
+            for field, axis, column in (('Up', 'Y', 1), ('At', 'Z', 2)):
+                if field == 'At' and object_id in ('U_POWERLINE', 'U_PIPELINE', 'U_PORTALLINE', 'U_BYTEBEATLINE'):
+                    continue  # A coincident cable can have a zero At direction.
+                if not any(matrix_world.col[column].to_3d()):
+                    raise ValueError(
+                        f'{child_name} ({object_id}) in group {parent_obj.name}: '
+                        f'exported {field} direction is zero. Check Scale {axis} '
+                        f'on the group or its cached part before exporting.'
+                    )
             
             pos, up, at = Group.extract_pos_up_at(matrix_world)
             
@@ -377,6 +390,11 @@ class Group:
             if message is not None:
                 data[Part.PROP_MESSAGE] = message
 
+            if bubble_hints is not None and object_id == 'BASE_BUBPIPE' and cache_data.get('bbe_bubble_shape'):
+                scale = matrix_world.to_scale()
+                if min(scale) <= 0 or max(scale) - min(scale) > max(scale) * 1e-4:
+                    raise ValueError(f'{child_name}: bubble ducts need the same positive scale on X, Y and Z before exporting.')
+                bubble_hints[len(serialized_objects)] = {'shape': cache_data['bbe_bubble_shape'], 'name': child_name}
             serialized_objects.append(data)
 
         return serialized_objects
