@@ -24,6 +24,11 @@ PLACEMENT_HELP = {
     'CURVEPIPESHAPE': (
         'Fixed curved pipe: keeps its 90-degree bend in NMS regardless of nearby connections.'
     ),
+    'B_DECO_U': (
+        'Deathwrought Amplifier: the current NMS 7.10 game files assign this part '
+        'the same native geometry as Aeron Pyramid. BBE keeps the correct '
+        'Deathwrought part ID for export and shows the geometry the game supplies.'
+    ),
 }
 
 

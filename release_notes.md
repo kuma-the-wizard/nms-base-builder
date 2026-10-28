@@ -1,3 +1,10 @@
+# 18.2.33
+
+- Correct Forsaken variant menus using each part's native game GroupID, keeping Hornet, Viper, Mantis and hull families separate.
+- Add 87 native mirror pairs for new wings and hull sections, with measured placement geometry for Blender's mirror tool.
+- Replace 20 game-supplied red-X thumbnails with clean renders from the native meshes.
+- Explain in the Asset Browser that NMS 7.10 assigns the Deathwrought Amplifier the same geometry as Aeron Pyramid; its correct part ID remains intact for export. The new rim and cap meshes also rely on game parallax shading for their detail.
+
 # 18.2.32
 
 - Add 214 supported Forsaken 7.10 part IDs and variants, including Corvette cockpits, hull sections, wings, reactors, decorations and gravity floor, ramp and wall. Include native icons, lightweight proxies, detailed models and portable textures. Preserve native IDs and placement transforms for export.
