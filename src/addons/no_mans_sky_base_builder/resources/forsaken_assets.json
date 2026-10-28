@@ -1,0 +1,3869 @@
+{
+  "gameBuild": 26271400,
+  "gameVersion": "7.10",
+  "assets": [
+    {
+      "id": "B_COK_C1",
+      "name": "HORNET-I-CLASS COCKPIT",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Cockpits and Habitation Modules",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/COCKPIT_C1_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_COK_C1",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/COCKPIT_1X2_C_H1S1.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\COCKPIT_C1_1X2_PLACEMENT\\ENTITIES\\COCKPIT_C1_1X2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_COK_C2",
+      "name": "HORNET-II-CLASS COCKPIT",
+      "visible": false,
+      "parent": "B_COK_C1",
+      "category": "Corvette",
+      "subcategory": "Cockpits and Habitation Modules",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/COCKPIT_C2_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_COK_C2",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/COCKPIT_1X2_C_H1S3.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\COCKPIT_C2_1X2_PLACEMENT\\ENTITIES\\COCKPIT_C2_1X2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_COK_C3",
+      "name": "HORNET-III-CLASS COCKPIT",
+      "visible": false,
+      "parent": "B_COK_C1",
+      "category": "Corvette",
+      "subcategory": "Cockpits and Habitation Modules",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/COCKPIT_C3_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_COK_C3",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/COCKPIT_1X2_C_H1S4.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\COCKPIT_C3_1X2_PLACEMENT\\ENTITIES\\COCKPIT_C3_1X2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_COK_C4",
+      "name": "VIPER-I-CLASS COCKPIT",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Cockpits and Habitation Modules",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/COCKPIT_C4_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_COK_C4",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/COCKPIT_1X2_C_H2S1.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\COCKPIT_C4_1X2_PLACEMENT\\ENTITIES\\COCKPIT_C4_1X2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_COK_C5",
+      "name": "VIPER-II-CLASS COCKPIT",
+      "visible": false,
+      "parent": "B_COK_C1",
+      "category": "Corvette",
+      "subcategory": "Cockpits and Habitation Modules",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/COCKPIT_C5_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_COK_C5",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/COCKPIT_1X2_C_H2S3.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\COCKPIT_C5_1X2_PLACEMENT\\ENTITIES\\COCKPIT_C5_1X2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_COK_C6",
+      "name": "VIPER-III-CLASS COCKPIT",
+      "visible": false,
+      "parent": "B_COK_C1",
+      "category": "Corvette",
+      "subcategory": "Cockpits and Habitation Modules",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/COCKPIT_C6_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_COK_C6",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/COCKPIT_1X2_C_H2S4.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\COCKPIT_C6_1X2_PLACEMENT\\ENTITIES\\COCKPIT_C6_1X2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_COK_C7",
+      "name": "MANTIS-I-CLASS COCKPIT",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Cockpits and Habitation Modules",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/COCKPIT_C7_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_COK_C7",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/COCKPIT_1X2_C_H3S1.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\COCKPIT_C7_1X2_PLACEMENT\\ENTITIES\\COCKPIT_C7_1X2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_COK_C8",
+      "name": "MANTIS-II-CLASS COCKPIT",
+      "visible": false,
+      "parent": "B_COK_C1",
+      "category": "Corvette",
+      "subcategory": "Cockpits and Habitation Modules",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/COCKPIT_C8_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_COK_C8",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/COCKPIT_1X2_C_H3S3.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\COCKPIT_C8_1X2_PLACEMENT\\ENTITIES\\COCKPIT_C8_1X2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_COK_C9",
+      "name": "MANTIS-III-CLASS COCKPIT",
+      "visible": false,
+      "parent": "B_COK_C1",
+      "category": "Corvette",
+      "subcategory": "Cockpits and Habitation Modules",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/COCKPIT_C9_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_COK_C9",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/COCKPIT_1X2_C_H3S4.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\COCKPIT_C9_1X2_PLACEMENT\\ENTITIES\\COCKPIT_C9_1X2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_COK_E",
+      "name": "VANTAGE-CLASS COCKPIT",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Cockpits and Habitation Modules",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/COCKPIT_E_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_COK_E",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/COCKPIT_1X2_E.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\COCKPIT_E_1X2_PLACEMENT\\ENTITIES\\COCKPIT_E_1X2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_CON_16",
+      "name": "MAGMOX JOINT",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Connectors",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_CONNECTOR_1X1_16_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_CON1X1_16",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/CONNECTORS/CONNECTOR_1X1_16.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_CONNECTOR_1X1_16_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_DECO_U",
+      "name": "DEATHWROUGHT AMPLIFIER",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Exterior Decoration",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_DECORATION_1X1_0.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTDECORATION",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/DECORATION/DECORATION_20.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_DECORATION_1X1_0\\ENTITIES\\EXTDECORATION1X1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_DECO_V_0",
+      "name": "LUNGFISH CAP",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Exterior Decoration",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_DECORATION_1X1_0.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTDECORATION",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/DECORATION/DECORATION_21.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_DECORATION_1X1_0\\ENTITIES\\EXTDECORATION1X1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_DECO_V_1",
+      "name": "LUNGFISH CAP",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Exterior Decoration",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_DECORATION_1X1_1.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTDECORATION1",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/DECORATION/DECORATION_21_1.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_DECORATION_1X1_1\\ENTITIES\\EXTDECORATION1X1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_DECO_W",
+      "name": "LUNGFISH CHASSIS",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Exterior Decoration",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_DECORATION_1X1_0.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTDECORATION",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/DECORATION/DECORATION_22.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_DECORATION_1X1_0\\ENTITIES\\EXTDECORATION1X1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_GEN_6",
+      "name": "CHELONE-CLASS GENERATOR",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Reactors",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_GEN_1X1_6_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_GEN1X1_6",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/GENERATORS/GENERATOR_1X1_6.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_GEN_1X1_6_PLACEMENT\\ENTITIES\\GENERATOR1X16PLACEMENT.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_GEN_6_1",
+      "name": "CHELONE-CLASS GENERATOR",
+      "visible": false,
+      "parent": "B_GEN_6",
+      "category": "Corvette",
+      "subcategory": "Reactors",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_GEN_1X1_6_1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_GEN1X1_6_1",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/GENERATORS/GENERATOR_1X1_6_1.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_GEN_1X1_6_1_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_HAB1_D",
+      "name": "LEGION-CLASS WALKWAY",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Cockpits and Habitation Modules",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/HAB_D_1X1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_HAB_1X1_CORE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/HAB_D_1X1_CORE.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X1_PLACEMENT\\ENTITIES\\HAB1X1PLACEMENT.ENTITY.MBIN"
+        },
+        {
+          "partId": "_BIGGS_FLOOR",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/FLOOR_D.SCENE.MBIN",
+          "locator": "FLOOR0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X1_PLACEMENT\\ENTITIES\\HAB1X1PLACEMENT.ENTITY.MBIN"
+        },
+        {
+          "partId": "_BIGGS_CEILING_0",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/CEILING_D0.SCENE.MBIN",
+          "locator": "CEILING0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X1_PLACEMENT\\ENTITIES\\HAB1X1PLACEMENT.ENTITY.MBIN"
+        },
+        {
+          "partId": "_BIGGS_WALL_NS_EMPTY0",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WALL_NS_D_EMPTY0.SCENE.MBIN",
+          "locator": "WALLN1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X1_PLACEMENT\\ENTITIES\\HAB1X1PLACEMENT.ENTITY.MBIN"
+        },
+        {
+          "partId": "_BIGGS_WALL_NS_EMPTY1",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WALL_NS_D_EMPTY1.SCENE.MBIN",
+          "locator": "WALLS1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X1_PLACEMENT\\ENTITIES\\HAB1X1PLACEMENT.ENTITY.MBIN"
+        },
+        {
+          "partId": "_BIGGS_WALL_EW_EMPTY0",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WALL_EW_D_EMPTY0.SCENE.MBIN",
+          "locator": "WALLE1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X1_PLACEMENT\\ENTITIES\\HAB1X1PLACEMENT.ENTITY.MBIN"
+        },
+        {
+          "partId": "_BIGGS_WALL_EW_EMPTY1",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WALL_EW_D_EMPTY1.SCENE.MBIN",
+          "locator": "WALLW1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X1_PLACEMENT\\ENTITIES\\HAB1X1PLACEMENT.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_HAB_D",
+      "name": "LEGION-CLASS HAB",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Cockpits and Habitation Modules",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/HAB_D_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_HAB_1X2_CORE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/HAB_D_1X2_CORE.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X2_PLACEMENT\\ENTITIES\\HAB1X2PLACEMENT.ENTITY.MBIN"
+        },
+        {
+          "partId": "_BIGGS_FLOOR",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/FLOOR_D.SCENE.MBIN",
+          "locator": "FLOOR0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X2_PLACEMENT\\ENTITIES\\HAB1X2PLACEMENT.ENTITY.MBIN"
+        },
+        {
+          "partId": "_BIGGS_FLOOR",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/FLOOR_D.SCENE.MBIN",
+          "locator": "FLOOR1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X2_PLACEMENT\\ENTITIES\\HAB1X2PLACEMENT.ENTITY.MBIN"
+        },
+        {
+          "partId": "_BIGGS_CEILING_0",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/CEILING_D0.SCENE.MBIN",
+          "locator": "CEILING0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X2_PLACEMENT\\ENTITIES\\HAB1X2PLACEMENT.ENTITY.MBIN"
+        },
+        {
+          "partId": "_BIGGS_CEILING_0",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/CEILING_D0.SCENE.MBIN",
+          "locator": "CEILING1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X2_PLACEMENT\\ENTITIES\\HAB1X2PLACEMENT.ENTITY.MBIN"
+        },
+        {
+          "partId": "_BIGGS_WALL_NS_EMPTY0",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WALL_NS_D_EMPTY0.SCENE.MBIN",
+          "locator": "WALLN1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X2_PLACEMENT\\ENTITIES\\HAB1X2PLACEMENT.ENTITY.MBIN"
+        },
+        {
+          "partId": "_BIGGS_WALL_NS_EMPTY1",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WALL_NS_D_EMPTY1.SCENE.MBIN",
+          "locator": "WALLS1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X2_PLACEMENT\\ENTITIES\\HAB1X2PLACEMENT.ENTITY.MBIN"
+        },
+        {
+          "partId": "_BIGGS_WALL_EW_EMPTY0",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WALL_EW_D_EMPTY0.SCENE.MBIN",
+          "locator": "WALLE1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X2_PLACEMENT\\ENTITIES\\HAB1X2PLACEMENT.ENTITY.MBIN"
+        },
+        {
+          "partId": "_BIGGS_WALL_EW_EMPTY1",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WALL_EW_D_EMPTY1.SCENE.MBIN",
+          "locator": "WALLW1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X2_PLACEMENT\\ENTITIES\\HAB1X2PLACEMENT.ENTITY.MBIN"
+        },
+        {
+          "partId": "_BIGGS_WALL_EW_EMPTY1",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WALL_EW_D_EMPTY1.SCENE.MBIN",
+          "locator": "WALLE3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X2_PLACEMENT\\ENTITIES\\HAB1X2PLACEMENT.ENTITY.MBIN"
+        },
+        {
+          "partId": "_BIGGS_WALL_EW_EMPTY0",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WALL_EW_D_EMPTY0.SCENE.MBIN",
+          "locator": "WALLW3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\HAB_1X2_PLACEMENT\\ENTITIES\\HAB1X2PLACEMENT.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_E",
+      "name": "BASILISK CASING (E)",
+      "visible": false,
+      "parent": "B_STR_AC_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_E_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_21.SCENE.MBIN",
+          "locator": "EAST_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_E_PLACEMENT\\ENTITIES\\EXTSTR1X1E.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_N",
+      "name": "BASILISK CASING (N)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_N_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_21.SCENE.MBIN",
+          "locator": "NORTH_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_N_PLACEMENT\\ENTITIES\\EXTSTR1X1N.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_NE",
+      "name": "BASILISK AEROFOIL (NE)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_21.SCENE.MBIN",
+          "locator": "NORTHEAST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE_PLACEMENT\\ENTITIES\\EXTSTR1X1NE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_NE1",
+      "name": "BASILISK AEROFOIL (NE1)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_21.SCENE.MBIN",
+          "locator": "NORTHEAST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE1_PLACEMENT\\ENTITIES\\EXTSTR1X1NE1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_NE2",
+      "name": "BASILISK AEROFOIL (NE2)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_21.SCENE.MBIN",
+          "locator": "NORTHEAST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE2_PLACEMENT\\ENTITIES\\EXTSTR1X1NE2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_NE3",
+      "name": "BASILISK AEROFOIL (NE3)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_21.SCENE.MBIN",
+          "locator": "NORTHEAST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE3_PLACEMENT\\ENTITIES\\EXTSTR1X1NE3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_NW",
+      "name": "BASILISK AEROFOIL (NW)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_21.SCENE.MBIN",
+          "locator": "NORTHWEST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW_PLACEMENT\\ENTITIES\\EXTSTR1X1NW.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_NW1",
+      "name": "BASILISK AEROFOIL (NW1)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_21.SCENE.MBIN",
+          "locator": "NORTHWEST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW1_PLACEMENT\\ENTITIES\\EXTSTR1X1NW1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_NW2",
+      "name": "BASILISK AEROFOIL (NW2)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_21.SCENE.MBIN",
+          "locator": "NORTHWEST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW2_PLACEMENT\\ENTITIES\\EXTSTR1X1NW2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_NW3",
+      "name": "BASILISK AEROFOIL (NW3)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_21.SCENE.MBIN",
+          "locator": "NORTHWEST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW3_PLACEMENT\\ENTITIES\\EXTSTR1X1NW3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_S",
+      "name": "BASILISK CASING (S)",
+      "visible": false,
+      "parent": "B_STR_AC_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_S_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_21.SCENE.MBIN",
+          "locator": "SOUTH_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_S_PLACEMENT\\ENTITIES\\EXTSTR1X1S.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_W",
+      "name": "BASILISK CASING (W)",
+      "visible": false,
+      "parent": "B_STR_AC_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_W_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_21.SCENE.MBIN",
+          "locator": "WEST_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_W_PLACEMENT\\ENTITIES\\EXTSTR1X1W.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_Y_E",
+      "name": "BASILISK CASING (Y E)",
+      "visible": false,
+      "parent": "B_STR_AC_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_E_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_21.SCENE.MBIN",
+          "locator": "EASTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_E_PLACEMENT\\ENTITIES\\EXTSTR1X1YE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_Y_N",
+      "name": "BASILISK CASING (Y N)",
+      "visible": false,
+      "parent": "B_STR_AC_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_N_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_21.SCENE.MBIN",
+          "locator": "NORTHY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_N_PLACEMENT\\ENTITIES\\EXTSTR1X1YN.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_Y_NE",
+      "name": "BASILISK AEROFOIL (Y NE)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_21.SCENE.MBIN",
+          "locator": "NORTHEAST0Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_Y_NE1",
+      "name": "BASILISK AEROFOIL (Y NE1)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_21.SCENE.MBIN",
+          "locator": "NORTHEAST1Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE1_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_Y_NE2",
+      "name": "BASILISK AEROFOIL (Y NE2)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_21.SCENE.MBIN",
+          "locator": "NORTHEAST2Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE2_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_Y_NE3",
+      "name": "BASILISK AEROFOIL (Y NE3)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_21.SCENE.MBIN",
+          "locator": "NORTHEAST3Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE3_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_Y_NW",
+      "name": "BASILISK AEROFOIL (Y NW)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_21.SCENE.MBIN",
+          "locator": "NORTHWESTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_Y_NW1",
+      "name": "BASILISK AEROFOIL (Y NW1)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_21.SCENE.MBIN",
+          "locator": "NORTHWEST1Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW1_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_Y_NW2",
+      "name": "BASILISK AEROFOIL (Y NW2)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_21.SCENE.MBIN",
+          "locator": "NORTHWEST2Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW2_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_Y_NW3",
+      "name": "BASILISK AEROFOIL (Y NW3)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_21.SCENE.MBIN",
+          "locator": "NORTHWEST3Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW3_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_Y_S",
+      "name": "BASILISK CASING (Y S)",
+      "visible": false,
+      "parent": "B_STR_AC_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_S_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_21.SCENE.MBIN",
+          "locator": "SOUTHY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_S_PLACEMENT\\ENTITIES\\EXTSTR1X1YS.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AC_Y_W",
+      "name": "BASILISK CASING (Y W)",
+      "visible": false,
+      "parent": "B_STR_AC_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_W_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_21.SCENE.MBIN",
+          "locator": "WESTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_W_PLACEMENT\\ENTITIES\\EXTSTR1X1YW.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_E",
+      "name": "REAPER COWLING (E)",
+      "visible": false,
+      "parent": "B_STR_AD_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_E_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_22.SCENE.MBIN",
+          "locator": "EAST_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_E_PLACEMENT\\ENTITIES\\EXTSTR1X1E.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_N",
+      "name": "REAPER COWLING (N)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_N_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_22.SCENE.MBIN",
+          "locator": "NORTH_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_N_PLACEMENT\\ENTITIES\\EXTSTR1X1N.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_NE",
+      "name": "REAPER CAP (NE)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_22.SCENE.MBIN",
+          "locator": "NORTHEAST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE_PLACEMENT\\ENTITIES\\EXTSTR1X1NE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_NE1",
+      "name": "REAPER CAP (NE1)",
+      "visible": false,
+      "parent": "B_STR_AD_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_22.SCENE.MBIN",
+          "locator": "NORTHEAST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE1_PLACEMENT\\ENTITIES\\EXTSTR1X1NE1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_NE2",
+      "name": "REAPER CAP (NE2)",
+      "visible": false,
+      "parent": "B_STR_AD_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_22.SCENE.MBIN",
+          "locator": "NORTHEAST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE2_PLACEMENT\\ENTITIES\\EXTSTR1X1NE2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_NE3",
+      "name": "REAPER CAP (NE3)",
+      "visible": false,
+      "parent": "B_STR_AD_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_22.SCENE.MBIN",
+          "locator": "NORTHEAST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE3_PLACEMENT\\ENTITIES\\EXTSTR1X1NE3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_NW",
+      "name": "REAPER CAP (NW)",
+      "visible": false,
+      "parent": "B_STR_AD_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_22.SCENE.MBIN",
+          "locator": "NORTHWEST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW_PLACEMENT\\ENTITIES\\EXTSTR1X1NW.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_NW1",
+      "name": "REAPER CAP (NW1)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_22.SCENE.MBIN",
+          "locator": "NORTHWEST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW1_PLACEMENT\\ENTITIES\\EXTSTR1X1NW1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_NW2",
+      "name": "REAPER CAP (NW2)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_22.SCENE.MBIN",
+          "locator": "NORTHWEST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW2_PLACEMENT\\ENTITIES\\EXTSTR1X1NW2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_NW3",
+      "name": "REAPER CAP (NW3)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_22.SCENE.MBIN",
+          "locator": "NORTHWEST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW3_PLACEMENT\\ENTITIES\\EXTSTR1X1NW3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_S",
+      "name": "REAPER COWLING (S)",
+      "visible": false,
+      "parent": "B_STR_AD_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_S_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_22.SCENE.MBIN",
+          "locator": "SOUTH_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_S_PLACEMENT\\ENTITIES\\EXTSTR1X1S.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_W",
+      "name": "REAPER COWLING (W)",
+      "visible": false,
+      "parent": "B_STR_AD_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_W_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_22.SCENE.MBIN",
+          "locator": "WEST_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_W_PLACEMENT\\ENTITIES\\EXTSTR1X1W.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_Y_E",
+      "name": "REAPER COWLING (Y E)",
+      "visible": false,
+      "parent": "B_STR_AD_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_E_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_22.SCENE.MBIN",
+          "locator": "EASTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_E_PLACEMENT\\ENTITIES\\EXTSTR1X1YE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_Y_N",
+      "name": "REAPER COWLING (Y N)",
+      "visible": false,
+      "parent": "B_STR_AC_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_N_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_22.SCENE.MBIN",
+          "locator": "NORTHY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_N_PLACEMENT\\ENTITIES\\EXTSTR1X1YN.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_Y_NE",
+      "name": "REAPER CAP (Y NE)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_22.SCENE.MBIN",
+          "locator": "NORTHEAST0Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_Y_NE1",
+      "name": "REAPER CAP (Y NE1)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_22.SCENE.MBIN",
+          "locator": "NORTHEAST1Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE1_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_Y_NE2",
+      "name": "REAPER CAP (Y NE2)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_22.SCENE.MBIN",
+          "locator": "NORTHEAST2Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE2_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_Y_NE3",
+      "name": "REAPER CAP (Y NE3)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_22.SCENE.MBIN",
+          "locator": "NORTHEAST3Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE3_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_Y_NW",
+      "name": "REAPER CAP (Y NW)",
+      "visible": false,
+      "parent": "B_STR_AD_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_22.SCENE.MBIN",
+          "locator": "NORTHWESTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_Y_NW1",
+      "name": "REAPER CAP (Y NW1)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_22.SCENE.MBIN",
+          "locator": "NORTHWEST1Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW1_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_Y_NW2",
+      "name": "REAPER CAP (Y NW2)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_22.SCENE.MBIN",
+          "locator": "NORTHWEST2Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW2_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_Y_NW3",
+      "name": "REAPER CAP (Y NW3)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_22.SCENE.MBIN",
+          "locator": "NORTHWEST3Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW3_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_Y_S",
+      "name": "REAPER COWLING (Y S)",
+      "visible": false,
+      "parent": "B_STR_AD_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_S_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_22.SCENE.MBIN",
+          "locator": "SOUTHY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_S_PLACEMENT\\ENTITIES\\EXTSTR1X1YS.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AD_Y_W",
+      "name": "REAPER COWLING (Y W)",
+      "visible": false,
+      "parent": "B_STR_AD_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_W_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_22.SCENE.MBIN",
+          "locator": "WESTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_W_PLACEMENT\\ENTITIES\\EXTSTR1X1YW.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AE_NE",
+      "name": "PHANTOM AEROFOIL (NE)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_23.SCENE.MBIN",
+          "locator": "NORTHEAST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE_PLACEMENT\\ENTITIES\\EXTSTR1X1NE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AE_NE1",
+      "name": "PHANTOM AEROFOIL (NE1)",
+      "visible": false,
+      "parent": "B_STR_AE_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_23.SCENE.MBIN",
+          "locator": "NORTHEAST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE1_PLACEMENT\\ENTITIES\\EXTSTR1X1NE1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AE_NE2",
+      "name": "PHANTOM AEROFOIL (NE2)",
+      "visible": false,
+      "parent": "B_STR_AE_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_23.SCENE.MBIN",
+          "locator": "NORTHEAST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE2_PLACEMENT\\ENTITIES\\EXTSTR1X1NE2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AE_NE3",
+      "name": "PHANTOM AEROFOIL (NE3)",
+      "visible": false,
+      "parent": "B_STR_AE_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_23.SCENE.MBIN",
+          "locator": "NORTHEAST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE3_PLACEMENT\\ENTITIES\\EXTSTR1X1NE3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AE_NW",
+      "name": "PHANTOM AEROFOIL (NW)",
+      "visible": false,
+      "parent": "B_STR_AE_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_23.SCENE.MBIN",
+          "locator": "NORTHWEST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW_PLACEMENT\\ENTITIES\\EXTSTR1X1NW.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AE_NW1",
+      "name": "PHANTOM AEROFOIL (NW1)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_23.SCENE.MBIN",
+          "locator": "NORTHWEST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW1_PLACEMENT\\ENTITIES\\EXTSTR1X1NW1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AE_NW2",
+      "name": "PHANTOM AEROFOIL (NW2)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_23.SCENE.MBIN",
+          "locator": "NORTHWEST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW2_PLACEMENT\\ENTITIES\\EXTSTR1X1NW2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AE_NW3",
+      "name": "PHANTOM AEROFOIL (NW3)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_23.SCENE.MBIN",
+          "locator": "NORTHWEST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW3_PLACEMENT\\ENTITIES\\EXTSTR1X1NW3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AE_Y_NE",
+      "name": "PHANTOM AEROFOIL (Y NE)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_23.SCENE.MBIN",
+          "locator": "NORTHEAST0Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AE_Y_NE1",
+      "name": "PHANTOM AEROFOIL (Y NE1)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_23.SCENE.MBIN",
+          "locator": "NORTHEAST1Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE1_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AE_Y_NE2",
+      "name": "PHANTOM AEROFOIL (Y NE2)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_23.SCENE.MBIN",
+          "locator": "NORTHEAST2Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE2_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AE_Y_NE3",
+      "name": "PHANTOM AEROFOIL (Y NE3)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_23.SCENE.MBIN",
+          "locator": "NORTHEAST3Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE3_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AE_Y_NW",
+      "name": "PHANTOM AEROFOIL (Y NW)",
+      "visible": false,
+      "parent": "B_STR_AE_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_23.SCENE.MBIN",
+          "locator": "NORTHWESTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AE_Y_NW1",
+      "name": "PHANTOM AEROFOIL (Y NW1)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_23.SCENE.MBIN",
+          "locator": "NORTHWEST1Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW1_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AE_Y_NW2",
+      "name": "PHANTOM AEROFOIL (Y NW2)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_23.SCENE.MBIN",
+          "locator": "NORTHWEST2Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW2_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AE_Y_NW3",
+      "name": "PHANTOM AEROFOIL (Y NW3)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_23.SCENE.MBIN",
+          "locator": "NORTHWEST3Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW3_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AF_NE",
+      "name": "BLACKTHORN COVER (NE)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_24.SCENE.MBIN",
+          "locator": "NORTHEAST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE_PLACEMENT\\ENTITIES\\EXTSTR1X1NE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AF_NE1",
+      "name": "BLACKTHORN COVER (NE1)",
+      "visible": false,
+      "parent": "B_STR_AF_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_24.SCENE.MBIN",
+          "locator": "NORTHEAST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE1_PLACEMENT\\ENTITIES\\EXTSTR1X1NE1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AF_NE2",
+      "name": "BLACKTHORN COVER (NE2)",
+      "visible": false,
+      "parent": "B_STR_AF_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_24.SCENE.MBIN",
+          "locator": "NORTHEAST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE2_PLACEMENT\\ENTITIES\\EXTSTR1X1NE2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AF_NE3",
+      "name": "BLACKTHORN COVER (NE3)",
+      "visible": false,
+      "parent": "B_STR_AF_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_24.SCENE.MBIN",
+          "locator": "NORTHEAST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE3_PLACEMENT\\ENTITIES\\EXTSTR1X1NE3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AF_NW",
+      "name": "BLACKTHORN COVER (NW)",
+      "visible": false,
+      "parent": "B_STR_AF_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_24.SCENE.MBIN",
+          "locator": "NORTHWEST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW_PLACEMENT\\ENTITIES\\EXTSTR1X1NW.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AF_NW1",
+      "name": "BLACKTHORN COVER (NW1)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_24.SCENE.MBIN",
+          "locator": "NORTHWEST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW1_PLACEMENT\\ENTITIES\\EXTSTR1X1NW1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AF_NW2",
+      "name": "BLACKTHORN COVER (NW2)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_24.SCENE.MBIN",
+          "locator": "NORTHWEST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW2_PLACEMENT\\ENTITIES\\EXTSTR1X1NW2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AF_NW3",
+      "name": "BLACKTHORN COVER (NW3)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_24.SCENE.MBIN",
+          "locator": "NORTHWEST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW3_PLACEMENT\\ENTITIES\\EXTSTR1X1NW3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AF_Y_NE",
+      "name": "BLACKTHORN COVER (Y NE)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_24.SCENE.MBIN",
+          "locator": "NORTHEAST0Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AF_Y_NE1",
+      "name": "BLACKTHORN COVER (Y NE1)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_24.SCENE.MBIN",
+          "locator": "NORTHEAST1Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE1_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AF_Y_NE2",
+      "name": "BLACKTHORN COVER (Y NE2)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_24.SCENE.MBIN",
+          "locator": "NORTHEAST2Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE2_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AF_Y_NE3",
+      "name": "BLACKTHORN COVER (Y NE3)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_24.SCENE.MBIN",
+          "locator": "NORTHEAST3Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE3_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AF_Y_NW",
+      "name": "BLACKTHORN COVER (Y NW)",
+      "visible": false,
+      "parent": "B_STR_AF_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_24.SCENE.MBIN",
+          "locator": "NORTHWESTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AF_Y_NW1",
+      "name": "BLACKTHORN COVER (Y NW1)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_24.SCENE.MBIN",
+          "locator": "NORTHWEST1Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW1_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AF_Y_NW2",
+      "name": "BLACKTHORN COVER (Y NW2)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_24.SCENE.MBIN",
+          "locator": "NORTHWEST2Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW2_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AF_Y_NW3",
+      "name": "BLACKTHORN COVER (Y NW3)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_24.SCENE.MBIN",
+          "locator": "NORTHWEST3Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW3_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AG_NE",
+      "name": "SCORPION DIFFUSER (NE)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_25.SCENE.MBIN",
+          "locator": "NORTHEAST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE_PLACEMENT\\ENTITIES\\EXTSTR1X1NE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AG_NE1",
+      "name": "SCORPION DIFFUSER (NE1)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_25.SCENE.MBIN",
+          "locator": "NORTHEAST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE1_PLACEMENT\\ENTITIES\\EXTSTR1X1NE1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AG_NE2",
+      "name": "SCORPION DIFFUSER (NE2)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_25.SCENE.MBIN",
+          "locator": "NORTHEAST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE2_PLACEMENT\\ENTITIES\\EXTSTR1X1NE2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AG_NE3",
+      "name": "SCORPION DIFFUSER (NE3)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_25.SCENE.MBIN",
+          "locator": "NORTHEAST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE3_PLACEMENT\\ENTITIES\\EXTSTR1X1NE3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AG_Y_NE",
+      "name": "SCORPION DIFFUSER (Y NE)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_25.SCENE.MBIN",
+          "locator": "NORTHEAST0Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AG_Y_NE1",
+      "name": "SCORPION DIFFUSER (Y NE1)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_25.SCENE.MBIN",
+          "locator": "NORTHEAST1Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE1_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AG_Y_NE2",
+      "name": "SCORPION DIFFUSER (Y NE2)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_25.SCENE.MBIN",
+          "locator": "NORTHEAST2Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE2_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AG_Y_NE3",
+      "name": "SCORPION DIFFUSER (Y NE3)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_25.SCENE.MBIN",
+          "locator": "NORTHEAST3Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE3_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AH_NETB",
+      "name": "BASILISK RIM (NETB)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NETB_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NETB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NETB_26.SCENE.MBIN",
+          "locator": "NORTHEAST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NETB_PLACEMENT\\ENTITIES\\EXTSTR1X1NETB.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AH_NETB1",
+      "name": "BASILISK RIM (NETB1)",
+      "visible": false,
+      "parent": "B_STR_AH_NETB",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NETB1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NETB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NETB_26.SCENE.MBIN",
+          "locator": "NORTHEAST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NETB1_PLACEMENT\\ENTITIES\\EXTSTR1X1NETB1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AH_NETB2",
+      "name": "BASILISK RIM (NETB2)",
+      "visible": false,
+      "parent": "B_STR_AH_NETB",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NETB2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NETB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NETB_26.SCENE.MBIN",
+          "locator": "NORTHEAST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NETB2_PLACEMENT\\ENTITIES\\EXTSTR1X1NETB2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AH_NETB3",
+      "name": "BASILISK RIM (NETB3)",
+      "visible": false,
+      "parent": "B_STR_AH_NETB",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NETB3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NETB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NETB_26.SCENE.MBIN",
+          "locator": "NORTHEAST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NETB3_PLACEMENT\\ENTITIES\\EXTSTR1X1NETB3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AH_NWTB",
+      "name": "BASILISK RIM (NWTB)",
+      "visible": false,
+      "parent": "B_STR_AH_NETB",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NWTB_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NWTB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NWTB_26.SCENE.MBIN",
+          "locator": "NORTHWEST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NWTB_PLACEMENT\\ENTITIES\\EXTSTR1X1NWTB.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AH_NWTB1",
+      "name": "BASILISK RIM (NWTB1)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NWTB1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NWTB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NWTB_26.SCENE.MBIN",
+          "locator": "NORTHWEST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NWTB1_PLACEMENT\\ENTITIES\\EXTSTR1X1NWTB1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AH_NWTB2",
+      "name": "BASILISK RIM (NWTB2)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NWTB2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NWTB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NWTB_26.SCENE.MBIN",
+          "locator": "NORTHWEST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NWTB2_PLACEMENT\\ENTITIES\\EXTSTR1X1NWTB2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AH_NWTB3",
+      "name": "BASILISK RIM (NWTB3)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NWTB3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NWTB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NWTB_26.SCENE.MBIN",
+          "locator": "NORTHWEST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NWTB3_PLACEMENT\\ENTITIES\\EXTSTR1X1NWTB3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AI_NETB",
+      "name": "REAPER RIM (NETB)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NETB_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NETB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NETB_27.SCENE.MBIN",
+          "locator": "NORTHEAST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NETB_PLACEMENT\\ENTITIES\\EXTSTR1X1NETB.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AI_NETB1",
+      "name": "REAPER RIM (NETB1)",
+      "visible": false,
+      "parent": "B_STR_AI_NETB",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NETB1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NETB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NETB_27.SCENE.MBIN",
+          "locator": "NORTHEAST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NETB1_PLACEMENT\\ENTITIES\\EXTSTR1X1NETB1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AI_NETB2",
+      "name": "REAPER RIM (NETB2)",
+      "visible": false,
+      "parent": "B_STR_AI_NETB",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NETB2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NETB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NETB_27.SCENE.MBIN",
+          "locator": "NORTHEAST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NETB2_PLACEMENT\\ENTITIES\\EXTSTR1X1NETB2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AI_NETB3",
+      "name": "REAPER RIM (NETB3)",
+      "visible": false,
+      "parent": "B_STR_AI_NETB",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NETB3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NETB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NETB_27.SCENE.MBIN",
+          "locator": "NORTHEAST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NETB3_PLACEMENT\\ENTITIES\\EXTSTR1X1NETB3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AI_NWTB",
+      "name": "REAPER RIM (NWTB)",
+      "visible": false,
+      "parent": "B_STR_AI_NETB",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NWTB_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NWTB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NWTB_27.SCENE.MBIN",
+          "locator": "NORTHWEST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NWTB_PLACEMENT\\ENTITIES\\EXTSTR1X1NWTB.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AI_NWTB1",
+      "name": "REAPER RIM (NWTB1)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NWTB1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NWTB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NWTB_27.SCENE.MBIN",
+          "locator": "NORTHWEST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NWTB1_PLACEMENT\\ENTITIES\\EXTSTR1X1NWTB1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AI_NWTB2",
+      "name": "REAPER RIM (NWTB2)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NWTB2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NWTB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NWTB_27.SCENE.MBIN",
+          "locator": "NORTHWEST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NWTB2_PLACEMENT\\ENTITIES\\EXTSTR1X1NWTB2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AI_NWTB3",
+      "name": "REAPER RIM (NWTB3)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NWTB3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NWTB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NWTB_27.SCENE.MBIN",
+          "locator": "NORTHWEST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NWTB3_PLACEMENT\\ENTITIES\\EXTSTR1X1NWTB3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AJ_NETB",
+      "name": "PHANTOM RIM (NETB)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NETB_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NETB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NETB_28.SCENE.MBIN",
+          "locator": "NORTHEAST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NETB_PLACEMENT\\ENTITIES\\EXTSTR1X1NETB.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AJ_NETB1",
+      "name": "PHANTOM RIM (NETB1)",
+      "visible": false,
+      "parent": "B_STR_AJ_NETB",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NETB1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NETB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NETB_28.SCENE.MBIN",
+          "locator": "NORTHEAST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NETB1_PLACEMENT\\ENTITIES\\EXTSTR1X1NETB1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AJ_NETB2",
+      "name": "PHANTOM RIM (NETB2)",
+      "visible": false,
+      "parent": "B_STR_AJ_NETB",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NETB2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NETB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NETB_28.SCENE.MBIN",
+          "locator": "NORTHEAST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NETB2_PLACEMENT\\ENTITIES\\EXTSTR1X1NETB2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AJ_NETB3",
+      "name": "PHANTOM RIM (NETB3)",
+      "visible": false,
+      "parent": "B_STR_AJ_NETB",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NETB3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NETB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NETB_28.SCENE.MBIN",
+          "locator": "NORTHEAST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NETB3_PLACEMENT\\ENTITIES\\EXTSTR1X1NETB3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AJ_NWTB",
+      "name": "PHANTOM RIM (NWTB)",
+      "visible": false,
+      "parent": "B_STR_AJ_NETB",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NWTB_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NWTB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NWTB_28.SCENE.MBIN",
+          "locator": "NORTHWEST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NWTB_PLACEMENT\\ENTITIES\\EXTSTR1X1NWTB.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AJ_NWTB1",
+      "name": "PHANTOM RIM (NWTB1)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NWTB1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NWTB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NWTB_28.SCENE.MBIN",
+          "locator": "NORTHWEST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NWTB1_PLACEMENT\\ENTITIES\\EXTSTR1X1NWTB1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AJ_NWTB2",
+      "name": "PHANTOM RIM (NWTB2)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NWTB2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NWTB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NWTB_28.SCENE.MBIN",
+          "locator": "NORTHWEST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NWTB2_PLACEMENT\\ENTITIES\\EXTSTR1X1NWTB2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AJ_NWTB3",
+      "name": "PHANTOM RIM (NWTB3)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NWTB3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NWTB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NWTB_28.SCENE.MBIN",
+          "locator": "NORTHWEST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NWTB3_PLACEMENT\\ENTITIES\\EXTSTR1X1NWTB3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AK_NETB",
+      "name": "BLACKTHORN RIM (NETB)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NETB_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NETB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NETB_29.SCENE.MBIN",
+          "locator": "NORTHEAST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NETB_PLACEMENT\\ENTITIES\\EXTSTR1X1NETB.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AK_NETB1",
+      "name": "BLACKTHORN RIM (NETB1)",
+      "visible": false,
+      "parent": "B_STR_AK_NETB",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NETB1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NETB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NETB_29.SCENE.MBIN",
+          "locator": "NORTHEAST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NETB1_PLACEMENT\\ENTITIES\\EXTSTR1X1NETB1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AK_NETB2",
+      "name": "BLACKTHORN RIM (NETB2)",
+      "visible": false,
+      "parent": "B_STR_AK_NETB",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NETB2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NETB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NETB_29.SCENE.MBIN",
+          "locator": "NORTHEAST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NETB2_PLACEMENT\\ENTITIES\\EXTSTR1X1NETB2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AK_NETB3",
+      "name": "BLACKTHORN RIM (NETB3)",
+      "visible": false,
+      "parent": "B_STR_AK_NETB",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NETB3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NETB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NETB_29.SCENE.MBIN",
+          "locator": "NORTHEAST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NETB3_PLACEMENT\\ENTITIES\\EXTSTR1X1NETB3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AK_NWTB",
+      "name": "BLACKTHORN RIM (NWTB)",
+      "visible": false,
+      "parent": "B_STR_AK_NETB",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NWTB_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NWTB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NWTB_29.SCENE.MBIN",
+          "locator": "NORTHWEST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NWTB_PLACEMENT\\ENTITIES\\EXTSTR1X1NWTB.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AK_NWTB1",
+      "name": "BLACKTHORN RIM (NWTB1)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NWTB1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NWTB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NWTB_29.SCENE.MBIN",
+          "locator": "NORTHWEST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NWTB1_PLACEMENT\\ENTITIES\\EXTSTR1X1NWTB1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AK_NWTB2",
+      "name": "BLACKTHORN RIM (NWTB2)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NWTB2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NWTB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NWTB_29.SCENE.MBIN",
+          "locator": "NORTHWEST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NWTB2_PLACEMENT\\ENTITIES\\EXTSTR1X1NWTB2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AK_NWTB3",
+      "name": "BLACKTHORN RIM (NWTB3)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NWTB3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NWTB",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NWTB_29.SCENE.MBIN",
+          "locator": "NORTHWEST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NWTB3_PLACEMENT\\ENTITIES\\EXTSTR1X1NWTB3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AM_NE",
+      "name": "MARROW CAP (NE)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_26.SCENE.MBIN",
+          "locator": "NORTHEAST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE_PLACEMENT\\ENTITIES\\EXTSTR1X1NE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AM_NE1",
+      "name": "MARROW CAP (NE1)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_26.SCENE.MBIN",
+          "locator": "NORTHEAST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE1_PLACEMENT\\ENTITIES\\EXTSTR1X1NE1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AM_NE2",
+      "name": "MARROW CAP (NE2)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_26.SCENE.MBIN",
+          "locator": "NORTHEAST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE2_PLACEMENT\\ENTITIES\\EXTSTR1X1NE2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AM_NE3",
+      "name": "MARROW CAP (NE3)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_26.SCENE.MBIN",
+          "locator": "NORTHEAST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE3_PLACEMENT\\ENTITIES\\EXTSTR1X1NE3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AM_NW",
+      "name": "MARROW CAP (NW)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_26.SCENE.MBIN",
+          "locator": "NORTHWEST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW_PLACEMENT\\ENTITIES\\EXTSTR1X1NW.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AM_NW1",
+      "name": "MARROW CAP (NW1)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_26.SCENE.MBIN",
+          "locator": "NORTHWEST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW1_PLACEMENT\\ENTITIES\\EXTSTR1X1NW1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AM_NW2",
+      "name": "MARROW CAP (NW2)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_26.SCENE.MBIN",
+          "locator": "NORTHWEST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW2_PLACEMENT\\ENTITIES\\EXTSTR1X1NW2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AM_NW3",
+      "name": "MARROW CAP (NW3)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_26.SCENE.MBIN",
+          "locator": "NORTHWEST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW3_PLACEMENT\\ENTITIES\\EXTSTR1X1NW3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AM_Y_NE",
+      "name": "MARROW CAP (Y NE)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_26.SCENE.MBIN",
+          "locator": "NORTHEAST0Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AM_Y_NE1",
+      "name": "MARROW CAP (Y NE1)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_26.SCENE.MBIN",
+          "locator": "NORTHEAST1Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE1_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AM_Y_NE2",
+      "name": "MARROW CAP (Y NE2)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_26.SCENE.MBIN",
+          "locator": "NORTHEAST2Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE2_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AM_Y_NE3",
+      "name": "MARROW CAP (Y NE3)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_26.SCENE.MBIN",
+          "locator": "NORTHEAST3Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE3_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AM_Y_NW",
+      "name": "MARROW CAP (Y NW)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_26.SCENE.MBIN",
+          "locator": "NORTHWESTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AM_Y_NW1",
+      "name": "MARROW CAP (Y NW1)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_26.SCENE.MBIN",
+          "locator": "NORTHWEST1Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW1_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AM_Y_NW2",
+      "name": "MARROW CAP (Y NW2)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_26.SCENE.MBIN",
+          "locator": "NORTHWEST2Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW2_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AM_Y_NW3",
+      "name": "MARROW CAP (Y NW3)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_26.SCENE.MBIN",
+          "locator": "NORTHWEST3Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW3_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AN_NE",
+      "name": "BONESPUR CAP (NE)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_27.SCENE.MBIN",
+          "locator": "NORTHEAST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE_PLACEMENT\\ENTITIES\\EXTSTR1X1NE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AN_NE1",
+      "name": "BONESPUR CAP (NE1)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_27.SCENE.MBIN",
+          "locator": "NORTHEAST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE1_PLACEMENT\\ENTITIES\\EXTSTR1X1NE1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AN_NE2",
+      "name": "BONESPUR CAP (NE2)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_27.SCENE.MBIN",
+          "locator": "NORTHEAST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE2_PLACEMENT\\ENTITIES\\EXTSTR1X1NE2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AN_NE3",
+      "name": "BONESPUR CAP (NE3)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_27.SCENE.MBIN",
+          "locator": "NORTHEAST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE3_PLACEMENT\\ENTITIES\\EXTSTR1X1NE3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AN_NW",
+      "name": "BONESPUR CAP (NW)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_27.SCENE.MBIN",
+          "locator": "NORTHWEST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW_PLACEMENT\\ENTITIES\\EXTSTR1X1NW.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AN_NW1",
+      "name": "BONESPUR CAP (NW1)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_27.SCENE.MBIN",
+          "locator": "NORTHWEST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW1_PLACEMENT\\ENTITIES\\EXTSTR1X1NW1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AN_NW2",
+      "name": "BONESPUR CAP (NW2)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_27.SCENE.MBIN",
+          "locator": "NORTHWEST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW2_PLACEMENT\\ENTITIES\\EXTSTR1X1NW2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AN_NW3",
+      "name": "BONESPUR CAP (NW3)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_27.SCENE.MBIN",
+          "locator": "NORTHWEST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW3_PLACEMENT\\ENTITIES\\EXTSTR1X1NW3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AN_Y_NE",
+      "name": "BONESPUR CAP (Y NE)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_27.SCENE.MBIN",
+          "locator": "NORTHEAST0Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AN_Y_NE1",
+      "name": "BONESPUR CAP (Y NE1)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_27.SCENE.MBIN",
+          "locator": "NORTHEAST1Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE1_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AN_Y_NE2",
+      "name": "BONESPUR CAP (Y NE2)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_27.SCENE.MBIN",
+          "locator": "NORTHEAST2Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE2_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AN_Y_NE3",
+      "name": "BONESPUR CAP (Y NE3)",
+      "visible": false,
+      "parent": "B_STR_AC_NE",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_27.SCENE.MBIN",
+          "locator": "NORTHEAST3Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE3_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AN_Y_NW",
+      "name": "BONESPUR CAP (Y NW)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_27.SCENE.MBIN",
+          "locator": "NORTHWESTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AN_Y_NW1",
+      "name": "BONESPUR CAP (Y NW1)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_27.SCENE.MBIN",
+          "locator": "NORTHWEST1Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW1_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AN_Y_NW2",
+      "name": "BONESPUR CAP (Y NW2)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_27.SCENE.MBIN",
+          "locator": "NORTHWEST2Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW2_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW2.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AN_Y_NW3",
+      "name": "BONESPUR CAP (Y NW3)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_27.SCENE.MBIN",
+          "locator": "NORTHWEST3Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW3_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW3.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AO_E",
+      "name": "BASILISK COWLING (E)",
+      "visible": false,
+      "parent": "B_STR_AO_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_E_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_28.SCENE.MBIN",
+          "locator": "EAST_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_E_PLACEMENT\\ENTITIES\\EXTSTR1X1E.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AO_N",
+      "name": "BASILISK COWLING (N)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_N_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_28.SCENE.MBIN",
+          "locator": "NORTH_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_N_PLACEMENT\\ENTITIES\\EXTSTR1X1N.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AO_S",
+      "name": "BASILISK COWLING (S)",
+      "visible": false,
+      "parent": "B_STR_AO_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_S_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_28.SCENE.MBIN",
+          "locator": "SOUTH_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_S_PLACEMENT\\ENTITIES\\EXTSTR1X1S.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AO_W",
+      "name": "BASILISK COWLING (W)",
+      "visible": false,
+      "parent": "B_STR_AO_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_W_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_28.SCENE.MBIN",
+          "locator": "WEST_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_W_PLACEMENT\\ENTITIES\\EXTSTR1X1W.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AO_Y_E",
+      "name": "BASILISK COWLING (Y E)",
+      "visible": false,
+      "parent": "B_STR_AO_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_E_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_28.SCENE.MBIN",
+          "locator": "EASTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_E_PLACEMENT\\ENTITIES\\EXTSTR1X1YE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AO_Y_N",
+      "name": "BASILISK COWLING (Y N)",
+      "visible": false,
+      "parent": "B_STR_AC_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_N_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_28.SCENE.MBIN",
+          "locator": "NORTHY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_N_PLACEMENT\\ENTITIES\\EXTSTR1X1YN.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AO_Y_S",
+      "name": "BASILISK COWLING (Y S)",
+      "visible": false,
+      "parent": "B_STR_AO_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_S_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_28.SCENE.MBIN",
+          "locator": "SOUTHY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_S_PLACEMENT\\ENTITIES\\EXTSTR1X1YS.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AO_Y_W",
+      "name": "BASILISK COWLING (Y W)",
+      "visible": false,
+      "parent": "B_STR_AO_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_W_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_28.SCENE.MBIN",
+          "locator": "WESTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_W_PLACEMENT\\ENTITIES\\EXTSTR1X1YW.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AP_E",
+      "name": "WEBSPINNER CASING (E)",
+      "visible": false,
+      "parent": "B_STR_AP_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_E_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_29.SCENE.MBIN",
+          "locator": "EAST_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_E_PLACEMENT\\ENTITIES\\EXTSTR1X1E.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AP_N",
+      "name": "WEBSPINNER CASING (N)",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_N_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_29.SCENE.MBIN",
+          "locator": "NORTH_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_N_PLACEMENT\\ENTITIES\\EXTSTR1X1N.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AP_S",
+      "name": "WEBSPINNER CASING (S)",
+      "visible": false,
+      "parent": "B_STR_AP_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_S_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_29.SCENE.MBIN",
+          "locator": "SOUTH_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_S_PLACEMENT\\ENTITIES\\EXTSTR1X1S.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AP_W",
+      "name": "WEBSPINNER CASING (W)",
+      "visible": false,
+      "parent": "B_STR_AP_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_W_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_29.SCENE.MBIN",
+          "locator": "WEST_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_W_PLACEMENT\\ENTITIES\\EXTSTR1X1W.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AP_Y_E",
+      "name": "WEBSPINNER CASING (Y E)",
+      "visible": false,
+      "parent": "B_STR_AP_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_E_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_29.SCENE.MBIN",
+          "locator": "EASTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_E_PLACEMENT\\ENTITIES\\EXTSTR1X1YE.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AP_Y_N",
+      "name": "WEBSPINNER CASING (Y N)",
+      "visible": false,
+      "parent": "B_STR_AC_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_N_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_29.SCENE.MBIN",
+          "locator": "NORTHY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_N_PLACEMENT\\ENTITIES\\EXTSTR1X1YN.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AP_Y_S",
+      "name": "WEBSPINNER CASING (Y S)",
+      "visible": false,
+      "parent": "B_STR_AP_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_S_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_29.SCENE.MBIN",
+          "locator": "SOUTHY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_S_PLACEMENT\\ENTITIES\\EXTSTR1X1YS.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_STR_AP_Y_W",
+      "name": "WEBSPINNER CASING (Y W)",
+      "visible": false,
+      "parent": "B_STR_AP_N",
+      "category": "Corvette",
+      "subcategory": "Hull Plating",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_W_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_29.SCENE.MBIN",
+          "locator": "WESTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_W_PLACEMENT\\ENTITIES\\EXTSTR1X1YW.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_TRU_J",
+      "name": "RAZOR JET",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Thrusters",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_THRUSTERS_1X1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTTRU1X1",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/ZENGINEJ.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_THRUSTERS_1X1_PLACEMENT\\ENTITIES\\EXTTRU1X1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_TUR_G",
+      "name": "DEMATERIALISATION RAY",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Defensive Systems",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_TURRET_1X1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTTUR1X1",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/GUN_G.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_TURRET_1X1_PLACEMENT\\ENTITIES\\EXTTURRET1X1.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WALL_CANT0",
+      "name": "B_WALL_CANT0",
+      "visible": false,
+      "parent": "B_WALL_PLAN0",
+      "category": "Corvette",
+      "subcategory": "Utility Modules",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/INT_WALL_PLANTER_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_WALL_EW_A",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WALL_EW_A_PLANTER0.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\INT_WALL_PLACEMENT\\ENTITIES\\INTWALLPLACEMENT.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WALL_WIND3",
+      "name": "B_WALL_WIND3",
+      "visible": false,
+      "parent": "B_WALL_WIND2",
+      "category": "Corvette",
+      "subcategory": "Utility Modules",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/INT_WINDOW_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_WALL_EW_A",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WALL_EW_A_WINDOW2.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\INT_WALL_PLACEMENT\\ENTITIES\\INTWALLPLACEMENT.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_S",
+      "name": "GORGON THRUSTER",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_S_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGL1X2S",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_S_L.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_S_1X2_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_S_R",
+      "name": "GORGON THRUSTER (R)",
+      "visible": false,
+      "parent": "B_WNG_S",
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_S_1X2_R_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGR1X2S",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_S_R.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_S_1X2_R_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_T",
+      "name": "DROMEDARY WING MODULE",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_T_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGL1X2T",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_T_L.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_T_1X2_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_T_R",
+      "name": "DROMEDARY WING MODULE (R)",
+      "visible": false,
+      "parent": "B_WNG_T",
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_T_1X2_R_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGR1X2T",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_T_R.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_T_1X2_R_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_U",
+      "name": "KOMODO WING MODULE",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_U_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGL1X2U",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_U_L.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_U_1X2_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_U_R",
+      "name": "KOMODO WING MODULE (R)",
+      "visible": false,
+      "parent": "B_WNG_U",
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_U_1X2_R_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGR1X2U",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_U_R.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_U_1X2_R_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_V",
+      "name": "ARTHROPOD WING MODULE",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_V_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGL1X2V",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_V_L.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_V_1X2_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_V_R",
+      "name": "ARTHROPOD WING MODULE (R)",
+      "visible": false,
+      "parent": "B_WNG_V",
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_V_1X2_R_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGR1X2V",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_V_R.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_V_1X2_R_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_W",
+      "name": "ELDRITCH THRUSTER",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_W_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGL1X2W",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_W_L.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_W_1X2_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_W_B",
+      "name": "ELDRITCH THRUSTER (B)",
+      "visible": false,
+      "parent": "B_WNG_W",
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_W_1X2_B_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGB1X2W",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_W_B.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_W_1X2_B_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_W_R",
+      "name": "ELDRITCH THRUSTER (R)",
+      "visible": false,
+      "parent": "B_WNG_W",
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_W_1X2_R_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGR1X2W",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_W_R.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_W_1X2_R_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_W_T",
+      "name": "ELDRITCH THRUSTER (T)",
+      "visible": false,
+      "parent": "B_WNG_W",
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_W_1X2_T_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGT1X2W",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_W_T.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_W_1X2_T_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_X",
+      "name": "PLATED THRUSTER",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_X_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGL1X2X",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_X_L.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_X_1X2_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_X_B",
+      "name": "PLATED THRUSTER (B)",
+      "visible": false,
+      "parent": "B_WNG_X",
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_X_1X2_B_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGB1X2X",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_X_B.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_X_1X2_B_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_X_R",
+      "name": "PLATED THRUSTER (R)",
+      "visible": false,
+      "parent": "B_WNG_X",
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_X_1X2_R_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGR1X2X",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_X_R.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_X_1X2_R_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_X_T",
+      "name": "PLATED THRUSTER (T)",
+      "visible": false,
+      "parent": "B_WNG_X",
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_X_1X2_T_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGT1X2X",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_X_T.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_X_1X2_T_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_Y",
+      "name": "LOCKJAW THRUSTER",
+      "visible": true,
+      "parent": null,
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_Y_1X2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGL1X2Y",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_Y_L.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_Y_1X2_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_Y_B",
+      "name": "LOCKJAW THRUSTER (B)",
+      "visible": false,
+      "parent": "B_WNG_Y",
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_Y_1X2_B_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGB1X2Y",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_Y_B.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_Y_1X2_B_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_Y_R",
+      "name": "LOCKJAW THRUSTER (R)",
+      "visible": false,
+      "parent": "B_WNG_Y",
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_Y_1X2_R_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGR1X2Y",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_Y_R.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_Y_1X2_R_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "B_WNG_Y_T",
+      "name": "LOCKJAW THRUSTER (T)",
+      "visible": false,
+      "parent": "B_WNG_Y",
+      "category": "Corvette",
+      "subcategory": "Wings",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_Y_1X2_T_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTWNGT1X2Y",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/WING_Y_T.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_WING_Y_1X2_T_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "GRAV_FLOOR",
+      "name": "GRAVITATIONAL FLOORING",
+      "visible": true,
+      "parent": null,
+      "category": "Technology",
+      "subcategory": "Gravity",
+      "nativePlacement": "MODELS/PLANETS/BIOMES/COMMON/BUILDINGS/PARTS/BUILDABLEPARTS/BASICPARTS/BASIC_FLOOR_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_FLOOR",
+          "scene": "MODELS/PLANETS/BIOMES/COMMON/BUILDINGS/PARTS/BUILDABLEPARTS/BASICPARTS/MESHES/GRAV_FLOOR.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\PLANETS\\BIOMES\\COMMON\\BUILDINGS\\PARTS\\BUILDABLEPARTS\\BASICPARTS\\BASIC_FLOOR_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "GRAV_RAMP",
+      "name": "GRAVITATIONAL RAMP",
+      "visible": true,
+      "parent": null,
+      "category": "Technology",
+      "subcategory": "Gravity",
+      "nativePlacement": "MODELS/PLANETS/BIOMES/COMMON/BUILDINGS/PARTS/BUILDABLEPARTS/BASICPARTS/BASIC_RAMP_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_RAMP",
+          "scene": "MODELS/PLANETS/BIOMES/COMMON/BUILDINGS/PARTS/BUILDABLEPARTS/BASICPARTS/MESHES/GRAV_RAMP.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\PLANETS\\BIOMES\\COMMON\\BUILDINGS\\PARTS\\BUILDABLEPARTS\\BASICPARTS\\BASIC_RAMP_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    },
+    {
+      "id": "GRAV_WALL",
+      "name": "GRAVITATIONAL WALL",
+      "visible": true,
+      "parent": null,
+      "category": "Technology",
+      "subcategory": "Gravity",
+      "nativePlacement": "MODELS/PLANETS/BIOMES/COMMON/BUILDINGS/PARTS/BUILDABLEPARTS/BASICPARTS/BASIC_WALLB_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_WALLB",
+          "scene": "MODELS/PLANETS/BIOMES/COMMON/BUILDINGS/PARTS/BUILDABLEPARTS/BASICPARTS/MESHES/GRAV_WALL.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\PLANETS\\BIOMES\\COMMON\\BUILDINGS\\PARTS\\BUILDABLEPARTS\\BASICPARTS\\BASIC_WALLB_PLACEMENT\\ENTITIES\\PLACEMENTDATA.ENTITY.MBIN"
+        }
+      ]
+    }
+  ],
+  "textures": [
+    "0173e4191d31_glasstrim.masks.png",
+    "0293c7b42b9b_lights2.png",
+    "03f24d70c368_pipe1.png",
+    "06b2c3c416a4_biggsinteriora.png",
+    "0ea05cd0e7d8_entrancerunway.png",
+    "0ff06f9ad730_darkmetal.masks.png",
+    "15ba5b3bb239_biggsinteriora.masks.png",
+    "19a2eda098b8_glass.base.refraction.png",
+    "1bad2f5481d4_cockpitside4.png",
+    "1c16b02143b4_shinymetal.png",
+    "1df6ed87c79b_animatedbuttonscolourd2.png",
+    "1e4f3f317ce9_plasticgrain.base.png",
+    "22b030911038_basebuildingexterior.png",
+    "248aea4b092f_glasstrim.refraction.png",
+    "25768fa25480_biggspadhighlight.base.1.masks.png",
+    "27db3a8f5d5f_plasticgrain.base.masks.png",
+    "29edfdd408a1_scientificsurfdetail.base.default.normal.png",
+    "2ab4834dc8dd_cockpitside2.png",
+    "2b715298cc1d_warriorshopinteriorwall.base.normal.png",
+    "2de852440b28_shinymetal.masks.png",
+    "2f9078880dd2_smalldetails.masks.png",
+    "30d01107b881_rubberpattern.masks.png",
+    "318d1df2302e_sand.normal.png",
+    "3289ff08531c_royalsclassglass.masks.png",
+    "34f88162a76c_warpzonered.png",
+    "39167df7cb7f_biggsinteriora.normal.png",
+    "39967ee6dd39_cockpitmain.png",
+    "3ab811f3247f_nipstalk.base.1.png",
+    "3c7950d0e6da_nipstalk.base.1.masks.png",
+    "4037992c4014_nipleaf.base.png",
+    "40ec5d374a78_rubberpattern.png",
+    "41a469253d47_pulsedrive.png",
+    "48f614dc0a26_interiortrim1.base.normal.png",
+    "4a39b8bfc114_pipe1.masks.png",
+    "4d1a7f9d797f_sand.png",
+    "4fcd8bfeaf29_interiortrim1.base.colourisemask.png",
+    "51057838a65f_mixedmat_001.masks.png",
+    "5189bb9ddfc0_rubber.normal.png",
+    "51dc66d546ed_warpzone.png",
+    "521c75b792fb_buttons.png",
+    "537c8f390cb9_rodtechmat.masks.png",
+    "53ca39e97c8a_biggsatlasdetail.occlusion.png",
+    "54b60c0fc327_rodtechmat.png",
+    "56a1509bf557_interiortrim1.base.png",
+    "57c2268b7532_ejectvfxmat.png",
+    "5c48e38d9003_biggsatlasdetail.png",
+    "5cb0b4d47420_rubber.png",
+    "5d8a9b295355_interiorfreightertrims.png",
+    "5f6c7a6f060d_interiorfreightertrims.masks.png",
+    "613c6cabf7c2_basebuildingexterior.masks.png",
+    "6214bfee0b55_light_red.png",
+    "6601a37d856c_royalsclassglass.png",
+    "690ab2b4c3ca_warriorshopinteriorwall.base.masks.png",
+    "69480f1e2867_lights.png",
+    "694c4d46a7d4_scientificsurfdetail.base.abandoned.masks.png",
+    "695d0f0ee18e_metaltiling.base.normal.png",
+    "6a0a045afc90_nipleaf.base.normal.png",
+    "6b686cfbfe80_warpzoneorange.png",
+    "6c4023f67bd1_biggstrim.normal.png",
+    "6ed15f7bfad2_interiorfreightertrims.normal.png",
+    "6f317014c07d_interiorfreighterlights.png",
+    "6f49f4cc8169_warriorshopinteriorwall.base.png",
+    "706fd613116c_rougintmat.masks.png",
+    "711cb5106895_rougintmat.png",
+    "7225e3a9e2cd_biggsatlasdetail.masks.png",
+    "729c0a74b9fb_biggstrim.png",
+    "7574e3a3ca76_mixedmat_001.png",
+    "77acfb994468_metaltiling.base.png",
+    "7b60c42422b2_rodtechmat.normal.png",
+    "8304037c11f6_speedomax.png",
+    "8527cab8204c_buttonlightscrolling.png",
+    "86a5f11cd6c1_glasstrim.png",
+    "8880179d1227_pipe2.masks.png",
+    "89cb61dc6fb5_biggspadcontact.base.1.png",
+    "8e3f32285a4f_biggsatlasdetail.normal.png",
+    "8ff0a1f29dec_glasstrim.normal.png",
+    "90dc65b59b3d_pipe1.normal.png",
+    "926c3dd2aa02_darkmetal.png",
+    "97d556be9c26_interiortrim1.base.masks.png",
+    "9ac80af164e9_core_d_int.png",
+    "9c091c575462_metaltiling.base.masks.png",
+    "9c8ada4e2bb3_interiorfreightertrims.colourisemask.png",
+    "9cbb992ca34a_cockpitseat.png",
+    "9d636564bb06_plasticgrain.base.normal.png",
+    "9d6ff8519934_scientificsurfdetail.base.abandoned.png",
+    "9d922ab67a40_nipleaf.base.masks.png",
+    "9dfd87815e92_cockpitside1.png",
+    "9e4cbfa24c0a_cockpitside3.png",
+    "a0b4df4817b8_landinganimated.png",
+    "a2fad726b9e4_target.png",
+    "a301b13f181e_shinymetal.normal.png",
+    "a5aa46a0a064_lightwite.png",
+    "a709c1f374a4_basebuildingexterior.normal.png",
+    "ab1e7db81b40_smalldetails.normal.png",
+    "ad364dfb1c6a_speedobg.png",
+    "af9cff98e49b_core_d_int.masks.png",
+    "b34b24446cf4_biggsatlasglow.png",
+    "b39d38866f36_rubberpattern.normal.png",
+    "b4a8b27ff0a1_biggstrim.masks.png",
+    "bbb15510c174_gravstalk.base.2.normal.png",
+    "be888b127f42_biggspadcontact.base.1.refraction.png",
+    "c373a86457ca_pipe2.normal.png",
+    "c5dd1f3e1be4_basebuildingexterior.colourisemask.png",
+    "c7e46714e49b_biggspadcontact.base.1.masks.png",
+    "c9e17f8a0d68_cockpitseat.normal.png",
+    "ced4eaf872f7_biggspadhighlight.base.1.png",
+    "d32c5c77a4f6_smalldetails.png",
+    "d54058aeb03f_biggstrim.base.1.occlusion.png",
+    "d76ba300c778_core_d_int.normal.png",
+    "d869fee4b03b_rubber.masks.png",
+    "d8a48c3ad2b8_darkmetal.normal.png",
+    "dd820e1633ec_light1.2.png",
+    "de1a29e3bd2f_pipe2.png",
+    "e124c6489c0c_light1.1.png",
+    "e579beeedfd2_biggsspacewalkshield.normal.png",
+    "e62d317e4da5_mixedmat_001.normal.png",
+    "e739740ea8a1_royalsclassglass.normal.png",
+    "ec1b84a2687c_biggstrim.colourisemask.png",
+    "ed15e03699e1_glass.base.png",
+    "f00fd63a5bb2_rougintmat.normal.png",
+    "f58c904afe64_animatedbuttons.png",
+    "f6dcbb64ec5d_biggsspacewalkshield.png",
+    "ff9a70e74a3a_speedo.png"
+  ],
+  "excluded": {
+    "B_LND_D": "Native model LANDINGGEAR_LEG_D is absent from installed game archives.",
+    "B_TRU_I": "Native model ZENGINEI is absent from installed game archives."
+  }
+}

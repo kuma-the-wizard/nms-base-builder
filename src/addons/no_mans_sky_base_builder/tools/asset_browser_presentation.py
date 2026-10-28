@@ -425,7 +425,7 @@ def draw_asset_browser_left_options(context, asset_browser_box, scene):
             "object.nms_asset_browser_category_selected",
             text = category,
             depress = is_active,
-            emboss = False,
+            emboss = is_active,
             icon = "TRIA_DOWN" if is_expanded else "TRIA_RIGHT"
         )
         cat_button.category = category
@@ -458,7 +458,7 @@ def draw_asset_browser_left_options(context, asset_browser_box, scene):
                     "object.nms_asset_browser_sub_category_selected",
                     text = sub_category,
                     depress = is_sub_active,
-                    emboss = False,
+                    emboss = is_sub_active,
                     icon = "TRIA_RIGHT" if is_sub_active else "BLANK1"
                 )
                 sub_cat_button.sub_category = sub_category

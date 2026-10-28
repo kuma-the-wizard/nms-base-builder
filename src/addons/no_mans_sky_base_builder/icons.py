@@ -48,7 +48,7 @@ def extract_pcoll():
     toolbar_dir = os.path.join(current_dir, 'images', 'toolbar_icons')
     for name in ('io', 'color', 'builder', 'transform', 'batch', 'parts',
                  'cables', 'lighting', 'settings', 'extended_mark',
-                 'support', 'save', 'recovery'):
+                 'support', 'save', 'recovery', 'assets'):
         pcoll.load('toolbar_' + name, os.path.join(toolbar_dir, name + '.png'), 'IMAGE')
 
     # Keep the branding at source resolution instead of Blender's thumbnail

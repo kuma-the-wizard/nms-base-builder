@@ -1,3 +1,239 @@
+# 18.2.32
+
+- Add 214 supported Forsaken 7.10 part IDs and variants, including Corvette cockpits, hull sections, wings, reactors, decorations and gravity floor, ramp and wall. Include native icons, lightweight proxies, detailed models and portable textures. Preserve native IDs and placement transforms for export.
+- Test all 214 parts for loading and export in Blender 5.1 and 5.2. Confirm NMScribe shape generation and native export in both versions. Full in-game placement still needs testing.
+- Two new native records, `B_LND_D` and `B_TRU_I`, have no matching model files in the installed game archives and are excluded from the supported catalog.
+- Includes the chat, theme, save export, decal, asset browser, prefab and building fixes detailed below since public 18.2.0.
+
+# 18.2.31
+
+- Distinguish Pipe — Automatic from Pipe — Fixed in the Asset Browser, search, favourites, recents and part names. Explain the in-game shape changes in hover help, including that automatic pipes currently have a straight Blender preview. Existing part identities and exports are unchanged.
+
+# 18.2.30
+
+- Close Messenger automatically when its connected Blender sessions exit or crash, including when chat is hidden in the toolbar. Keep it open for another connected Blender session; cancel active transfers and bound shutdown if a network worker is stuck.
+- Includes the 18.2.29 Scene Preview Undo crash fix.
+
+# 18.2.29
+
+- Fix a reproducible Undo crash after moving selected parts with Scene Preview enabled. Protect generated preview materials and lights during Undo/Redo, and keep decal updates away from scene data while history is being restored.
+- Preserve selection, transform gizmos and Redo history without adding extra undo steps or changing saved preferences.
+
+# 18.2.28
+
+- Fix colour and material changes on intact prefabs and their split parts. New prefabs retain the selected model quality, textures and saved colours; recolouring a prefab updates its native parts without changing their placement.
+- Repair unchanged legacy prefab/proxy appearances when reopening detailed scenes, preserving edited meshes. Apply proxy colour changes immediately through Scene Preview instead of leaving its old display material over the new colour.
+- Clear Build Scene and replacement file imports now remove leftover empties and nested collections from the current scene. Keep the Asset Browser, workspace and collections used by other scenes or library instances.
+
+# 18.2.27
+
+- Fix missing Move, Rotate and Scale gizmos after reopening a project with Scene Preview enabled. Restore the scene preview without forcing a redraw inside Blender's file-load callback, so Blender can initialize its tools normally. Interactive preview refreshes retain their progress display.
+
+# 18.2.26
+
+- Restore Blender's Move gizmo when selected power, ByteBeat, supply or portal cables have both endpoint controls selected. Cable locations remain driven by those controls; incomplete selections retain their cable locks. Base anchors and rotation/scale locks are unchanged.
+- Refresh BBE's cached modules when Blender reloads an updated, disabled add-on. Prevent old modules from causing missing-operator import errors during an in-session upgrade, including `BBE_OT_backup_settings`.
+
+# 18.2.25
+
+- New incoming DMs take over the chat bar and remain highlighted until answered, even after reading them. A successful reply advances to the oldest remaining unanswered DM; once none are waiting, the bar returns to Main Room.
+- Add a slow theme-native attention pulse, updating only Blender's toolbar region. Main Room updates remain unhighlighted; no extra network polling is used for the pulse.
+- Clicking the bar opens the displayed conversation. Incoming DMs do not switch the conversation being composed, and an unfinished draft prevents a toolbar click from silently changing its recipient.
+- Preserve pending replies across restarts. Failed sends and newer DMs arriving during a send retain their alerts. Your outgoing messages are never displayed as the preview.
+
+# 18.2.24
+
+- The chat toolbar follows the selected conversation: latest incoming response in the active DM, otherwise latest incoming Main Room message. Your own messages never replace the preview.
+- Switching or closing a DM updates the preview immediately. Unread DMs highlight the toolbar without replacing the selected conversation's message; Main Room messages remain unhighlighted.
+- Quoted replies preview the new response instead of repeating the older quoted message. Current poll contents are available to notifications immediately.
+
+# 18.2.23
+
+- Update Steam companion metadata during base and pinned Corvette exports, including Optimize & Export. Recorded compressed/uncompressed sizes now match the exported data.
+- Synchronize save and metadata file timestamps with one metadata timestamp for each export transaction. Preserve save identity and each save point's unrelated progress.
+- Use verified staging, concurrent-change checks and backups across these export routes. Failed writes restore both data and metadata, including original timestamps.
+- Validated on disposable saves. The reported in-game cross-save conflict still requires confirmation; this does not suppress genuine cloud conflicts or claim to fix game-loading crashes.
+
+# 18.2.22
+
+- Enabled chat updates online counts and the latest received message without opening Messenger, including after loading another Blender file. Disabled chat remains offline.
+- Fix sparse inbox notifications replacing message text with a generic attachment notice. Image links stay readable in Mini mode, failed previews show an error, and new messages scroll into view.
+- Add quoted replies and distinct unread/reply-or-DM notifications. Replies remain readable in older chat versions.
+- Compact conversations and single-line online users; the aligned drawer grows with its contents and retains scroll position during refreshes.
+- Close individual DMs with the inline ×. History is retained; clicking the person or receiving a new DM reopens the conversation.
+- Startup profiling found about 1.6 seconds of total BBE overhead in isolated background launches, with chat registration around 5 ms. This release does not claim a general Blender startup speed fix.
+
+# 18.2.21
+
+- Preserve the selected save build by identity when refreshing; clear missing or ambiguous destinations instead of silently selecting a different ship. Apply this to remembered selections in other save tabs too.
+- Export to Save and Optimize & Export no longer default to a new ship when none is selected. Ask users to explicitly create a new ship in an empty slot or choose an existing ship, then confirm that destination before writing.
+- Show a red overwrite warning with the existing ship name, save context and slot when the destination differs from the scene source. Remember source information on save imports and successful exports; older scenes with unknown provenance show a red verify-target notice. Changing destination clears prior confirmation.
+- These safeguards do not diagnose or repair reported in-game loading crashes.
+
+# 18.2.20
+
+- Replace the chat toolbar icon with a person and a corner badge showing other builders online. Counts match the online list, cap visually at 99+ with an exact-count tooltip, and disappear when disabled, disconnected or stale. Keep the single toolbar chat control and unread message preview.
+
+# 18.2.19
+
+- Align the users and conversations sidebar with the top of mini chat. Keep both aligned when moving or resizing the chat, and shorten the sidebar near the screen bottom.
+
+# 18.2.18
+
+- Consolidate chat into one reorderable toolbar control: Chat opens the Enable chat dropdown while disabled; when enabled it becomes the latest received message preview. Remove the duplicate chat launcher and online-users toolbar button. Toolbar settings always remain last.
+- Clicking the message preview opens the rich mini chat beneath the clicked toolbar. The expanded chat includes Enable chat, its existing users/DM drawer, attachments and composer. Returning focus to Blender dismisses the attached chat without discarding the draft.
+- Fix Windows monitor matching when Qt reports friendly display names, so chat attaches to the Blender client window instead of falling back to the monitor bounds. Native focus, placement and dismissal checked on the primary and secondary monitors.
+- The rich chat remains a separate Qt window presented as an attached dropdown; it is not embedded inside a native Blender popover. The disabled Enable chat menu is native Blender UI.
+
+# 18.2.17
+
+- Reuse ordinary decals' existing display mesh and material slots when refreshing projection. This removes the Material Preview rebuild pause after a drag or Projection Preview toggle in testXE2.blend. Shared displays and history restores retain guarded handling.
+- Preserve ordinary decal coverage, surface placement, signed rotation, export transforms and the calibrated NMScribe / White Border projection path. Repeated toggle/rotate/delete Undo and Redo passed in Blender 5.1 and 5.2.
+- Put the enabled chat's shortened latest-message preview, unread count and users/DM button inside Blender's native BBE toolbar. The toolbar follows Blender's height and theme; clicking opens the conversation below it. The old floating collapsed strip is hidden in toolbar mode. Explicit corner and floating placement remain available.
+
+# 18.2.16
+
+- Keep decal projection rebuilding out of native move/rotate/scale drags. Reconcile after confirm or cancel, and reuse flat artwork during movement.
+- Batch ordinary decal triangles that are fully inside the existing projection volume, clip only boundary triangles, and cache unchanged receiver geometry and transform stamps. Preserve the same coverage and UVs, with unchanged NMScribe / White Border stair calibration.
+- Replace the fixed +/-5 degree buttons with Rotate and a signed Degrees input. Surface placement, offsets, preview toggle and Undo/Redo remain available.
+- Tested with testXE2.blend: all 15 decals retain equivalent geometry/UVs; the native drag test completes without projection rebuilds or new display meshes during the drag.
+
+# 18.2.15
+
+- Ordinary decal previews cover intersecting raised and recessed surfaces without jumping to one centre-selected depth. Existing projection bounds and saved part transforms are retained.
+- Add a per-decal Projection Preview toggle: projected artwork remains the default; Flat mode changes only Blender's preview, not the exported placement.
+- Add stationary, draggable decal controls with optional click-on-surface placement, free movement, artwork rotation and surface offset. Controls appear for a single selected decal.
+- Preserve the calibrated NMScribe / White Border stair projection, depth limits, wrapping and UV mapping. Regression geometry and UVs match 18.2.14 exactly in Blender 5.1 and 5.2.
+
+# 18.2.14
+
+- Export editable Charon Forge point-based shapes using their saved part placements, including objects whose normal group cache is empty. Preserve source part IDs, colors, world transforms and parent poses without splitting or modifying the shape.
+- Works from the saved layout with Forge disabled. Unsupported procedural placement data produces a named error instead of silently omitting the shape.
+- CreepyCrawly regression: all 573 parts export, including 290 previously omitted abdomen panels; existing 283 records remain unchanged. Includes the pending 18.2.13 Mini chat and gradient editor fixes.
+
+# 18.2.13
+
+- Mini chat uses a genuinely rounded native window shape with transparent corners. The sidebar chevron is centered geometrically, and the attachment / message / emoji row spans the bottom.
+- Mini defaults to a collapsed strip aligned with Blender's tool-header row. The strip follows the toolbar height, previews the latest received message with ellipsis, and expands for chat. Placement and full-window preferences remain available and are remembered after this layout migration.
+- Removed duplicate Dock top right / Dock bottom right actions; placement options remain under Attach Mini to Blender.
+- Theme customization is labeled Customize Colors & Gradients, with Solid, Vertical gradient and Vignette, two viewport colors, and grid color. Installation repairs the previously stale theme-editor module in both profiles.
+
+# 18.2.12
+
+- Bubble tube controls choose a clear viewport edge and stay in place when selecting or adding pieces. Drag their header to reposition them. Rotation and placement controls keep their top anchor as the panel changes height.
+- Mini chat has an attachment menu to the left of the message field and an emoji picker to the right. A larger middle-left handle opens the rounded users / rooms / DM drawer; redundant Messenger branding is removed.
+- Top-right and bottom-right docking follows Blender's viewport boundaries. Expanded image previews remain bounded, and message rows keep their space in small windows.
+- A changed-save warning opens a dismissible notice with a large highlighted REFRESH SAVE button and dimmed I/O controls. Refresh Save also has a visible label in the normal menu. Existing freshness checks remain in force.
+- The Color palette follows the active part's saved color and material, displays its current color, and highlights the matching swatch without recoloring the selection.
+- Client UI update; compatible with the existing 18.2.11 chat service and its file limits.
+
+# 18.2.11
+
+- Share BLEND, ZIP and PDF files up to 2 GiB using 4 MiB chunks, with checksum verification, progress and Cancel file transfer in chat options. Small structured/text files and media retain their existing limits.
+- Files expire two hours after upload completes. One active non-media file or pending upload per identity, shared across aliases. Abandoned partial uploads expire after 30 minutes idle or two hours total and are cleared on server restart.
+- The global 5 GiB cap includes full reservations for pending uploads. Downloading uses bounded ranges and writes to a temporary file; cancellation or failed verification removes that partial file.
+- Requires the matching chat server update. Existing media uploads and older clients remain supported.
+
+# 18.2.10
+
+- Mini Messenger can attach to Blender corners or its top/bottom edge and collapse to a 32-pixel strip. Hover or click to expand; typing, menus and dialogs keep it open.
+- Images become expandable links in Mini mode. Preview size follows the window width. The arrow opens a separate online-users and DM drawer.
+- New-message counts appear on the strip and conversation list. Always on top defaults on, is checked against the native Windows window state, and remembers your choice.
+- Share BLEND, ZIP, PDF, JSON, NMSBASE, NMSSHIP, TXT and LOG files up to 20 MB. One active non-media file per identity, including all its claimed names; remove it from chat options or wait for two-hour expiry.
+- File sharing and inbox notifications require the updated chat service. Server storage is capped at 5 GiB shared by all users, with automatic expiry and oldest-first eviction. Media expires after seven days; expired attachments remain labeled in history.
+
+# 18.2.9
+
+- Fixed Mirror, Flip, and Turn doing nothing to BBE groups. Group orientation actions now reflect the cached parts about a common local plane and rebuild the group for export.
+- Preserved parent links, parent inverses, and world placements when mirroring swaps a part to a renamed native counterpart.
+- Fixed orientation actions being ignored for ordinary Blender objects.
+
+Verified reflected Rockhopper fin surfaces on all three world axes, parented and with either scale sign, plus grouped orientation and export/reimport in Blender 5.1.2 and 5.2.2. This does not add a native mirrored Hyperspace Beacon asset or change negative-scale export behavior.
+
+# 18.2.8
+
+- Fixed bubble preview updates repeatedly resetting viewport selection and preventing gizmo drags, including after reopening a saved ship.
+- Inspect tube shapes on import and project load. Repair missing or malformed shape metadata and stale snap references while preserving placements and valid unfinished bends.
+- Added **Builder > Check & Repair Bubble Tubes** for older projects. Remaining connection problems are reported for correction.
+- Connected branch turns reject unsupported joint angles, including 45 degrees and cumulative small turns beyond the supported range.
+- An unconnected straight tube now offers six local starting directions. The next straight or elbow follows the chosen end, and the choice survives saving and reopening.
+
+Validated in Blender 5.1.2 and 5.2.2 LTS, including native mouse-event gizmo drags in the supplied affected ship before and after a save/reopen cycle in 5.2.2. Game saves were not modified; fresh in-game validation is still needed.
+
+# 18.2.7
+
+- Theme colors now cover the timeline header, time ruler, status bar, and Asset Browser surfaces.
+- Pop-out and sidebar asset cards, labels, hover highlights, footer, scrollbar, and loading screen follow the current Blender palette.
+- Existing custom themes work unchanged; reapply the preset after updating.
+
+# 18.2.6
+
+- Moved chat enablement, name claims, identity switching, and recovery-key controls into Messenger account settings. Removed the BBE chat-settings entry. Opening Chat without joining stays offline.
+
+- Removed the old Join Selected Bubble Ducts entry from the BBE dropdown and sidebar. Tube connections remain in the contextual tube interface.
+- Added BBE > Themes > Customize Theme with interface, button/header, accent, text, and viewport color controls.
+- Save named custom theme presets and reapply them from My themes. Chat follows applied colors.
+
+# Base Builder Extended 18.2.5
+
+- Mini mode shows messages and a compact message field. The small options menu keeps users, attachments, snapshots, and window settings available.
+- The users and conversations sidebar can be hidden independently. Mini mode and sidebar visibility are remembered.
+- Always on top now applies the native Windows window position flag. Side placement preserves the window title bar and keeps Mini mode narrow.
+- Changing conversations clears old message layouts completely.
+
+---
+
+# Base Builder Extended 18.2.4
+
+## Chat, themes, and toolbar
+- Chat is one toolbar button. Account and opt-in controls are under **BBE > Chat & account settings**; the old chat popup is no longer part of daily messaging.
+- The Messenger can be resized, pinned above Blender, or placed against the left or right side of the screen. Its position and pin setting are restored when reopened. A separate Online users list shows who is present; click a name to start a direct message.
+- Messenger colors follow Blender's active interface theme, including themes changed while it is open.
+- **BBE > Themes** has ten choices: Blender Dark, Blender Light, Slate, Midnight, Ocean, Forest, Ember, Violet, Rose, and Sand. Theme choices affect Blender only when selected; save Blender Preferences to retain one across restarts.
+- **Assets** is a one-click top toolbar button with its own icon.
+
+## Installation
+Windows x64; Blender 5.1 or newer. Install `no_mans_sky_base_builder-18.2.4.zip` through Blender's **Install from Disk**, then restart Blender. Existing chat names, keys, messages, and opt-in settings remain valid.
+
+---
+
+# Base Builder Extended 18.2.3
+
+## Messenger window
+- Chat opens in a separate, responsive messenger window with a buddy list, conversation history, direct messages, and images shown inside the conversation.
+- Enter sends a message; Shift+Enter adds a new line. The Snapshot button queues the Blender window image for review before sending.
+- Screenshot images and other supported still images can be reduced before upload. Uploads and image previews run outside Blender's UI thread. Short videos remain downloadable attachments.
+- The top Chat button opens the messenger. The small arrow beside it holds the optional enable switch and name settings. No chat requests are made before chat is enabled.
+
+## Installation
+Windows x64; Blender 5.1 or newer. Install `no_mans_sky_base_builder-18.2.3.zip` through Blender's **Install from Disk**, then restart Blender. Existing chat names, keys and messages remain valid.
+
+---
+
+# Base Builder Extended 18.2.2
+
+## Chat fixes
+- Two-character names such as FF are accepted. One private recovery key can claim and switch between up to three names; existing keys and messages remain valid.
+- BBE identifies its chat requests to the website so Cloudflare does not reject Blender's default Python request identity. Website blocks now have a clearer error.
+
+## Installation
+Windows x64; Blender 5.1 or newer. Install `no_mans_sky_base_builder-18.2.2.zip` through Blender's **Install from Disk**, then restart Blender. Chat remains optional and starts off for new profiles.
+
+---
+
+# Base Builder Extended 18.2.1
+
+## Optional community chat
+- Chat starts off. Turn on **Enable Chat** in the top toolbar to join, and turn it off any time to stop chat requests. Your claimed name stays in your Blender profile; copy its private recovery key to restore it on another profile.
+- See online users, send public messages and direct messages, and share supported images or short videos. Files are saved to a location you choose when downloaded.
+- Queue a screenshot of the Blender window with Snapshot; review and explicitly send it from the chat controls. Chat requires Blender Online Access. Project files and game saves are never uploaded automatically; a screenshot can show anything visible in the Blender window.
+- Attachments are limited by file type and size, checked by the server, and downloaded as files rather than opened in the chat.
+
+## Installation
+Windows x64; Blender 5.1 or newer. Install `no_mans_sky_base_builder-18.2.1.zip` through Blender's **Install from Disk**, then restart Blender. Community chat is optional and requires the FuriousFurby chat service.
+
+---
+
 # Base Builder Extended 18.2
 
 ## Bubble tube building

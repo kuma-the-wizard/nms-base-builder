@@ -58,6 +58,71 @@ def _panel_position(bounds, obstacles, viewport, size, gap):
     return min(choices, key=lambda item:item[0])[1]
 
 
+
+# UI-only positions are keyed by viewport, never by selected object or scene geometry.
+_PANEL_ANCHORS = {}
+
+
+def fixed_panel_position(anchor, bounds, obstacles, viewport, size, reserve=380):
+    left, bottom, right, top = viewport
+    width, height = size
+    if anchor is None:
+        reserved = min(max(height, reserve), max(height, top-bottom))
+        candidates = ((right-width, top), (left, top),
+                      (right-width, bottom+reserved), (left, bottom+reserved))
+        def score(candidate):
+            x, y = candidate
+            rect = (x, y-reserved, x+width, y)
+            return (sum(overlap(rect, b) for b in obstacles), overlap(rect, bounds))
+        anchor = min(candidates, key=score)
+    x = max(left, min(max(left, right-width), anchor[0]))
+    top_y = max(bottom+height, min(top, anchor[1])) if height <= top-bottom else top
+    return (x, top_y-height), (x, top_y)
+
+
+def _panel_key(context):
+    return context.window.as_pointer(), context.area.as_pointer(), context.region.as_pointer()
+
+
+def _control_panel_position(context, bounds, obstacles, viewport, size):
+    key = _panel_key(context)
+    if key not in _PANEL_ANCHORS and len(_PANEL_ANCHORS) >= 64:
+        _PANEL_ANCHORS.clear()
+    position, anchor = fixed_panel_position(_PANEL_ANCHORS.get(key), bounds, obstacles,
+                                           viewport, size, 380*context.preferences.system.ui_scale)
+    _PANEL_ANCHORS[key] = anchor
+    return position
+
+
+class BBE_OT_move_tube_controls(bpy.types.Operator):
+    bl_idname = 'bbe.move_tube_controls'
+    bl_label = 'Move Tube Controls'
+    bl_description = 'Drag this header to place the tube controls; the panel stays here as you build'
+    bl_options = {'INTERNAL', 'BLOCKING'}
+
+    def invoke(self, context, event):
+        self._key = _panel_key(context)
+        if self._key not in _PANEL_ANCHORS:
+            return {'CANCELLED'}
+        self._anchor = _PANEL_ANCHORS[self._key]
+        self._mouse = (event.mouse_region_x, event.mouse_region_y)
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        if event.type in {'ESC', 'RIGHTMOUSE'}:
+            _PANEL_ANCHORS[self._key] = self._anchor
+            context.area.tag_redraw()
+            return {'CANCELLED'}
+        if event.type == 'MOUSEMOVE':
+            _PANEL_ANCHORS[self._key] = (self._anchor[0]+event.mouse_region_x-self._mouse[0],
+                                       self._anchor[1]+event.mouse_region_y-self._mouse[1])
+            context.area.tag_redraw()
+        if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
+            return {'FINISHED'}
+        return {'RUNNING_MODAL'}
+
+
 def projected_bounds(context, obj):
     points = [location_3d_to_region_2d(context.region, context.region_data,
               obj.matrix_world @ Vector(corner)) for corner in obj.bound_box]
@@ -200,6 +265,9 @@ class BBE_GGT_tube_controls(bpy.types.GizmoGroup):
         self.card=self.gizmos.new('BBE_GT_tube_button')
         self.card.hide_select=True
         self.card.color=(.055,.07,.09);self.card.alpha=.96
+        self.grip=self.gizmos.new('BBE_GT_tube_button')
+        self.grip.use_tooltip=True
+        self.grip.target_set_operator('bbe.move_tube_controls')
         self.buttons=[]
         for label,operator in (('-90°','bbe.turn_bubble_elbow'),('+90°','bbe.turn_bubble_elbow'),
                                ('-5°','bbe.turn_bubble_elbow'),('+5°','bbe.turn_bubble_elbow'),
@@ -216,7 +284,10 @@ class BBE_GGT_tube_controls(bpy.types.GizmoGroup):
                                ('Previous','bbe.preview_bubble_opening'),
                                ('Next','bbe.preview_bubble_opening'),
                                ('Use direction','bbe.expand_bubble_junction'),
-                               ('Cancel','bbe.preview_bubble_opening')):
+                               ('Cancel','bbe.preview_bubble_opening'),
+                               ('+X','bbe.bubble_start_direction'),('-X','bbe.bubble_start_direction'),
+                               ('+Y','bbe.bubble_start_direction'),('-Y','bbe.bubble_start_direction'),
+                               ('+Z','bbe.bubble_start_direction'),('-Z','bbe.bubble_start_direction')):
             gz=self.gizmos.new('BBE_GT_tube_button')
             gz.text=label;gz.color=(.18,.23,.29);gz.alpha=1
             gz.color_highlight=(.22,.43,.61);gz.alpha_highlight=1
@@ -232,6 +303,8 @@ class BBE_GGT_tube_controls(bpy.types.GizmoGroup):
         for i,(_,props) in enumerate(self.buttons[:4]):
             props.direction = -1 if i%2==0 else 1
             props.angle=math.pi/2 if i<2 else math.radians(5)
+        for (_,props),port in zip(self.buttons[18:], ('Right','Left','Top','Bot','Front','Back')):
+            props.port=port
 
     def draw_directions(self, context, state):
         from . import bubble_preview as pr
@@ -247,12 +320,16 @@ class BBE_GGT_tube_controls(bpy.types.GizmoGroup):
         bounds=(min(p.x for p in points),min(p.y for p in points),max(p.x for p in points),max(p.y for p in points))
         scale=context.preferences.system.ui_scale;region=context.region
         width,height=330*scale,200*scale
-        viewport=[16*scale,24*scale,region.width-16*scale,region.height-60*scale]
+        viewport=[16*scale,24*scale,region.width-100*scale,region.height-60*scale]
         for r in context.area.regions:
             if r.type=='UI' and r.width>1:viewport[2]-=r.width
             if r.type=='TOOLS' and r.width>1:viewport[0]+=r.width
-        obstacles=[bounds]+[b for p in pr._native_objects(context.scene) if p!=obj and (b:=projected_bounds(context,p))]
-        x,y=panel_position(bounds,obstacles,viewport,(width,height),gap=40*scale)
+        obstacles=([bounds]+[b for p in pr._native_objects(context.scene) if p!=obj and (b:=projected_bounds(context,p))]
+                   if _panel_key(context) not in _PANEL_ANCHORS else ())
+        x,y=_control_panel_position(context,bounds,obstacles,viewport,(width,height))
+        self.grip.hide=False
+        self.grip.matrix_basis=Matrix.Translation((x,y+height-42*scale,0))
+        self.grip.width=238*scale;self.grip.height=42*scale
         self.card.hide=False
         self.card.matrix_basis=Matrix.Translation((x,y,0))
         self.card.width=width;self.card.height=height;self.card.font_size=12*scale
@@ -297,6 +374,7 @@ class BBE_GGT_tube_controls(bpy.types.GizmoGroup):
         for gz,props in self.buttons[12:]:gz.hide=True
         scale=context.preferences.system.ui_scale
         can_turn=pr._active_tube_joint(context) is not None
+        can_start=pr.can_set_start_direction(context.scene,obj)
         parts,(_,issues,_)=pr._scene_plan(context.scene)
         own_index=parts.index(obj)
         own_issue=issues.get(own_index)
@@ -341,17 +419,25 @@ class BBE_GGT_tube_controls(bpy.types.GizmoGroup):
         if opening:
             message=('This opening is unused. Change its direction, or remove it.' if can_redirect else
                      'This opening is unused. Connect a tube here, or remove the opening.')
+        if can_start:
+            direction={'Right':'+X','Left':'-X','Top':'+Y','Bot':'-Y','Front':'+Z','Back':'-Z'}.get(obj.get(pr._START_KEY))
+            message=(f'Start toward local {direction}. Add a straight or elbow to begin.' if direction else
+                     'Choose a local starting direction, then add a straight or elbow.')
         lines=wrap(message, width=34, break_long_words=False)
         width=330*scale
         extra=30 if opening else 0
         height=max(157+extra+len(lines)*16+(30 if problem!=obj and problem and not option and not opening else 0),
                    184+84*(bool(option)+bool(cross_option)+len(upgrades)))*scale
-        viewport=[16*scale,24*scale,region.width-16*scale,region.height-60*scale]
+        viewport=[16*scale,24*scale,region.width-100*scale,region.height-60*scale]
         for r in context.area.regions:
             if r.type=='UI' and r.width>1:viewport[2]-=r.width
             if r.type=='TOOLS' and r.width>1:viewport[0]+=r.width
-        obstacles=[b for p in pr._native_objects(context.scene) if (b:=projected_bounds(context,p))]
-        x,y=panel_position(bounds,obstacles,viewport,(width,height),gap=40*scale)
+        obstacles=([b for p in pr._native_objects(context.scene) if (b:=projected_bounds(context,p))]
+                   if _panel_key(context) not in _PANEL_ANCHORS else ())
+        x,y=_control_panel_position(context,bounds,obstacles,viewport,(width,height))
+        self.grip.hide=False
+        self.grip.matrix_basis=Matrix.Translation((x,y+height-42*scale,0))
+        self.grip.width=238*scale;self.grip.height=42*scale
         self.card.matrix_basis=Matrix.Translation((x,y,0))
         self.card.width=width;self.card.height=height;self.card.font_size=12*scale
         color=(.62,.86,.70,1) if ready else (1,.72,.32,1)
@@ -365,6 +451,10 @@ class BBE_GGT_tube_controls(bpy.types.GizmoGroup):
             gz.matrix_basis=Matrix.Translation((x+dx*scale,y+height-dy*scale,0))
             gz.width=bw*scale;gz.height=25*scale;gz.font_size=12*scale
             gz.hide=not can_turn
+        for i,(gz,props) in enumerate(self.buttons[18:]):
+            gz.hide=not can_start
+            gz.matrix_basis=Matrix.Translation((x+(12+116*(i%2))*scale,y+height-(68+30*(i//2))*scale,0))
+            gz.width=110*scale;gz.height=25*scale;gz.font_size=12*scale
         accept,aprops=self.buttons[5]
         select,sprops=self.buttons[6]
         cross,cprops=self.buttons[9]
@@ -414,6 +504,7 @@ class BBE_GGT_tube_controls(bpy.types.GizmoGroup):
 
 
 def register():
+    bpy.utils.register_class(BBE_OT_move_tube_controls)
     bpy.utils.register_class(BBE_GT_tube_button)
     bpy.utils.register_class(BBE_GGT_tube_controls)
 
@@ -421,4 +512,6 @@ def register():
 def unregister():
     bpy.utils.unregister_class(BBE_GGT_tube_controls)
     bpy.utils.unregister_class(BBE_GT_tube_button)
+    bpy.utils.unregister_class(BBE_OT_move_tube_controls)
+    _PANEL_ANCHORS.clear()
     _panel_position.cache_clear()

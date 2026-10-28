@@ -1,9 +1,11 @@
-"""Protect history restores in scenes with asynchronously generated meshes.
+"""Protect history restores in scenes with asynchronously generated previews.
 
 Blender 5.1's incremental memfile restore can leave an object's material array
 invalid after decal previews change between history steps. The UI regression
 in qa/test_nmscribe_history_ui.py reproduces build_materials(null) on 18.1.53.
-Use Blender's full restore only during undo/redo involving these meshes. Never
+Scene Preview also replaces generated materials/lights between undo steps;
+incremental restore can then retain invalid dependency-graph IDs. Use Blender's
+full restore during undo/redo involving these previews. Never
 push a synthetic undo step: doing so would discard the user's redo history.
 """
 import bpy
@@ -14,6 +16,23 @@ restoring = False
 _preferences = None
 _resume_at = 0.0
 _curve_reseed_pending = False
+_generated_preview_history = False
+
+
+def track_generated_preview():
+    """Keep full restore until file load, even after a preview was cleared.
+
+    Cleared display IDs may still be present in an earlier undo step. A plain
+    Python flag avoids inspecting ID references while history is restoring.
+    """
+    global _generated_preview_history
+    _generated_preview_history = True
+
+
+@persistent
+def before_load(_):
+    global _generated_preview_history
+    _generated_preview_history = False
 
 
 def history_ready():
@@ -61,7 +80,7 @@ def before_history(_):
     restoring = True
     # Include unused meshes: undo can restore a decal that was just deleted.
     # This is one scan per undo/redo, with no additional idle polling.
-    if not any(mesh.get('bbe_projected_decal') or mesh.get('bbe_hab_open_slots')
+    if not _generated_preview_history and not any(mesh.get('bbe_projected_decal') or mesh.get('bbe_hab_open_slots')
                for mesh in bpy.data.meshes):
         return
     prefs = bpy.context.preferences
@@ -87,6 +106,7 @@ def after_history(_):
 
 def register():
     for handlers, callback in (
+            (bpy.app.handlers.load_pre, before_load),
             (bpy.app.handlers.undo_pre, before_history),
             (bpy.app.handlers.redo_pre, before_history),
             (bpy.app.handlers.undo_post, after_history),
@@ -103,6 +123,7 @@ def unregister():
         bpy.app.timers.unregister(_reseed_curves_when_idle)
     _release()
     for handlers, callback in (
+            (bpy.app.handlers.load_pre, before_load),
             (bpy.app.handlers.undo_pre, before_history),
             (bpy.app.handlers.redo_pre, before_history),
             (bpy.app.handlers.undo_post, after_history),

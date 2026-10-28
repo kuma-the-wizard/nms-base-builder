@@ -1,3 +1,6 @@
+from .reload_support import prepare_package as _prepare_package
+_prepare_package(globals())
+
 from .furby_errors import report_error
 import json
 import base64
@@ -22,7 +25,7 @@ from .base_properties import NMSBaseProperties
 from .addon_preferences import NMSAddonPreferences
 from .part_overrides import line
 from .save_editor import save_editor_operators, save_editor_utils, station_reference
-from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel, BBE_OT_backup_settings, BBE_OT_refresh_save_counts
+from .save_editor.save_editor_presentation import NMS_PT_save_editor_panel, BBE_OT_backup_settings, BBE_OT_refresh_save_counts, BBE_OT_save_refresh_notice
 from .save_editor.save_manager import SaveManager
 from .save_editor import save_manager
 
@@ -68,7 +71,7 @@ def _clear_build_source(scene):
     if block and not any(other != scene and other.get('bbe_build_source_text') == old_name
                          for other in bpy.data.scenes):
         block.use_fake_user = False
-    for key in ('bbe_build_source_text', 'bbe_build_source_suffix', 'bbe_ship_source_error'):
+    for key in ('bbe_build_source_text', 'bbe_build_source_suffix', 'bbe_ship_source_error', 'bbe_ship_export_origin'):
         if key in scene:
             del scene[key]
 
@@ -379,50 +382,24 @@ class NMSMain(PropertyGroup):
         BUILDER.deserialise_from_data(save_data)
         station_reference.finish_transfer_import(bpy.context, save_data, previous_objects)
         from . import bubble_preview
-        bubble_preview.refresh(bpy.context.scene)
-        bubble_preview.lock_scene_shapes(bpy.context.scene)
+        bubble_preview.inspect_loaded_tubes(bpy.context.scene)
 
     def new_file(self):
-        """Reset's the entire Blender scene to default.
-
-        Note:
-            * Removes all base information in the Blender properties.
-            * Resets the build part order in the part builder.
-            * Removes all items with ObjectID, PresetID and NMS_LIGHT properties.
-            * Resets the room visibility switch to default.
-        """
-        from . import stages
+        """Clear the current build's objects, helpers, collections and metadata."""
+        from . import stages, scene_cleanup
 
         _clear_build_source(bpy.context.scene)
         stages.prepare_import(bpy.context.scene)
 
         BUILDER.clear_caches()
 
-        # Remove basic blender default items.
-        for default_name in ("Cube", "Light", "Camera"):
-            if default_name in bpy.context.scene.objects:
-                blend_utils.remove_object(default_name)
-
         base_props = bpy.context.scene.nms_base_tool
         base_props.new_file()
         base_props.string_base_type = 'HomePlanetBase'
 
-        # Remove all no mans sky items from scene.
-        # Deselect all
-        bpy.ops.object.select_all(action="DESELECT")
-        # Select NMS Items
-        for bpy_object in list(bpy.context.scene.objects):
-            id_check = "ObjectID" in bpy_object
-            preset_check = "PresetID" in bpy_object
-            light_check = "NMS_LIGHT" in bpy_object
-            rig_check = "rig_item" in bpy_object
-            
-            curve_check = "CurveID" in bpy_object
-            group_check = "GroupID" in bpy_object
-            if any([id_check, preset_check, light_check, rig_check, curve_check, group_check]):
-                blend_utils.remove_object(bpy_object.name)
-
         station_reference.clear_reference(bpy.context.scene)
+        bpy.context.scene.bbe_stage.collection = None
+        scene_cleanup.clear(bpy.context.scene)
         bpy.context.scene.nms_save_data.station_key = ""
         bpy.context.scene.nms_save_data.station_transfer_reference = False
         # Reset room vis
@@ -486,7 +463,7 @@ class NMSMain(PropertyGroup):
 
     def apply_colour(self, colour_index=0, material=0):
         """Gives an item a new colour."""
-        selected_objects = list(bpy.context.selected_objects)
+        selected_objects = preset.colour_targets(bpy.context.selected_objects)
         if not selected_objects:
             ShowMessageBox(
                 message="Make sure you have an item selected.", title="Apply Colour"
@@ -557,13 +534,15 @@ class NMSMain(PropertyGroup):
 
     def apply_default_colour(self):
         """Gives an item a new colour."""
-        selected_objects = bpy.context.selected_objects
+        selected_objects = preset.colour_targets(bpy.context.selected_objects)
         if not selected_objects:
             ShowMessageBox(
                 message="Make sure you have an item selected.", title="Apply Colour"
             )
             return {"FINISHED"}
 
+        # Keep unselected prefab copies independent in the simple-model path.
+        default_meshes = {}
         # Apply Colour Material.
         for obj in selected_objects:
             if "GroupID" in obj:
@@ -584,6 +563,11 @@ class NMSMain(PropertyGroup):
                         index = 45
                     elif parent_folder == "stone_structures":
                         index = 23
+            if not _materials_v2.is_high_res(obj) and hasattr(obj.data, 'materials'):
+                key = (obj.data.as_pointer(), index)
+                if key not in default_meshes:
+                    default_meshes[key] = obj.data.copy()
+                obj.data = default_meshes[key]
             _material.assign_default_material(obj, index=index)
 
         # Refresh the viewport.
@@ -606,7 +590,7 @@ class NMSMain(PropertyGroup):
             target_userdata = target_object["dup_UserData"]
             
         unique_keys = {}
-        selected_objects = bpy.context.selected_objects
+        selected_objects = preset.colour_targets(bpy.context.selected_objects)
 
         # High res parts take the picked UserData straight onto the object and
         # keep the mesh they already share. Everything else is a flat material
@@ -637,11 +621,7 @@ class NMSMain(PropertyGroup):
                     key = unique_keys.get(obj_id, None)
                     if key is not None:
                         obj.data = key.data
-                        obj["UserData"] = target_userdata
-                        obj.color = key.color
-                        for name in ("readonly:Colour", "readonly:Material"):
-                            if name in key:
-                                obj[name] = key[name]
+                        _material.restore_material(obj, target_userdata)
                     else:
                         _material.restore_material(obj, target_userdata)
         
@@ -704,7 +684,6 @@ class NMS_PT_hero_panel(Panel):
         draw_cockpit_controls(layout)
         from .save_editor.function_help import help_button
         help_button(layout, text='BBE Feature Help')
-        layout.operator('bbe.join_bubble_ducts', text='Join Selected Bubble Ducts', icon='SNAP_ON')
 
         workspace_row = layout.row(align=True)
         workspace_box = workspace_row.box()
@@ -842,11 +821,48 @@ class NMS_PT_colour_panel(Panel):
         draw_colour_palette(self.layout, context)
 
 
+_palette_selection = None
+
+
+def selected_colour_row(context):
+    obj = context.view_layer.objects.active if context.view_layer else None
+    if obj is None or not obj.select_get():
+        return None
+    value = obj.get('UserData', obj.get('dup_UserData'))
+    if value is None:
+        return None
+    try:
+        colour, material = _userdata.get_colour(int(value)), _userdata.get_material(int(value))
+    except (ValueError, TypeError):
+        return None
+    return next((row for row in _material.BAKED_COLOURS
+                 if int(row[3]) == colour and int(row[4]) == material), None)
+
+
+def sync_selected_palette(context):
+    # Palette selection is UI state. Never call the eyedropper's paint callback.
+    global _palette_selection
+    obj = context.view_layer.objects.active if context.view_layer else None
+    key = (context.scene.as_pointer(), obj.as_pointer(), obj.get('UserData', obj.get('dup_UserData'))) if obj and obj.select_get() else None
+    if key == _palette_selection:
+        return
+    _palette_selection = key
+    row = selected_colour_row(context)
+    if row is not None:
+        context.scene.nms_main.material_switch = f'{row[4]}_{row[2]}'
+
+
 def draw_colour_palette(layout, context, *, horizontal=False):
     """Share the same palette controls between the sidebar and tool header."""
     nms_tool = context.scene.nms_main
+    selected = selected_colour_row(context)
     colours = _material.get_colours_from_palette(nms_tool.material_switch)
     pcoll = preview_collections.get("main")
+    if selected is not None:
+        current_icon = pcoll.get(os.path.splitext(selected[9])[0]) if pcoll else None
+        current = layout.row(align=True)
+        current.label(text=f'Current: {selected[5]}', icon_value=current_icon.icon_id if current_icon else 0)
+        current.label(text=selected[2])
     if horizontal:
         colour_area = layout.row(align=True)
         palette = colour_area.row(align=True)
@@ -870,6 +886,7 @@ def draw_colour_palette(layout, context, *, horizontal=False):
         op = grid.operator(
             "object.nms_apply_colour", text="",
             icon_value=colour_icon.icon_id if colour_icon else 0,
+            depress=selected is not None and row[3:5] == selected[3:5],
         )
         op.colour_index = int(index)
         op.colour_name = name
@@ -1063,6 +1080,7 @@ class RefreshPrefabCatalogue(bpy.types.Operator):
 class NewFile(bpy.types.Operator):
     bl_idname = "object.nms_new_file"
     bl_label = "Clear Build Scene..."
+    bl_description = "Clear objects and collections from this build scene, keeping the workspace and Asset Browser"
     bl_options = {"REGISTER", "INTERNAL", "UNDO", "UNDO_GROUPED"}
 
     def execute(self, context):
@@ -2111,14 +2129,15 @@ def reset_plugin_state(dummy):
         asset_browser = scene.nms_asset_browser
         asset_browser.initialise_asset_browser()
         from . import bubble_preview
-        bubble_preview.refresh(scene)
-        bubble_preview.lock_scene_shapes(scene)
+        bubble_preview.inspect_loaded_tubes(scene)
     save_manager.restore_after_load()
 
             
 # Whenever a curve is modified, automatically update whatever child objects that are associated with that curve.
 @persistent
 def udpates_handler(scene, depsgraph):
+    if getattr(bpy.context, 'view_layer', None) and hasattr(scene, 'nms_main'):
+        sync_selected_palette(bpy.context)
     if not undo_guard.curve_tracking_ready():
         return
     
@@ -2230,7 +2249,7 @@ def udpates_handler(scene, depsgraph):
 
     if native_bubble_changed:
         from . import bubble_preview
-        bubble_preview.refresh(scene)
+        bubble_preview.request_refresh(scene)
 
 
     
@@ -2318,6 +2337,7 @@ classes = (
     NMS_PT_save_editor_panel,
     BBE_OT_backup_settings,
     BBE_OT_refresh_save_counts,
+    BBE_OT_save_refresh_notice,
     NMS_PT_transformation_panel,
     NMS_PT_colour_panel,
     NMS_PT_logic_panel,
@@ -2401,6 +2421,8 @@ def register_core():
 
     # Puts the "Base Builder" menu in the 3D viewport header. The menu classes
     # themselves are registered with everything else, above.
+    from . import bbe_chat
+    bbe_chat.register()
     base_builder_menu.register_menu()
     from . import hd_library_ui, stages, decals, hab_windows
     hd_library_ui.register()
@@ -2414,6 +2436,10 @@ def register_core():
     from .save_editor import function_help
     from . import bubble_preview
     bubble_preview.register()
+    from . import decal_controls
+    decal_controls.register()
+    from . import wire_selection
+    wire_selection.register()
     function_help.register()
     corvette_optimizer.register()
     from .save_editor import ship_management
@@ -2463,6 +2489,10 @@ def unregister():
     from .save_editor import function_help
     function_help.unregister()
     from . import bubble_preview
+    from . import decal_controls
+    decal_controls.unregister()
+    from . import wire_selection
+    wire_selection.unregister()
     bubble_preview.unregister()
     from . import release_updates
     release_updates.unregister()
@@ -2483,6 +2513,8 @@ def unregister():
     # Taken out of the header before its classes go, so nothing is left drawing
     # a menu that no longer exists.
     base_builder_menu.unregister_menu()
+    from . import bbe_chat
+    bbe_chat.unregister()
 
 
     for _class in reversed(classes):

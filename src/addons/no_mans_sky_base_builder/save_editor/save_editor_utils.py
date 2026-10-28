@@ -371,7 +371,10 @@ def import_paticular_base_from_save(base_identifier, save_slot, progress=None, w
 #save a base to save file
 def save_base_to_save_file(objects_data, base_identifier, save_slot, base_name=None, progress=None):
     from .save_file import SaveFile
-    pending = []
+    from . import ship_files
+    save_slot = list(dict.fromkeys(Path(p).resolve() for p in save_slot if p))
+    expected = ship_files.export_hashes(save_slot)
+    pending = {}
     total = max(1, len(save_slot))
     for index, slot in enumerate(save_slot):
         if progress is not None:
@@ -403,25 +406,11 @@ def save_base_to_save_file(objects_data, base_identifier, save_slot, base_name=N
                 ship_ownsership_element = save_file.get_ship_ownsership_element(userdata)
                 ship_ownsership_element[SaveTranslation.base_name] = base_name
         
-        pending.append(save_file)
+        pending[Path(slot)] = save_file.json_data
         if progress is not None:
             progress.update(.15 + .40 * (index + 1) / total,
                             f'Prepared save point {index + 1} / {total}')
-    # Capture both save points and their metadata before changing either file.
-    if progress is not None:
-        progress.update(.58, 'Backing up save points')
-    generation, _ = backup_policy.snapshot(save_slot, 'export')
-    for index, save_file in enumerate(pending):
-        if progress is not None:
-            progress.update(.64 + .25 * index / total,
-                            f'Writing save point {index + 1} / {total}')
-        save_file.save()
-        if progress is not None:
-            progress.update(.64 + .25 * (index + 1) / total,
-                            f'Wrote save point {index + 1} / {total}')
-    if progress is not None:
-        progress.update(.90, 'Finalizing backup')
-    backup_policy.finish(generation)
+    ship_files.commit_roots(pending, expected, progress=progress)
     if progress is not None:
         progress.update(.94, 'Save export finished')
     return "Base/Corvette saved sucessfully"

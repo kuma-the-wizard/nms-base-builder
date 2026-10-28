@@ -18,19 +18,21 @@ class VIEW3D_PT_nms_io_panel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        files = layout.column(align=True)
-        files.label(text='Standalone build files', **icons.ui_icon('FILE_FOLDER'))
-        files.operator('bbe.import_build_file', text='Import Build from File...', **icons.ui_icon('IMPORT'))
-        files.operator('bbe.export_ship_file', text='Export Corvette (.nmsship)...', **icons.ui_icon('EXPORT'))
-        files.operator('bbe.export_base_file', text='Export Base (.nmsbase)...', **icons.ui_icon('EXPORT'))
-        files.operator('object.nms_save_data', text='Save BBE Project JSON...', **icons.ui_icon('FILE_TICK'))
-        layout.separator()
-        layout.label(text="Save Manager", **icons.ui_icon("FILE_TICK"))
-        save_editor_presentation.draw_save_manager(layout, context)
-        if not context.scene.nms_save_data.check_plugin_enabled:
-            layout.label(text="Enable to choose a save and access its tools.", **icons.ui_icon("INFO"))
-       
-        
+        draw_io_contents(layout, context)
+
+
+def draw_io_contents(layout, context):
+    files = layout.column(align=True)
+    files.label(text='Standalone build files', **icons.ui_icon('FILE_FOLDER'))
+    files.operator('bbe.import_build_file', text='Import Build from File...', **icons.ui_icon('IMPORT'))
+    files.operator('bbe.export_ship_file', text='Export Corvette (.nmsship)...', **icons.ui_icon('EXPORT'))
+    files.operator('bbe.export_base_file', text='Export Base (.nmsbase)...', **icons.ui_icon('EXPORT'))
+    files.operator('object.nms_save_data', text='Save BBE Project JSON...', **icons.ui_icon('FILE_TICK'))
+    layout.separator()
+    layout.label(text="Save Manager", **icons.ui_icon("FILE_TICK"))
+    save_editor_presentation.draw_save_manager(layout, context)
+    if not context.scene.nms_save_data.check_plugin_enabled:
+        layout.label(text="Enable to choose a save and access its tools.", **icons.ui_icon("INFO"))
 
 
 class VIEW3D_PT_nms_base_builder(bpy.types.Panel):
@@ -59,7 +61,7 @@ class VIEW3D_PT_nms_base_builder(bpy.types.Panel):
         from ..save_editor.function_help import help_button
         draw_cockpit_controls(layout)
         help_button(layout, text='BBE Feature Help')
-        layout.operator('bbe.join_bubble_ducts', text='Join Selected Bubble Ducts', icon='SNAP_ON')
+        layout.popover(panel='VIEW3D_PT_bbe_themes', text='Themes', icon='COLOR')
         layout.separator()
         proxy_box = layout.column(align=True)
         proxy_box.label(text="Switch Proxy Quality")
@@ -79,13 +81,6 @@ class VIEW3D_PT_nms_base_builder(bpy.types.Panel):
             proxy_box.label(text="Downloading: progress in top bar", **icons.ui_icon('IMPORT'))
             proxy_box.operator('bbe.hd_cancel', text='Cancel Download', **icons.ui_icon('CANCEL'))
     
-        
-        layout.separator()
-        asset_browser_box = layout.column(align=True)
-        asset_browser_box.label(text="Asset Browser")
-        asset_browser_box.operator(
-            "object.nms_launch_asset_browser_window", text="Launch Asset Browser", **icons.ui_icon("ASSET_MANAGER")
-        )
         
         layout.separator()
         quick_access_column = layout.column(align = True)

@@ -202,8 +202,7 @@ def _deserialise_from_data(data, progress):
     # A native BASE_BUBPIPE is one placement node. Its visible straight or
     # elbow is chosen by the connected nodes, not by a different save ID.
     from . import bubble_preview
-    bubble_preview.refresh(bpy.context.scene)
-    bubble_preview.lock_scene_shapes(bpy.context.scene)
+    bubble_preview.inspect_loaded_tubes(bpy.context.scene)
 
     # Reconstruct presets.
     progress.update(.94, 'Building presets and connections')
@@ -357,6 +356,12 @@ def get_asset_index(rebuild=False):
     # Keep the distinct S_WALLHANGING fabric parts mapped to their own assets.
     for cable in CABLE_CORRECTIONS:
         _asset_index[cable] = os.path.join(FILE_PATH, 'resources', 'hd_corrections', cable + '.blend')
+
+    # Native additions ship with the extension; existing HD-pack receipts stay
+    # valid and users need not download the entire base library after an update.
+    additions = Path(FILE_PATH) / 'resources' / 'hd_additions' / 'assets'
+    if additions.is_dir():
+        _asset_index.update({path.stem: str(path) for path in additions.glob('*.blend')})
 
     # Core corrections do not replace or invalidate the persistent HD pack.
     scenes = hd_library.scenes_root()

@@ -3,6 +3,7 @@ from functools import partial
 
 from .icons import icons
 from .utils.qt import QtCore, QtGui, QtWidgets
+from ..utils.dictionary import PLACEMENT_HELP
 
 THUMB_SIZE = 64
 ITEM_SIZE_X = 100
@@ -46,7 +47,7 @@ class Item(QtWidgets.QFrame):
         self.label = label or ""
         self.item_id = item_id or ""
         self.variants = variants or []
-        self.setToolTip(self.item_id)
+        self.setToolTip(PLACEMENT_HELP.get(self.item_id, self.item_id))
         self.setMinimumSize(QtCore.QSize(ITEM_SIZE_X, ITEM_SIZE_Y))
         self.setMaximumSize(QtCore.QSize(ITEM_SIZE_X, ITEM_SIZE_Y))
         self.main_layout = QtWidgets.QVBoxLayout(self)

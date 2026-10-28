@@ -87,13 +87,16 @@ class BuildTool(bpy.types.PropertyGroup):
             return
         
         hierarchy_data = {}
+        hierarchy_results = []
         if objects_to_mirror is None and not auto_duplicate:
             for obj in selected_objects:
                 if obj is not None and curve.Curve.PROP_CURVE_PARENT in obj:
                     continue
                 
                 if obj.parent:
-                    hierarchy_data[obj.name] = obj.parent.name
+                    # Native counterpart swaps rename parts. Keep identity,
+                    # not the old name, when restoring their parent link.
+                    hierarchy_data[obj.as_pointer()] = (obj.parent, obj.matrix_parent_inverse.copy())
                     current_world_matrix = obj.matrix_world.copy()
                     obj.parent = None
                     obj.matrix_world = current_world_matrix
@@ -103,6 +106,8 @@ class BuildTool(bpy.types.PropertyGroup):
         # Get Selected item.
         new_items = []
         for target in selected_objects:
+            target_key = target.as_pointer()
+            result_start = len(new_items)
             # Part
             if "ObjectID" in target :
                 object_id = target["ObjectID"]
@@ -153,7 +158,26 @@ class BuildTool(bpy.types.PropertyGroup):
             elif Group.PROP_GROUP_ID in target and objects_to_mirror is None: 
                 is_target_mirror = target.get(Group.PROP_IS_MIRROR, False)   
                 found_match = Group.find_mirror_group(target, existing_groups)
-                if found_match is None:
+                if change_orientation:
+                    # The orientation buttons have no world reflection center.
+                    # Work in the group's frame, then restore that frame, so
+                    # every child is mirrored about the same local plane.
+                    group_matrix = target.matrix_world.copy()
+                    local_axis = {'X': 'X', 'Z': 'Y', 'Y': 'Z'}[axis]
+                    children = Group.ungroup_objects(BUILDER, target)
+                    for child in children:
+                        child.matrix_world = group_matrix.inverted_safe() @ child.matrix_world
+                    bpy.context.view_layer.update()
+                    children = self.mirror(local_axis, Vector((0, 0, 0)), objects_to_mirror=children)
+                    for child in children:
+                        child.matrix_world = group_matrix @ child.matrix_world
+                    bpy.context.view_layer.update()
+                    mirrored_group = Group.group_objects(children, group_matrix)
+                    # These local planes need not match the cached world-X twin.
+                    # A fresh identity prevents a later mirror reusing that twin.
+                    mirrored_group[Group.PROP_GROUP_ID] = str(uuid.uuid4())
+                    mirrored_group[Group.PROP_IS_MIRROR] = False
+                elif found_match is None:
                     # if there is no mirror present for target object 
                     # create a mirror by ungrouping -> mirroring ungrouped objects -> grouping them again
                     new_obj = blend_utils.duplicate_part(target) if auto_duplicate else target
@@ -203,19 +227,22 @@ class BuildTool(bpy.types.PropertyGroup):
                         new_item = blend_utils.duplicate_part(target)
                     else:
                         new_item = target
-                    new_item.matrix_world = mirror_utils.mirror_matrix_world_universal(None, new_item.matrix_world, axis,center)
+                    new_item.matrix_world = (mirror_utils.change_orientation(None, new_item.matrix_world, axis)
+                                            if change_orientation else
+                                            mirror_utils.mirror_matrix_world_universal(None, new_item.matrix_world, axis,center))
                     new_items.append(new_item)
+            if target_key in hierarchy_data:
+                parent, inverse = hierarchy_data[target_key]
+                hierarchy_results.extend((obj, parent, inverse) for obj in new_items[result_start:])
         
         if hierarchy_data:
-            for obj_name, parent_name in hierarchy_data.items():
-                if parent_name:
-                    parent = bpy.context.scene.objects.get(parent_name,None)
-                    obj = bpy.context.scene.objects.get(obj_name,None)
-                    # Re-parenting inherently alters the transform, so we force the 
-                    # mirrored matrix_world back onto the object after reparenting
-                    if parent and obj:
-                        obj.parent = parent
-                        obj.matrix_world = obj.matrix_world.copy()
+            bpy.context.view_layer.update()
+            restored = [(obj, parent, inverse, obj.matrix_world.copy())
+                        for obj, parent, inverse in hierarchy_results]
+            for obj, parent, inverse, world in restored:
+                obj.parent = parent
+                obj.matrix_parent_inverse = inverse
+                obj.matrix_world = world
         
         #material.optimise_materials()
         

@@ -423,6 +423,8 @@ class AssetBrowserObjectSelected(bpy.types.Operator):
                     'An unfinished elbow appears straight in game. Use the controls beside the selected tube to rotate.')
         if properties.has_variants:
             return f"Choose a variant of {properties.object_id}"
+        if properties.object_id in dictionary.PLACEMENT_HELP:
+            return dictionary.PLACEMENT_HELP[properties.object_id]
         return f"Place {properties.object_id} in the scene"
     
     

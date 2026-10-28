@@ -2,6 +2,7 @@
 from pathlib import Path
 from uuid import uuid4
 import textwrap
+import json
 import bpy
 from bpy.app.handlers import persistent
 from . import ship_core as core, ship_repair as repair, ship_files, ship_management, corvette_io as io
@@ -13,6 +14,44 @@ _pending = {}
 _dialogs = {}
 _NO_SLOTS = [('NONE', 'No available slot', '')]
 _MAIN_CONTEXT = [('Main', 'Main', '')]
+
+
+def destination_scope(links):
+    return repair.fingerprint(sorted(str(Path(p).resolve()).casefold() for p in links))
+
+
+def remember_ship_source(scene, links, context_name, index, name):
+    # Advisory provenance only. Never use a project's stored source to choose
+    # a local export destination or authorize a write.
+    scene['bbe_ship_export_origin'] = json.dumps(dict(scope=destination_scope(links),
+        context=context_name, index=index, name=name or 'Unnamed'))
+
+
+def overwrite_warning(op):
+    if op.destination != 'SELECTED' or getattr(op, '_error', ''):
+        return []
+    ship = core.ships(op._s['root'], op.context_name)[op._index]
+    target_name = core.get(ship, 'Name') or 'Unnamed'
+    target = (destination_scope(op._s['links']), op.context_name, op._index)
+    origin = getattr(op, '_origin', None)
+    changed = origin and target != (origin['scope'], origin['context'], origin['index'])
+    selected = getattr(op, '_initial_destination', None)
+    changed_selection = selected and (op.context_name, op._index) != selected
+    different_name = bool(op._name and op._name != target_name)
+    if origin and not (changed or changed_selection or different_name):
+        return []
+    heading = ('DIFFERENT SHIP / DESTINATION — CHECK BEFORE OVERWRITING'
+               if changed or changed_selection else
+               'VERIFY OVERWRITE TARGET — SCENE SOURCE UNKNOWN' if not origin else
+               'SHIP NAME WILL CHANGE — CHECK BEFORE OVERWRITING')
+    lines = [heading,
+             f'Replacing: {op.context_name} / Slot {op._index + 1}: {target_name}',
+             f'With scene: {op._name or "Unnamed build"}']
+    if changed:
+        lines.append(f'Scene source: {origin["context"]} / Slot {origin["index"] + 1}: {origin["name"]}')
+        if origin['scope'] != target[0]:
+            lines.append('The scene source belongs to a different save.')
+    return lines
 
 
 def snapshot(context):
@@ -99,6 +138,9 @@ def _commit(s, context, report, progress):
     progress.update(.80, 'Validating ship data and preserved records')
     repair.validate_reviewed_draft(s['root'], draft, [plan])
     ship_files.commit(draft, s['links'], s['hashes'], progress=progress_ui.Range(progress, .85, .97))
+    if s.get('signature'):
+        remember_ship_source(s['scene'], s['links'], plan['context'], plan['index'],
+                             core.get(plan['payload']['ship'], 'Name'))
     progress.update(.98, 'Refreshing Corvette list')
     try:
         refresh_selection(s, plan['context'], plan['index'])
@@ -266,6 +308,7 @@ class BBE_OT_corvette_export(bpy.types.Operator):
                       'Writes the game save after confirmation with backups; Blender Undo does not undo save-file writes')
     dialog_key: bpy.props.StringProperty(options={'HIDDEN'})
     destination: bpy.props.EnumProperty(name='Destination', items=[
+        ('CHOOSE', 'Choose destination', 'Choose an existing ship or explicitly create a new ship'),
         ('SELECTED', 'Overwrite selected ship', 'Replace its build with scene parts; keep readable inventory, technology, hyperslots and stats. Non-Corvette ships are converted'),
         ('NEW', 'New empty ship slot', 'Create a Corvette in an unused slot with minimal default inventory/stats and exactly the scene objects; no template parts are added')])
     context_name: bpy.props.EnumProperty(name='Save context', items=context_items)
@@ -295,8 +338,19 @@ class BBE_OT_corvette_export(bpy.types.Operator):
             current_context = selected.save_context if selected else core.get(root, 'ActiveContext')
             self.context_name = current_context if current_context in core.contexts(root) else self._contexts[0][0]
             valid_selected = selected and selected.base_type == 'PlayerShipBase' and type(selected.user_data) is int and 0 <= selected.user_data < 12
-            self.destination = 'SELECTED' if valid_selected else 'NEW' if self._slots[self.context_name, 'NEW'][0][0] != 'NONE' else 'SELECTED'
-            self.slot = str(selected.user_data) if valid_selected else self._slots[self.context_name, self.destination][0][0]
+            self._initial_destination = (selected.save_context, selected.user_data) if valid_selected else None
+            self._origin = None
+            try:
+                origin = json.loads(context.scene.get('bbe_ship_export_origin', 'null'))
+                if (isinstance(origin, dict) and isinstance(origin.get('scope'), str)
+                        and origin.get('context') in ('Main', 'Season')
+                        and type(origin.get('index')) is int and 0 <= origin['index'] < 12
+                        and isinstance(origin.get('name'), str)):
+                    self._origin = origin
+            except (ValueError, TypeError):
+                pass
+            self.destination = 'SELECTED' if valid_selected else 'CHOOSE'
+            self.slot = str(selected.user_data) if valid_selected else 'NONE'
             with progress_ui.Activity('Preparing Corvette export') as progress:
                 self._objects, self._name, self._counts, self._signature = scene_parts(context, self.optimized, progress)
             self.confirm = self.confirm_resets = self.confirm_duplicates = False
@@ -314,7 +368,7 @@ class BBE_OT_corvette_export(bpy.types.Operator):
     def check(self, context):
         scope = self.context_name, self.destination
         if scope != getattr(self, '_scope', scope):
-            self.slot = self._slots[scope][0][0]
+            self.slot = self._slots.get(scope, _NO_SLOTS)[0][0]
         self._scope = scope
         choice = self.context_name, self.destination, self.slot
         if choice == self._choice:
@@ -323,6 +377,8 @@ class BBE_OT_corvette_export(bpy.types.Operator):
         self.confirm = self.confirm_resets = self.confirm_duplicates = False
         self._error = ''
         try:
+            if self.destination not in ('SELECTED', 'NEW'):
+                raise ValueError('Select a ship to overwrite, or choose Create new ship. Nothing was written.')
             if not self.slot.isdigit():
                 raise ValueError('Choose a destination ship slot.')
             self._index = int(self.slot)
@@ -337,6 +393,18 @@ class BBE_OT_corvette_export(bpy.types.Operator):
     def draw(self, context):
         l = self.layout
         help_button(l, 'EXPORT')
+        if self.destination == 'CHOOSE':
+            l.label(text='No ship is selected.', icon='QUESTION')
+            l.label(text='Create a new ship in an empty slot to save this build?')
+            l.prop(self, 'context_name')
+            new = l.column()
+            new.enabled = self._slots[self.context_name, 'NEW'][0][0] != 'NONE'
+            new.prop_enum(self, 'destination', 'NEW', text='Create new ship in an empty slot', icon='ADD')
+            if not new.enabled:
+                l.label(text='No empty ship slots in this save context.', icon='INFO')
+            l.prop_enum(self, 'destination', 'SELECTED', text='Choose an existing ship instead', icon='VIEWZOOM')
+            l.label(text='Nothing is saved until you choose and confirm a destination.')
+            return
         l.prop(self, 'context_name')
         row = l.row(align=True)
         row.prop_enum(self, 'destination', 'SELECTED')
@@ -350,6 +418,12 @@ class BBE_OT_corvette_export(bpy.types.Operator):
             l.label(text=self._error, icon='ERROR'); return
         l.label(text=f"Destination: {self.context_name} / Slot {self._index+1}")
         l.label(text=f"Ship Name: {core.get(self._payload['ship'], 'Name')}")
+        changed = overwrite_warning(self)
+        if changed:
+            box = l.box(); box.alert = True
+            for line in changed:
+                for wrapped in textwrap.wrap(line, 76):
+                    box.label(text=wrapped, icon='ERROR' if wrapped == changed[0] else 'NONE')
         if len(self._records) > 1:
             l.label(text='Duplicate builds to replace: ' + ', '.join(str(n+1) for n in self._records), icon='ERROR')
             l.prop(self, 'confirm_duplicates')
@@ -359,7 +433,8 @@ class BBE_OT_corvette_export(bpy.types.Operator):
         warning(l, self._objects)
         l.label(text='Only the scene’s parts are exported. No template parts are added.')
         l.label(text='Other ships and the freighter are preserved; verified backups precede writes.')
-        l.prop(self, 'confirm')
+        row = l.row(); row.alert = bool(changed)
+        row.prop(self, 'confirm')
 
     def execute(self, context):
         try:

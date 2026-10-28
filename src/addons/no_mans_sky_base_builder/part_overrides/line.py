@@ -103,6 +103,8 @@ class Line(part.Part):
         # Tag powerlines onto controls.
         start["power_line"] = self.object.name
         end["power_line"] = self.object.name
+        from .. import wire_selection
+        wire_selection.invalidate()
 
     def split(self):
         # Fetch the controls first

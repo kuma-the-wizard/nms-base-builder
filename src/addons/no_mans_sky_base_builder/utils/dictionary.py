@@ -12,6 +12,20 @@ RESOURCES_DIR = os.path.realpath(
 NICE_JSON = os.path.join(RESOURCES_DIR,"nice_names.json")
 nice_name_dictionary = {}
 
+PLACEMENT_HELP = {
+    'PIPE': (
+        'Automatic pipe: NMS changes its shape to match nearby connections. '
+        'BBE currently shows a straight preview. Use Pipe — Fixed to keep a straight pipe.'
+    ),
+    'PIPESHAPE': (
+        'Fixed straight pipe: keeps its shape in NMS regardless of nearby connections. '
+        'Use Curved Pipe for a fixed bend.'
+    ),
+    'CURVEPIPESHAPE': (
+        'Fixed curved pipe: keeps its 90-degree bend in NMS regardless of nearby connections.'
+    ),
+}
+
 
 PART_DEFINITION = os.path.join(RESOURCES_DIR, "DT_PartDefinition.csv")
 part_definition_dictionary = {}

@@ -24,6 +24,22 @@ _enabled = False
 _loading_handler = None
 
 
+def browser_palette(context):
+    """Read live theme colors so open browser windows follow preset changes."""
+    ui = context.preferences.themes[0].user_interface
+    def opaque(value):
+        return (*value[:3], 1)
+    return {
+        'background': opaque(ui.wcol_box.inner),
+        'card': opaque(ui.wcol_regular.inner),
+        'hover': opaque(ui.wcol_regular.inner_sel),
+        'text': opaque(ui.wcol_regular.text),
+        'selected_text': opaque(ui.wcol_regular.text_sel),
+        'footer': opaque(ui.panel_header),
+        'accent': opaque(ui.wcol_regular.inner_sel),
+    }
+
+
 def _draw_loading():
     """Cover only our saved browser surface while its grid is being restored."""
     context=bpy.context
@@ -33,11 +49,12 @@ def _draw_loading():
     region=context.region
     shader=gpu.shader.from_builtin('UNIFORM_COLOR')
     shader.bind()
-    shader.uniform_float('color',(.075,.085,.10,1))
+    palette = browser_palette(context)
+    shader.uniform_float('color', palette['background'])
     batch_for_shader(shader,'TRI_FAN',{'pos':((0,0),(region.width,0),
         (region.width,region.height),(0,region.height))}).draw(shader)
     blf.size(0,16*context.preferences.system.ui_scale)
-    blf.color(0,.8,.84,.9,1)
+    blf.color(0, *palette['text'])
     blf.position(0,24,region.height-42,0)
     blf.draw(0,'Loading assets…')
 
@@ -166,8 +183,11 @@ def tile_action(tile, x, y, scale=1):
 
 def bubble_notice(context, hover=None):
     from ..bubble_preview import ELBOW_HELP
+    from ..utils.dictionary import PLACEMENT_HELP
     if hover and hover[0] == 'BASE_BUBPIPE_L':
         return ELBOW_HELP
+    if hover and hover[0] in PLACEMENT_HELP:
+        return (PLACEMENT_HELP[hover[0]],)
     return ()
 
 
@@ -328,14 +348,14 @@ class BBE_OT_asset_grid(bpy.types.Operator):
         shader.uniform_float('color', color)
         batch_for_shader(shader, 'TRI_FAN', {'pos': ((x, y), (x+w, y), (x+w, y+h), (x, y+h))}).draw(shader)
 
-    def label(self, x, y, label, width, size=12, color=(.85, .86, .88, 1)):
+    def label(self, x, y, label, width, size=12, color=None):
         blf.size(0, size * self._scale)
         label = str(label)
         if blf.dimensions(0, label)[0] > width:
             while label and blf.dimensions(0, label + '...')[0] > width:
                 label = label[:-1]
             label += '...'
-        blf.color(0, *color)
+        blf.color(0, *(color if color is not None else self._palette['text']))
         blf.position(0, x, y, 0)
         blf.draw(0, label)
 
@@ -370,6 +390,7 @@ class BBE_OT_asset_grid(bpy.types.Operator):
         if context.area is None or context.area.as_pointer() != self._key:
             return
         self.refresh(context)
+        palette = self._palette = browser_palette(context)
         region = context.region
         width, height = region.width, region.height
         scale = max(.75, context.preferences.system.ui_scale)
@@ -398,7 +419,7 @@ class BBE_OT_asset_grid(bpy.types.Operator):
             self._geometry_key = key
         gpu.state.blend_set('ALPHA')
         try:
-            self.rectangle(0, 0, width, height, (.19, .19, .19, 1))
+            self.rectangle(0, 0, width, height, palette['background'])
             for x, top, title in self._titles:
                 y = height - top + self._offset - 18 * scale
                 if footer <= y <= height:
@@ -408,33 +429,43 @@ class BBE_OT_asset_grid(bpy.types.Operator):
                 if y + h < footer or y > height:
                     continue
                 hovered = self._hover and self._hover[0] == object_id
-                self.rectangle(x, y, w, h, (.19, .25, .30, 1) if hovered else (.155, .155, .155, 1))
+                self.rectangle(x, y, w, h, palette['hover'] if hovered else palette['card'])
+                text_color = palette['selected_text'] if hovered else palette['text']
                 size = min(w - 8 * scale, h - 48 * scale)
                 self.preview(object_id, x + (w-size)/2, y + 26 * scale, size)
-                self.label(x+6*scale, y+8*scale, data['name'], w-12*scale, 11)
+                label_width = w - 12 * scale
+                blf.size(0, 11 * scale)
+                if (object_id in {'PIPE', 'PIPESHAPE'}
+                        and blf.dimensions(0, data['name'])[0] > label_width):
+                    # Keep the behavior visible even on the smallest tiles.
+                    self.label(x+6*scale, y+18*scale, 'Pipe', label_width, 10, text_color)
+                    behavior = data['name'].split(' — ', 1)[-1]
+                    self.label(x+6*scale, y+5*scale, behavior, label_width, 10, text_color)
+                else:
+                    self.label(x+6*scale, y+8*scale, data['name'], label_width, 11, text_color)
                 # These rectangles match tile_action's hit boxes exactly.
                 if not data.get('is_preset'):
                     for line in range(3):
-                        self.rectangle(x+8*scale, y+h-(8+line*4)*scale, 11*scale, scale, (.7,.7,.7,1))
+                        self.rectangle(x+8*scale, y+h-(8+line*4)*scale, 11*scale, scale, text_color)
                 if data.get('variants'):
                     for line in range(2):
-                        self.rectangle(x+w-(16-line*6)*scale, y+h-18*scale, 2*scale, 11*scale, (.85,.85,.85,1))
+                        self.rectangle(x+w-(16-line*6)*scale, y+h-18*scale, 2*scale, 11*scale, text_color)
             if not self._tiles:
                 self.label(12*scale, height-60*scale, 'No parts in this view.', width-24*scale)
             if self._max_offset:
                 thumb = max(30*scale, self._view_height**2 / max(self._total, 1))
                 top = self._offset / self._max_offset * (self._view_height-thumb)
-                self.rectangle(width-9*scale, height-top-thumb, 5*scale, thumb, (.32,.32,.32,1))
-            self.rectangle(0, 0, width, 30*scale, (.14,.14,.14,1))
+                self.rectangle(width-9*scale, height-top-thumb, 5*scale, thumb, palette['accent'])
+            self.rectangle(0, 0, width, 30*scale, palette['footer'])
             item = next((t for t in self._tiles if self._hover and t[4] == self._hover[0]), None)
             hint = item[5]['name'] + '  |  ' + item[4] if item else 'Click an image to place  |  Right-click for favourites and options'
             self.label(10*scale, 10*scale, hint, width-20*scale, 11)
             if lines:
-                self.rectangle(0, 30*scale, width, footer-30*scale, (.12, .17, .23, 1))
-                self.rectangle(0, 30*scale, 5*scale, footer-30*scale, (.95, .62, .2, 1))
+                self.rectangle(0, 30*scale, width, footer-30*scale, palette['background'])
+                self.rectangle(0, 30*scale, 5*scale, footer-30*scale, palette['accent'])
                 for i, line in enumerate(lines):
                     self.label(16*scale, footer-(23+i*21)*scale, line, width-32*scale,
-                               13, (.99, .72, .32, 1) if i == 0 else (.9, .93, .97, 1))
+                               13, palette['text'])
         finally:
             gpu.state.blend_set('NONE')
 

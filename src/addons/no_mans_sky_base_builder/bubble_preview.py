@@ -25,7 +25,10 @@ _ARMS = {
 }
 _MESH_KEY = "bbe_native_bubble_preview"
 _MESH_QUALITY = "bbe_native_bubble_quality"
+_MESH_REVISION = "bbe_native_bubble_revision"
+_PREVIEW_REVISION = 2
 _INTENT_KEY = "bbe_bubble_shape"
+_START_KEY = "bbe_bubble_start_socket"
 _refreshing = False
 _route_cache = {}
 _junction_option_cache = {}
@@ -91,7 +94,7 @@ def _sync_draft_shading():
             if space.shading.color_type != 'MATERIAL':
                 # Remember a user's latest color choice even during a draft.
                 _draft_shading_sessions[key] = (space, space.shading.color_type)
-            space.shading.color_type = 'MATERIAL'
+                space.shading.color_type = 'MATERIAL'
     for key in set(_draft_shading_sessions) - wanted:
         space, previous = _draft_shading_sessions.pop(key)
         try:
@@ -136,9 +139,12 @@ def _sync_elbow_controls(context):
         if key not in _elbow_lock_sessions:
             _elbow_lock_sessions[key] = (obj, tuple(obj.lock_rotation),
                                          obj.lock_rotation_w, obj.lock_rotations_4d)
-        obj.lock_rotation = (True, True, True)
-        obj.lock_rotation_w = True
-        obj.lock_rotations_4d = True
+        if not all(obj.lock_rotation):
+            obj.lock_rotation = (True, True, True)
+        if not obj.lock_rotation_w:
+            obj.lock_rotation_w = True
+        if not obj.lock_rotations_4d:
+            obj.lock_rotations_4d = True
     if not selected:
         _restore_elbow_controls()
         return
@@ -153,8 +159,11 @@ def _sync_elbow_controls(context):
             if key not in _elbow_gizmo_sessions:
                 _elbow_gizmo_sessions[key] = (space, space.show_gizmo_object_rotate,
                                                space.show_gizmo_tool)
-            space.show_gizmo_object_rotate = False
-            space.show_gizmo_tool = False if rotation_tool else _elbow_gizmo_sessions[key][2]
+            if space.show_gizmo_object_rotate:
+                space.show_gizmo_object_rotate = False
+            show_tool = False if rotation_tool else _elbow_gizmo_sessions[key][2]
+            if space.show_gizmo_tool != show_tool:
+                space.show_gizmo_tool = show_tool
 
 
 def _draft_material(index):
@@ -563,6 +572,28 @@ def _moving_branch(source, target, scene):
     return [obj for obj in parts if obj.name in branch]
 
 
+def _joint_turn_error(source_matrix, target_matrix):
+    """Check cumulative roll at the joint, allowing equivalent quarter turns.
+
+    A popup angle and repeated small turns must obey the same native envelope.
+    This applies only to turning one connected branch, never a whole build.
+    """
+    from .bubble_export import SUPPORTED_ROLL
+    left = target_matrix.to_quaternion().to_matrix()
+    right = source_matrix.to_quaternion().to_matrix()
+    relative = left.transposed() @ right
+    error = min((relative @ symmetry.to_3x3()).to_quaternion().angle
+                for symmetry in _ROTATIONS)
+    unit = all(abs(abs(v) - 1) < 1e-4 for matrix in (source_matrix, target_matrix)
+               for v in matrix.to_scale())
+    limit = SUPPORTED_ROLL if unit else math.radians(5.001)
+    if not math.isfinite(error) or error > limit:
+        return ('That turn would leave the joint outside the tested tube angles. '
+                'Use a 90-degree turn, or keep the total adjustment within '
+                f'{8 if unit else 5} degrees of it.')
+    return None
+
+
 class BBE_OT_turn_bubble_elbow(bpy.types.Operator):
     """Turn the selected elbow and its downstream tubes at the shared joint"""
     bl_idname = 'bbe.turn_bubble_elbow'
@@ -601,6 +632,10 @@ class BBE_OT_turn_bubble_elbow(bpy.types.Operator):
         turn = (Matrix.Translation(point)
                 @ Matrix.Rotation(self.direction * self.angle, 4, axis)
                 @ Matrix.Translation(-point))
+        error = _joint_turn_error(turn @ source.matrix_world, target.matrix_world)
+        if error:
+            self.report({'WARNING'}, error)
+            return {'CANCELLED'}
         original = {name: by_name[name].matrix_world.copy() for name in branch}
         before_parts, (_, before_issues, _) = _scene_plan(scene)
         editor_contacts = _editor_contacts(before_parts)
@@ -732,10 +767,16 @@ def _joint_guard_save_post(_):
 
 @persistent
 def _joint_guard_load_pre(_):
+    global _highlight_selection
     _clear_direction_sessions()
     _restore_draft_shading()
     _joint_save_resume.clear()
     _restore_joint_rotation_guard()
+    _route_cache.clear()
+    _junction_option_cache.clear()
+    _pending_group_refresh.clear()
+    _expansion_preview.clear()
+    _highlight_selection = None
 
 
 class BBE_OT_bubble_joint_pivot(bpy.types.Operator):
@@ -754,7 +795,8 @@ class BBE_OT_bubble_joint_pivot(bpy.types.Operator):
     def draw(self, context):
         self.layout.prop(self, 'angle')
         self.layout.label(text='Attached tubes turn together at this joint.')
-        self.layout.label(text='A turn that breaks a working connection is cancelled.')
+        self.layout.label(text='Use quarter turns with small supported adjustments.')
+        self.layout.label(text='Unsupported joint angles, including 45 degrees, are rejected.')
 
     def execute(self, context):
         selected = [obj for obj in context.selected_objects
@@ -855,6 +897,8 @@ def snap_native(source, target, next_target=False, prev_target=False,
     target_names = [entry[1] for entry in choices]
     if old_target in target_names:
         target_index = target_names.index(old_target)
+    elif not occupied and target.get(_START_KEY) in target_names:
+        target_index = target_names.index(target[_START_KEY])
     else:
         target_index = min(range(len(choices)), key=lambda i: choices[i][0])
     target_index = (target_index + int(next_target) - int(prev_target)) % len(choices)
@@ -940,7 +984,9 @@ def add_native_bend_point(builder, target=None, cursor=None):
             raise ValueError(problem)
         connected = _editor_contacts(_native_objects(scene)).get(target.name, set())
         available = set(_visible_sockets(target)) - connected
-        direction = 'Top' if 'Top' in available else sorted(available)[0]
+        preferred = target.get(_START_KEY)
+        direction = (preferred if not connected and preferred in available else
+                     'Top' if 'Top' in available else sorted(available)[0])
         matrix = target.matrix_world @ Matrix.Translation(2 * _ARMS[direction])
     part = builder_v2.add_part('BASE_BUBPIPE', builder_object=builder)
     try:
@@ -982,7 +1028,7 @@ def add_native_elbow(builder, target=None, cursor=None):
             direction = next(name for name, arm in _ARMS.items()
                              if arm.dot(_ARMS[existing]) == -1)
         else:
-            direction = 'Top'
+            direction = target.get(_START_KEY, 'Top')
         branch = 'Front' if direction in {'Top', 'Bot'} else 'Top'
         base = target.matrix_world.copy()
         positions = (base @ Matrix.Translation(2 * _ARMS[direction]),
@@ -1083,13 +1129,20 @@ def _display_spec(snaps, high_res):
 
 
 def _group_transform_active():
-    """Leave native group transform gizmos alone until confirm or cancel."""
+    """Leave every native transform alone until confirm or cancel.
+
+    A single cube's gizmo also shares the viewport with bubble previews.
+    """
     context = bpy.context
-    if context.mode != 'OBJECT' or len(context.selected_objects) < 2:
-        return False
     return any(op.bl_idname.startswith('TRANSFORM_OT_')
-               for window in context.window_manager.windows
+               for window in getattr(getattr(context, 'window_manager', None), 'windows', ())
                for op in window.modal_operators)
+
+
+def request_refresh(scene):
+    """Defer dependency-graph work to the guarded timer, outside evaluation."""
+    if scene is not None and not _refreshing:
+        _pending_group_refresh.add(scene.name)
 
 
 def refresh(scene):
@@ -1121,11 +1174,11 @@ def refresh(scene):
         # Use exactly the palette's target. Amber means "this part will change"
         # for straights and corners alike, not a route-wide warning color.
         from .bubble_controls import available_junction
-        active = bpy.context.active_object
+        preview_active = bpy.context.active_object
         target = None
         if (bpy.context.mode == 'OBJECT' and len(bpy.context.selected_objects) == 1
-                and active in parts and active.select_get()):
-            target, _ = available_junction(scene, active, parts, issues)
+                and preview_active in parts and preview_active.select_get()):
+            target, _ = available_junction(scene, preview_active, parts, issues)
         for index, obj in enumerate(parts):
             high_res = 'nms_high_res_id' in obj.data
             if _MESH_QUALITY in obj.data:
@@ -1162,13 +1215,15 @@ def refresh(scene):
                 key += '/' + ','.join(str(round(v, 5)) for row in relative for v in row)
             user_data = str(obj.get('UserData', 0))
             cache_key = key if high_res else key + '/' + user_data
-            if obj.data.get(_MESH_KEY) == cache_key:
+            if (obj.data.get(_MESH_KEY) == cache_key
+                    and obj.data.get(_MESH_REVISION) == _PREVIEW_REVISION):
                 continue
             import hashlib
             mesh_name = ('NMS_NATIVE_BUBBLE_' + ('HR_' if high_res else 'LR_')
-                         + hashlib.sha1(cache_key.encode('utf-8')).hexdigest()[:24])
+                         + hashlib.sha1(f'{_PREVIEW_REVISION}/{cache_key}'.encode('utf-8')).hexdigest()[:24])
             display = bpy.data.meshes.get(mesh_name)
-            if display is not None and display.get(_MESH_KEY) != cache_key:
+            if display is not None and (display.get(_MESH_KEY) != cache_key
+                                       or display.get(_MESH_REVISION) != _PREVIEW_REVISION):
                 display = None
             if display is None and high_res:
                 source = builder_v2.load_high_res_mesh(source_id, force=True)
@@ -1182,6 +1237,7 @@ def refresh(scene):
                     display.transform(transform)
                     display[_MESH_KEY] = cache_key
                     display[_MESH_QUALITY] = 'high'
+                    display[_MESH_REVISION] = _PREVIEW_REVISION
             elif display is None:
                 previous = obj.data
                 if not builder_v2.apply_proxy_mesh(obj, source_id, user_data):
@@ -1193,8 +1249,7 @@ def refresh(scene):
                     del display['nms_proxy_placement']
                 display[_MESH_KEY] = cache_key
                 display[_MESH_QUALITY] = 'low'
-                if previous.users == 0 and previous.get('bbe_bubble_variant'):
-                    bpy.data.meshes.remove(previous)
+                display[_MESH_REVISION] = _PREVIEW_REVISION
             else:
                 # Existing preview cache already has the correct geometry and
                 # per-UserData flat material for low-detail proxies.
@@ -1229,8 +1284,7 @@ def refresh(scene):
                 obj.data = display
                 if variant:
                     display['bbe_bubble_variant'] = True
-                if previous.users == 0 and previous.get('bbe_bubble_variant'):
-                    bpy.data.meshes.remove(previous)
+                # Undo states can still refer to a zero-user preview mesh.
                 changed += 1
         _sync_draft_shading()
         return changed
@@ -1243,8 +1297,10 @@ def refresh(scene):
                     if obj not in selected:
                         obj.select_set(False)
                 for obj in selected:
-                    obj.select_set(True)
-                view_layer.objects.active = active
+                    if not obj.select_get():
+                        obj.select_set(True)
+                if view_layer.objects.active != active:
+                    view_layer.objects.active = active
             except ReferenceError:
                 pass
         _refreshing = False
@@ -1259,6 +1315,108 @@ def lock_scene_shapes(scene):
             _, key, _ = _display_spec(snapped[obj.name], True)
             if not key.startswith('UNRESOLVED:'):
                 obj[_INTENT_KEY] = key
+
+
+def inspect_loaded_tubes(scene):
+    """Repair persisted hints and rebuild previews without changing placements.
+
+    Valid editor intentions include unfinished bends; preserve those and report
+    connection problems instead of silently straightening the user's build.
+    """
+    from .bubble_export import sockets
+    parts = _native_objects(scene)
+    try:
+        snapped = _native_contacts(parts)
+    except ValueError as exc:
+        return dict(tubes=len(parts), repaired=0, previews=0,
+                    problems=(str(exc),), legacy=0)
+    repaired = 0
+    for obj in parts:
+        intent = obj.get(_INTENT_KEY, '')
+        ports = sockets(intent) if isinstance(intent, str) else ()
+        canonical = _display_spec(ports, True)[1] if ports else None
+        valid = canonical and intent.split(':', 1)[0] == canonical.split(':', 1)[0]
+        wanted = canonical if valid else _display_spec(snapped[obj.name], True)[1]
+        if not wanted.startswith('UNRESOLVED:') and wanted != intent:
+            obj[_INTENT_KEY] = wanted
+            repaired += 1
+        if _START_KEY in obj and obj[_START_KEY] not in _visible_sockets(obj):
+            del obj[_START_KEY]
+            repaired += 1
+    for obj in parts:
+        keys = ('bbe_native_snap_target', 'bbe_native_target_socket', 'bbe_native_source_socket')
+        if not any(key in obj for key in keys):
+            continue
+        target = scene.objects.get(str(obj.get(keys[0], '')))
+        pair = (obj.get(keys[1]), obj.get(keys[2]))
+        if (target not in parts or target == obj
+                or pair[0] not in _visible_sockets(target)
+                or pair[1] not in _visible_sockets(obj)
+                or _joined_sockets(obj, target) != pair):
+            for key in keys:
+                if key in obj:
+                    del obj[key]
+            repaired += 1
+    _route_cache.clear()
+    _junction_option_cache.clear()
+    changed = refresh(scene)
+    try:
+        _, (_, issues, _) = _scene_plan(scene)
+        problems = tuple(issues.values())
+    except ValueError as exc:
+        problems = (str(exc),)
+    legacy = sum(obj.get('ObjectID') == 'BASE_BUBPIPE_L' for obj in scene.objects)
+    return dict(tubes=len(parts), repaired=repaired, previews=changed,
+                problems=problems, legacy=legacy)
+
+
+def can_set_start_direction(scene, obj):
+    return (obj is not None and obj.get('ObjectID') == 'BASE_BUBPIPE'
+            and str(obj.get(_INTENT_KEY, '')).startswith('STRAIGHT:')
+            and not _editor_contacts(_native_objects(scene)).get(obj.name))
+
+
+class BBE_OT_bubble_start_direction(bpy.types.Operator):
+    bl_idname = 'bbe.bubble_start_direction'
+    bl_label = 'Set Tube Starting Direction'
+    bl_description = 'Aim an unconnected straight tube and choose the end for its first connection, using tube-local axes'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    port: bpy.props.EnumProperty(name='Direction', items=[
+        ('Right', '+X', 'Start toward local +X'), ('Left', '-X', 'Start toward local -X'),
+        ('Top', '+Y', 'Start toward local +Y'), ('Bot', '-Y', 'Start toward local -Y'),
+        ('Front', '+Z', 'Start toward local +Z'), ('Back', '-Z', 'Start toward local -Z')])
+
+    @classmethod
+    def poll(cls, context):
+        return (context.mode == 'OBJECT' and len(context.selected_objects) == 1
+                and can_set_start_direction(context.scene, context.active_object))
+
+    def execute(self, context):
+        obj = context.active_object
+        axis = {'Left': 'X', 'Right': 'X', 'Top': 'Y', 'Bot': 'Y', 'Front': 'Z', 'Back': 'Z'}[self.port]
+        obj[_INTENT_KEY] = 'STRAIGHT:' + axis
+        obj[_START_KEY] = self.port
+        refresh(context.scene)
+        return {'FINISHED'}
+
+
+class BBE_OT_repair_bubble_tubes(bpy.types.Operator):
+    bl_idname = 'bbe.repair_bubble_tubes'
+    bl_label = 'Check & Repair Bubble Tubes'
+    bl_description = 'Check loaded tube shapes, repair old metadata and refresh previews; preserve tube positions'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        result = inspect_loaded_tubes(context.scene)
+        message = (f"Checked {result['tubes']} tubes; repaired {result['repaired']} records; "
+                   f"refreshed {result['previews']} previews.")
+        if result['problems']:
+            message += f" {len(result['problems'])} connection issue(s): {result['problems'][0]}"
+        if result['legacy']:
+            message += f" {result['legacy']} legacy corners: use Convert Old Bubble Corners."
+        self.report({'WARNING'} if result['problems'] or result['legacy'] else {'INFO'}, message)
+        return {'FINISHED'}
 
 
 def _scene_plan(scene):
@@ -1776,6 +1934,8 @@ class BBE_OT_convert_legacy_bubble_corners(bpy.types.Operator):
 
 
 def register():
+    bpy.utils.register_class(BBE_OT_bubble_start_direction)
+    bpy.utils.register_class(BBE_OT_repair_bubble_tubes)
     bpy.utils.register_class(BBE_OT_choose_bubble_opening)
     bpy.utils.register_class(BBE_OT_preview_bubble_opening)
     bpy.utils.register_class(BBE_OT_remove_bubble_opening)
@@ -1830,3 +1990,5 @@ def unregister():
     bpy.utils.unregister_class(BBE_OT_remove_bubble_opening)
     bpy.utils.unregister_class(BBE_OT_preview_bubble_opening)
     bpy.utils.unregister_class(BBE_OT_choose_bubble_opening)
+    bpy.utils.unregister_class(BBE_OT_repair_bubble_tubes)
+    bpy.utils.unregister_class(BBE_OT_bubble_start_direction)

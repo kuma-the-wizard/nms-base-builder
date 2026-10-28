@@ -160,6 +160,12 @@ def set_material(item, material):
     else:
         # If a material already exists, swap it.
         item.data.materials[0] = material
+    # Scene Preview may have an object-slot copy over the mesh's old colour.
+    # Release only that BBE override; the next effects refresh can rebuild it.
+    from .. import stage_effects
+    stage_effects.release_material_override(item, 0)
+    if item.material_slots[0].link == 'OBJECT':
+        item.material_slots[0].material = material
 
     # Mirror it onto the object colour as well, so a proxy still reads the same
     # under Solid shading set to Object colour. High res parts have to be drawn

@@ -268,14 +268,14 @@ def build(scene, progress=None):
     # Blender 5 uses BLENDER_EEVEE; retain compatibility with earlier versions.
 
 
-def apply(scene, commit=False):
+def apply(scene, commit=False, *, show_progress=True):
     s = scene.bbe_stage
     if not s.enabled or hd_library.scenes_root() is None:
         clear(scene)
         restore(scene)
         return
     from . import progress_ui
-    with progress_ui.Activity('Loading scene preview') as progress:
+    with progress_ui.Activity('Loading scene preview', visible=show_progress) as progress:
         _apply_enabled(scene, commit, progress)
 
 
@@ -391,6 +391,8 @@ def on_load(_):
         # Refresh corrected display meshes embedded in saved HD scenes.
         from . import builder_v2
         with bpy.context.temp_override(scene=scene):
+            from . import preset
+            preset.restore_legacy_appearance(scene)
             builder_v2.refresh_bytebeat_proxies(scene)
             for obj in scene.objects:
                 if (obj.type == 'MESH' and obj.get('ObjectID') == 'BUILDTERMINAL'
@@ -447,7 +449,12 @@ def on_load(_):
                 if hasattr(scene, 'compositing_node_group'):
                     scene.bbe_stage.previous_compositor = scene.compositing_node_group
                 scene[STATE] = json.dumps(saved)
-            apply(scene)
+            # load_post runs before Blender finishes initializing its tools.
+            # A progress redraw here initializes the saved Move/Rotate/Scale
+            # gizmo early; the remaining file-load cleanup clears its runtime
+            # without requesting another initialization. Keep this load-time
+            # rebuild silent. Interactive preview changes still show progress.
+            apply(scene, show_progress=False)
 
 
 def part_signature(scene):

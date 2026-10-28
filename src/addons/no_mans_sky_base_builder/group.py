@@ -345,7 +345,10 @@ class Group:
         Returns:
             List of serialized object dictionaries, or None if operation fails
         """
-        cached_child_data, origin_matrix = Group.extract_cached_data(parent_obj)
+        from .forge_compat import export_cache
+        cached_child_data = export_cache(parent_obj)
+        if cached_child_data is None:
+            cached_child_data, origin_matrix = Group.extract_cached_data(parent_obj)
         if not cached_child_data:
             return None
         

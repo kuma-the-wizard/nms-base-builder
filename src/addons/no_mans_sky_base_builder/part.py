@@ -407,7 +407,7 @@ class Part(object):
 
     @classmethod
     def deserialise_from_data(
-        cls, data, builder_object, build_rigs=True, *args, **kwargs
+        cls, data, builder_object, build_rigs=True, *args, high_res=False, **kwargs
     ):
         """Reconstruct the class using an a data.
 
@@ -416,12 +416,18 @@ class Part(object):
         # Create object based on the ID.
         object_id = data["ObjectID"].replace("^", "")
         user_data = data.get("UserData", 0)
-        part = cls(
-            object_id=object_id,
-            builder_object=builder_object,
-            build_rigs=build_rigs,
-            user_data=user_data,
-        )
+        if high_res:
+            from . import builder_v2
+            part = builder_v2.add_part(
+                object_id, user_data=user_data, build_rigs=build_rigs,
+                high_res=True, builder_object=builder_object)
+        else:
+            part = cls(
+                object_id=object_id,
+                builder_object=builder_object,
+                build_rigs=build_rigs,
+                user_data=user_data,
+            )
         # Get location data.
         pos = data.get("Position", [0.0, 0.0, 0.0])
         up = data.get("Up", [0.0, 0.0, 0.0])

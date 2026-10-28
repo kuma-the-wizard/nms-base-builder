@@ -463,6 +463,10 @@ class SaveManager(bpy.types.PropertyGroup):
         imported = [o for o in context.scene.objects if o not in previous_objects and 'ObjectID' in o]
         if source_count and not imported:
             raise RuntimeError(f'The save contains {source_count} parts, but none appeared in the active scene ({context.scene.name}).')
+        if base_identifiers.base_type == BaseType.CORVETTE:
+            from .corvette_actions import remember_ship_source
+            remember_ship_source(context.scene, save_links, base_identifiers.save_context,
+                                 base_identifiers.user_data, base_identifiers.base_name)
         if nms_base_json.get("BaseType", {}).get("PersistentBaseTypes") == BaseType.STATION:
             station_reference.imported_station(context, nms_base_json, imported)
             return "Station parts and reference imported; choose the exterior with the Outliner eyes"
@@ -740,6 +744,16 @@ class SaveManager(bpy.types.PropertyGroup):
         if current_slot_data is None:
             self.reset_base_list()
             return
+        # Array positions are not identities: deletions/reordering in the game
+        # can put an entirely different ship under the same enum identifier.
+        previous = {}
+        for kind, value in SaveManager.selected_base_type_tabs.items():
+            if kind == self.nms_base_type:
+                value = self.nms_base_index
+            entries = SaveManager.extracted_base_data.get(self.get_base_type_key(kind), [])
+            matches = [b for b in entries if
+                       (f'Season:{b.base_index}' if b.save_context == 'Season' else str(b.base_index)) == value]
+            previous[kind] = _build_identity(matches[0]) if len(matches) == 1 else None
         with progress_ui.Activity('Loading save list') as progress:
             progress.update(.08, 'Reading save points')
             SaveManager.extracted_base_data = save_editor_utils.extract_bases_list_from_save(
@@ -747,4 +761,14 @@ class SaveManager(bpy.types.PropertyGroup):
             progress.update(1.0, 'Save list ready')
         SaveManager.save_data_loaded = True
         self.session_status = ''
+        for kind, identity in previous.items():
+            entries = SaveManager.extracted_base_data.get(self.get_base_type_key(kind), [])
+            matches = [b for b in entries if identity is not None and _build_identity(b) == identity]
+            value = 'Default'
+            if len(matches) == 1:
+                base = matches[0]
+                value = f'Season:{base.base_index}' if base.save_context == 'Season' else str(base.base_index)
+            elif identity is not None and kind == self.nms_base_type:
+                self.session_status = 'Previous build changed or is unavailable. Select the destination again.'
+            SaveManager.selected_base_type_tabs[kind] = value
         self.on_base_type_selected()

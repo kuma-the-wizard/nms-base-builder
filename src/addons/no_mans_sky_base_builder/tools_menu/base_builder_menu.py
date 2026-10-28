@@ -8,6 +8,7 @@ from .base_builder_menu_presentation import (
     VIEW3D_PT_bbe_project_recovery, TOOLBAR_GROUPS,
 )
 from .. import icons
+from .. import bbe_themes
 
 TOOLBAR_ITEMS = (
     ('proxies', 'BBE', VIEW3D_PT_nms_base_builder.bl_idname, 'MESH_MONKEY'),
@@ -20,6 +21,7 @@ TOOLBAR_ITEMS = (
     ('parts', 'Prefabs', 'VIEW3D_PT_bbe_toolbar_parts', 'ASSET_MANAGER'),
     ('cables', 'Logic', 'VIEW3D_PT_bbe_toolbar_cables', 'CURVE_PATH'),
     ('lighting', 'Lighting', 'VIEW3D_PT_bbe_toolbar_lighting', 'LIGHT'),
+    ('chat', 'Chat', 'VIEW3D_PT_bbe_chat', 'TEXT'),
 )
 _ITEMS = {item[0]: item for item in TOOLBAR_ITEMS}
 _enabled = False
@@ -110,7 +112,10 @@ def draw_toolbar_settings(layout, context):
                           **icons.ui_icon('CHECKBOX_DEHLT' if key in hidden else 'CHECKBOX_HLT'))
         op.menu, op.action = key, 'TOGGLE'
         key_name = 'plugin_icon' if key == 'proxies' else 'toolbar_' + key
-        row.label(text=label, icon_value=icons.get_icons_pscroll()[key_name].icon_id)
+        if key == 'chat':
+            row.label(text=label, icon=icon)
+        else:
+            row.label(text=label, icon_value=icons.get_icons_pscroll()[key_name].icon_id)
         for action, arrow, available in (
             ('UP', 'TRIA_UP', index > 0),
             ('DOWN', 'TRIA_DOWN', index < len(order) - 1),
@@ -171,11 +176,16 @@ def draw_toolbar(self, context):
     order, hidden = toolbar_state(context)
     row = layout.row(align=True)
     ui_icons = icons.get_icons_pscroll()
+    row.operator('object.nms_launch_asset_browser_window', text='Assets',
+                 icon_value=ui_icons['toolbar_assets'].icon_id)
     for key in order:
         if key in hidden:
             continue
         _, label, panel, icon = _ITEMS[key]
-        if key == 'proxies':
+        if key == 'chat':
+            from .. import bbe_chat
+            bbe_chat.draw_native_toolbar(row, context)
+        elif key == 'proxies':
             row.popover(panel=panel, text=label,
                         icon_value=ui_icons['plugin_icon'].icon_id)
         else:
@@ -222,6 +232,8 @@ classes = (
     *(panel for panel, _icon in TOOLBAR_GROUPS),
     BBE_OT_toolbar_menu, VIEW3D_PT_bbe_toolbar_settings, VIEW3D_PT_bbe_toolbar_color,
     VIEW3D_PT_bbe_toolbar_lighting,
+    bbe_themes.VIEW3D_PT_bbe_themes, bbe_themes.BBE_OT_apply_theme,
+    bbe_themes.BBE_OT_custom_theme, bbe_themes.BBE_OT_load_custom_theme,
 )
 
 

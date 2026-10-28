@@ -138,19 +138,37 @@ def material_nodes(tree, seen=None):
             yield from material_nodes(node.node_tree, seen)
 
 
+def restore_object_materials(obj):
+    saved = json.loads(obj.get(LINKS, '{}'))
+    for index, link in saved.items():
+        if int(index) >= len(obj.material_slots):
+            continue
+        slot = obj.material_slots[int(index)]
+        mat = slot.material
+        if mat and mat.get(TAG) and mat.get('bbe_stage_source'):
+            slot.material = mat['bbe_stage_source']
+            slot.link = link
+    if LINKS in obj:
+        del obj[LINKS]
+
+
+def release_material_override(obj, index):
+    """A newly painted proxy must display its new material immediately."""
+    saved = json.loads(obj.get(LINKS, '{}'))
+    if str(index) not in saved or index >= len(obj.material_slots):
+        return
+    slot = obj.material_slots[index]
+    if slot.material and slot.material.get(TAG):
+        slot.link = saved.pop(str(index))
+        if saved:
+            obj[LINKS] = json.dumps(saved)
+        elif LINKS in obj:
+            del obj[LINKS]
+
+
 def restore_materials(scene):
     for obj in scene.objects:
-        saved = json.loads(obj.get(LINKS, '{}'))
-        for index, link in saved.items():
-            if int(index) >= len(obj.material_slots):
-                continue
-            slot = obj.material_slots[int(index)]
-            mat = slot.material
-            if mat and mat.get(TAG) and mat.get('bbe_stage_source'):
-                slot.material = mat['bbe_stage_source']
-                slot.link = link
-        if LINKS in obj:
-            del obj[LINKS]
+        restore_object_materials(obj)
     for mat in list(bpy.data.materials):
         if mat.get(TAG) and mat.users == 0:
             bpy.data.materials.remove(mat)
@@ -261,6 +279,10 @@ def budget_lights(candidates, budget):
 
 
 def build(scene, progress=None):
+    # These display IDs can be replaced by the idle timer between undo steps.
+    # Incremental restore may reuse stale graph IDs after that replacement.
+    from . import undo_guard
+    undo_guard.track_generated_preview()
     clear(scene)
     # World transforms must be evaluated before sizing lights after file load.
     bpy.context.view_layer.update()

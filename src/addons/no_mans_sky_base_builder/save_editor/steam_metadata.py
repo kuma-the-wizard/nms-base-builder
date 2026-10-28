@@ -56,12 +56,12 @@ def decode(data, filename):
     raise ValueError('Could not decrypt Steam save metadata')
 
 
-def rebuild(data, source, destination, compressed_size, decompressed_size, name=None):
+def rebuild(data, source, destination, compressed_size, decompressed_size, name=None, *, timestamp=None):
     plain = bytearray(decode(data, source))
     struct.pack_into('<I', plain, 56, decompressed_size)
     if len(plain) >= 384:
         struct.pack_into('<I', plain, 60, compressed_size)
-        struct.pack_into('<I', plain, 356, int(time.time()))
+        struct.pack_into('<I', plain, 356, int(time.time() if timestamp is None else timestamp))
     if name is not None:
         encoded = name.encode('utf8')
         if len(encoded) > 127:

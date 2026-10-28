@@ -113,6 +113,11 @@ def startup_failure(error,product,version,gui=True):
 _active_reporter=None
 
 def report_error(operator,kinds,message):
+    if 'ERROR' in kinds and __package__:
+        from .save_editor.save_editor_presentation import needs_save_refresh, prompt_save_refresh
+        if needs_save_refresh(message):
+            prompt_save_refresh(message)
+            return operator.report({'WARNING'}, message)
     if "ERROR" in kinds and _active_reporter is not None:
         detail=str(message)
         if sys.exc_info()[0] is not None:detail+='\n\n'+traceback.format_exc()

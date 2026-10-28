@@ -79,6 +79,7 @@ class NMS_PT_tools_panel(Panel):
         tools_box = snap_column.box()
         tools_col = tools_box.column(align = True)
         tools_col.label(text="Common Tools")
+        tools_col.operator('bbe.repair_bubble_tubes', icon='FILE_REFRESH')
         #tools_col.separator()
         tools_dup_row = tools_col.column(align = False)
         tools_dup_row.operator("object.nms_duplicate", **icons.ui_icon("DUPLICATE"))

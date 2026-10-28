@@ -1,6 +1,7 @@
 import json
 import math
 import os
+import re
 from copy import copy
 
 import bpy
@@ -8,6 +9,84 @@ import mathutils
 
 from . import part
 from .utils import blend_utils, material
+
+
+def colour_targets(objects):
+    """Expand selected prefab controls without changing the user's selection."""
+    result = list(dict.fromkeys(objects))
+    seen = set(result)
+    for control in tuple(result):
+        if 'PresetID' not in control:
+            continue
+        for child in control.children_recursive:
+            if child not in seen and ('ObjectID' in child or 'GroupID' in child):
+                seen.add(child)
+                result.append(child)
+    return result
+
+
+def restore_legacy_appearance(scene):
+    """Repair old prefab/proxy looks, upgrading only unchanged library geometry."""
+    from array import array
+    from . import builder_v2, hd_library
+    from .utils import materials_v2
+
+    def geometry(mesh):
+        coordinates = array('f', [0]) * (len(mesh.vertices) * 3)
+        vertices = array('i', [0]) * len(mesh.loops)
+        counts = array('i', [0]) * len(mesh.polygons)
+        mesh.vertices.foreach_get('co', coordinates)
+        mesh.loops.foreach_get('vertex_index', vertices)
+        mesh.polygons.foreach_get('loop_total', counts)
+        return coordinates.tobytes(), vertices.tobytes(), counts.tobytes()
+
+    comparisons = {}
+    originals = {}
+    detailed = getattr(scene, 'bbe_detailed_proxies', True) and hd_library.available()
+    repaired = 0
+    with materials_v2.defer_shared_data():
+        for obj in list(scene.objects):
+            pid = obj.get('ObjectID')
+            if obj.type != 'MESH' or not pid or materials_v2.is_high_res(obj):
+                continue
+            # These old placements bypassed the HD importer. A quality switch
+            # writes nms_proxy_placement, so deliberately simple parts stay simple.
+            raw_proxy = (obj.data.get(builder_v2.PROXY_MESH_TAG) == pid
+                         and not obj.data.get(builder_v2.PROXY_PLACEMENT_TAG))
+            first_material = obj.data.materials[0] if obj.data.materials else None
+            legacy_palette = first_material and (
+                first_material.name.startswith('preset_material')
+                or first_material.name == 'default_material'
+                or re.fullmatch(r'\d+_material(?:_transparent)?(?:\.\d+)?', first_material.name))
+            custom_slots = any(s.link == 'OBJECT' and s.material
+                               and not s.material.get('bbe_stage_effect') for s in obj.material_slots)
+            can_upgrade = (raw_proxy and detailed and legacy_palette and not custom_slots
+                           and not obj.modifiers and not obj.vertex_groups and not obj.data.shape_keys)
+            if can_upgrade:
+                use_class = builder_v2.BUILDER.get_part_class(pid)
+                if use_class is part.Part or getattr(use_class, 'HIGH_RES_COMPATIBLE', False):
+                    key = (obj.data.as_pointer(), pid)
+                    if key not in comparisons:
+                        if pid not in originals:
+                            original = builder_v2.load_proxy_mesh(pid)
+                            originals[pid] = geometry(original) if original is not None else None
+                        comparisons[key] = originals[pid] is not None and geometry(obj.data) == originals[pid]
+                    if comparisons[key]:
+                        mesh = builder_v2.load_high_res_mesh(pid)
+                        if mesh is not None:
+                            # Drop only BBE's display overrides before changing
+                            # slot layouts; saved transforms and metadata stay put.
+                            from . import stage_effects
+                            stage_effects.restore_object_materials(obj)
+                            obj.data = mesh
+                            materials_v2.apply(obj, obj.get('UserData', 0))
+                            repaired += 1
+                            continue
+            # Old prefab orange and pre-node palette shaders can survive a split.
+            # Restore their actual saved colour without replacing edited geometry.
+            if legacy_palette and not custom_slots:
+                material.restore_material(obj, obj.get('UserData', 0))
+    return repaired
 
 
 class Preset(object):
@@ -34,8 +113,9 @@ class Preset(object):
                 scene.
         """
         # Turn off relationship lines.
-        if hasattr(bpy.context.space_data, "overlay"):
-            bpy.context.space_data.overlay.show_relationship_lines = False
+        overlay = getattr(bpy.context.space_data, 'overlay', None)
+        if hasattr(overlay, 'show_relationship_lines'):
+            overlay.show_relationship_lines = False
 
         # Assign private variables.
         self.__preset_id = preset_id
@@ -240,17 +320,20 @@ class Preset(object):
             if "Prefab" in data:
                 object_list = data["Prefab"]
             # Reconstruct objects.
-            for part_data in object_list:
-                object_id = part_data["ObjectID"].replace("^", "")
-                user_data = part_data["UserData"]
-                use_class = self.builder.get_part_class(object_id)
-                preset_part = use_class.deserialise_from_data(
-                    part_data,
-                    self.builder,
-                    build_rigs=build_rigs,
-                    compensate_normal=compensate_normal,
-                )
-                parts.append(preset_part)
+            from .utils import materials_v2
+            with materials_v2.defer_shared_data():
+                for part_data in object_list:
+                    object_id = part_data["ObjectID"].replace("^", "")
+                    use_class = self.builder.get_part_class(object_id)
+                    preset_part = use_class.deserialise_from_data(
+                        part_data,
+                        self.builder,
+                        build_rigs=build_rigs,
+                        compensate_normal=compensate_normal,
+                        high_res=True,
+                    )
+                    preset_part.object['bbe_preset_part'] = True
+                    parts.append(preset_part)
         return parts
 
     def create_control(self, preset_items):
@@ -290,7 +373,7 @@ class Preset(object):
             part.parent = curve_object
             part.hide_select = True
             part.belongs_to_preset = True
-            material.assign_preset_material(part.object)
+            # Grouping must retain the part's real textures and saved palette.
 
         return curve_object
 

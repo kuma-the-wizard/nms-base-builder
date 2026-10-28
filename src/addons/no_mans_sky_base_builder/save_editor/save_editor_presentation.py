@@ -63,12 +63,72 @@ class BBE_OT_backup_settings(bpy.types.Operator):
         return {'FINISHED'}
 
 
+_refresh_prompt_pending = False
+_refresh_generation = 0
+
+
+def needs_save_refresh(message):
+    text = str(message).lower()
+    return ('refresh' in text and 'save' in text
+            and ('save changed' in text or 'no longer exists' in text))
+
+
+def prompt_save_refresh(message):
+    """Transient attention popup; off-click dismisses without disabling I/O."""
+    global _refresh_prompt_pending
+    if bpy.app.background or _refresh_prompt_pending:
+        return
+    _refresh_prompt_pending = True
+    window = bpy.context.window
+    scene = bpy.context.scene
+
+    def show():
+        global _refresh_prompt_pending
+        _refresh_prompt_pending = False
+        if window not in list(bpy.context.window_manager.windows) or window.scene != scene:
+            return
+        with bpy.context.temp_override(window=window):
+            bpy.ops.bbe.save_refresh_notice('INVOKE_DEFAULT')
+    bpy.app.timers.register(show, first_interval=0.05)
+
+
+class BBE_OT_save_refresh_notice(bpy.types.Operator):
+    bl_idname = 'bbe.save_refresh_notice'
+    bl_label = 'Refresh Save'
+    bl_description = 'Refresh the changed save or click outside to dismiss this notice'
+    bl_options = {'INTERNAL'}
+
+    def invoke(self, context, event):
+        self._generation = _refresh_generation
+        return context.window_manager.invoke_popup(self, width=470)
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def draw(self, context):
+        from ..tools_menu.base_builder_menu_presentation import draw_io_contents
+        if self._generation != _refresh_generation:
+            draw_io_contents(self.layout, context)
+            return
+        focus = self.layout.box()
+        focus.alert = True
+        focus.label(text='The game save has changed.', icon='FILE_REFRESH')
+        button = focus.row()
+        button.scale_y = 1.8
+        button.operator('bbe.refresh_save_counts', text='REFRESH SAVE', icon='FILE_REFRESH')
+        self.layout.label(text='Refresh current data, or click outside to dismiss.')
+        dimmed = self.layout.column()
+        dimmed.enabled = False
+        draw_io_contents(dimmed, context)
+
+
 class BBE_OT_refresh_save_counts(bpy.types.Operator):
     bl_idname = 'bbe.refresh_save_counts'
-    bl_label = 'Refresh Save Counts'
+    bl_label = 'Refresh Save'
     bl_description = 'Read the selected game save point again; this does not change the save'
 
     def execute(self, context):
+        global _refresh_generation
         manager = get_save_data(context)
         if manager is None or manager.get_current_slot_data() is None:
             return {'CANCELLED'}
@@ -77,7 +137,11 @@ class BBE_OT_refresh_save_counts(bpy.types.Operator):
         except Exception as exc:
             report_error(self, {'ERROR'}, f'Could not refresh save counts: {exc}')
             return {'CANCELLED'}
-        self.report({'INFO'}, 'Save counts refreshed from disk')
+        _refresh_generation += 1
+        for window in context.window_manager.windows:
+            for area in window.screen.areas:
+                area.tag_redraw()
+        self.report({'INFO'}, 'Save refreshed from disk')
         return {'FINISHED'}
 
 
@@ -215,7 +279,7 @@ def draw_base_picker(container, save_data):
     slot_row.enabled = save_data.nms_account_selected != 'Default'
     slot_row.prop(save_data, "nms_save_slot", **icons.ui_icon("LINENUMBERS_ON"))
     if save_data.get_current_slot_data() is not None and not save_data.is_base_data_loaded():
-        slot_row.operator('bbe.refresh_save_counts', text='', **icons.ui_icon('FILE_REFRESH'))
+        slot_row.operator('bbe.refresh_save_counts', text='Refresh Save', **icons.ui_icon('FILE_REFRESH'))
     if save_data.nms_account_selected != 'Default' and save_data.nms_save_slot == 'Default':
         if len(type(save_data).enum_save_slots_list) <= 1:
             sf_column.label(text="No readable save slots found in this account.", **icons.ui_icon("ERROR"))
@@ -253,7 +317,7 @@ def draw_base_picker(container, save_data):
     slot_total = int(save_data.get_total_parts_count())
     count_row = sf_column.row(align=True)
     count_row.label(text=f"\U0001F4E6 Save slot total (owned builds): {slot_total}")
-    count_row.operator('bbe.refresh_save_counts', text='', **icons.ui_icon('FILE_REFRESH'))
+    count_row.operator('bbe.refresh_save_counts', text='Refresh Save', **icons.ui_icon('FILE_REFRESH'))
     source = save_data.extracted_base_data
     if source.get('source_file'):
         read_at = time.strftime('%b %d, %I:%M %p', time.localtime(source['source_mtime']))

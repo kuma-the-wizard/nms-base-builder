@@ -31,13 +31,9 @@ def add_to_scene(item, collection_name="Collection"):
                               if c.get("nms_station_player_parts")), None)
         if station_parts is not None:
             collection_name = station_parts.name
-    # Validate collection existence.
-    if collection_name not in bpy.data.collections:
-        collection = bpy.data.collections.new(collection_name)
-        bpy.context.scene.collection.children.link(collection)
-
-    # Add the item to the collection.
-    object_set = bpy.data.collections[collection_name].objects
+    from .collection_utils import get_collection
+    # Another scene may already own this name after clearing the current build.
+    object_set = get_collection(collection_name).objects
     if item.name not in object_set:
         object_set.link(item)
 

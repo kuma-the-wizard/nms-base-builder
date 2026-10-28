@@ -13,7 +13,7 @@ import gpu
 from bpy.app.handlers import persistent
 
 from .asset_browser_grid import (
-    BBE_OT_asset_grid, _contains, _groups, grid_geometry, tile_action,
+    BBE_OT_asset_grid, _contains, _groups, grid_geometry, tile_action, browser_palette,
 )
 from ..utils.asset_browser_utils import get_grid_settings
 
@@ -221,6 +221,7 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
             self._bounds = None
             return
         self.refresh(context)
+        palette = self._palette = browser_palette(context)
         width, height = region.width, region.height
         scale = max(.75, context.preferences.system.ui_scale)
         self._scale = scale
@@ -240,7 +241,7 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
             self._geometry_key = key
         gpu.state.blend_set('ALPHA')
         try:
-            self.rectangle(left, 0, panel_width, self._view_height, (.16, .16, .16, 1))
+            self.rectangle(left, 0, panel_width, self._view_height, palette['background'])
             for x, top, title in self._titles:
                 y = self._view_height - top + self._offset - 18 * scale
                 if 0 <= y <= self._view_height:
@@ -250,18 +251,19 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
                 if y + h < 0 or y + h > self._view_height or y < 0:
                     continue
                 hovered = self._hover and self._hover[0] == object_id
-                self.rectangle(x, y, w, h, (.19, .25, .30, 1) if hovered else (.12, .12, .12, 1))
+                self.rectangle(x, y, w, h, palette['hover'] if hovered else palette['card'])
+                text_color = palette['selected_text'] if hovered else palette['text']
                 size = min(w - 8 * scale, h - 48 * scale)
                 self.preview(object_id, x + (w-size)/2, y + 26 * scale, size)
-                self.label(x+5*scale, y+8*scale, data['name'], w-10*scale, 11)
+                self.label(x+5*scale, y+8*scale, data['name'], w-10*scale, 11, text_color)
                 if not data.get('is_preset'):
                     for line in range(3):
                         self.rectangle(x+8*scale, y+h-(8+line*4)*scale,
-                                       11*scale, scale, (.7,.7,.7,1))
+                                       11*scale, scale, text_color)
                 if data.get('variants'):
                     for line in range(2):
                         self.rectangle(x+w-(16-line*6)*scale, y+h-18*scale,
-                                       2*scale, 11*scale, (.85,.85,.85,1))
+                                       2*scale, 11*scale, text_color)
             if not self._tiles:
                 self.label(left + 12*scale, self._view_height-25*scale,
                            'No parts in this view.', panel_width-24*scale)
@@ -270,7 +272,7 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
                 thumb = max(30*scale, self._view_height**2 / max(self._total, 1))
                 top = self._offset / self._max_offset * (self._view_height-thumb)
                 self.rectangle(track_x+4*scale, self._view_height-top-thumb,
-                               4*scale, thumb, (.45,.45,.45,1))
+                               4*scale, thumb, palette['accent'])
         finally:
             gpu.state.blend_set('NONE')
 

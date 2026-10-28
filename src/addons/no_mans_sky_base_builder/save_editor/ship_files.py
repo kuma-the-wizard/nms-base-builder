@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import tempfile
+import time
 from pathlib import Path
 from .. import progress_ui
 from .save_file import SaveFile
@@ -12,6 +13,24 @@ from . import steam_metadata, backup_policy
 
 def hashes(paths):
     return {str(Path(p)): hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths}
+
+
+def export_hashes(paths):
+    """Watch the data and companion metadata before reading either save point."""
+    paths = [Path(p).resolve() for p in paths]
+    return hashes(paths + [p.with_name('mf_' + p.name) for p in paths
+                           if p.with_name('mf_' + p.name).exists()])
+
+
+def commit_roots(roots, expected, progress=None):
+    """Export each save point's own edited root, preserving its other progress."""
+    roots = {Path(p).resolve(): root for p, root in roots.items()}
+    if not roots:
+        raise ValueError('No save files selected')
+    if progress is not None:
+        return _commit(None, roots, expected, None, None, False, progress, roots)
+    with progress_ui.Activity('Exporting build to save') as progress:
+        return _commit(None, roots, expected, None, None, False, progress, roots)
 
 
 def read(links):
@@ -50,9 +69,12 @@ def commit(root, paths, expected, source=None, name=None, create=False, progress
         return _commit(root, paths, expected, source, name, create, progress)
 
 
-def _commit(root, paths, expected, source, name, create, progress):
+def _commit(root, paths, expected, source, name, create, progress, roots=None):
     prepared, temps, replaced, backups = [], [], [], []
     generation = None
+    # The Steam metadata timestamp is whole Unix seconds. Publish all data and
+    # metadata files with that same timestamp, as used by established editors.
+    write_time = int(time.time())
     paths = [Path(p).resolve() for p in paths]
     if len(set(paths)) != len(paths):
         raise ValueError('Repeated save destination')
@@ -64,12 +86,16 @@ def _commit(root, paths, expected, source, name, create, progress):
             stream.write(data)
         if temp.read_bytes() != data:
             raise ValueError('Staged file verification failed')
-        prepared.append((path, temp, None if create else path.read_bytes()))
+        original = None if create else path.read_bytes()
+        stat = None if create else path.stat()
+        os.utime(temp, (write_time, write_time))
+        prepared.append((path, temp, original, stat))
     try:
         progress.update(.05, 'Checking source saves')
         if hashes(expected) != expected:
             raise ValueError('Save changed since the review opened. Reopen Ship Management.')
         for index, path in enumerate(paths):
+            current_root = roots[path] if roots is not None else root
             progress.update(.10 + .45 * index / max(1, len(paths)),
                             f'Encoding and verifying {path.name}')
             if create and (path.exists() or path.with_name('mf_'+path.name).exists()):
@@ -79,9 +105,9 @@ def _commit(root, paths, expected, source, name, create, progress):
             temp = Path(filename)
             temps.append(temp)
             save = SaveFile(temp)
-            save.json_data = root
+            save.json_data = current_root
             save.save()
-            if SaveFile(temp).load() != root:
+            if SaveFile(temp).load() != current_root:
                 raise ValueError('Compressed save round-trip failed')
             encoded = temp.read_bytes()
             stage(path, encoded)
@@ -90,8 +116,8 @@ def _commit(root, paths, expected, source, name, create, progress):
             if create and not meta.exists():
                 raise ValueError('Steam metadata is required to create a new save slot')
             if meta.exists():
-                decoded_size = len(json.dumps(root,separators=(',',':'),ensure_ascii=False).encode('utf8'))+1
-                rebuilt = steam_metadata.rebuild(meta.read_bytes(), meta_source.name, path.name, len(encoded), decoded_size, name)
+                decoded_size = len(json.dumps(current_root,separators=(',',':'),ensure_ascii=False).encode('utf8'))+1
+                rebuilt = steam_metadata.rebuild(meta.read_bytes(), meta_source.name, path.name, len(encoded), decoded_size, name, timestamp=write_time)
                 stage(path.with_name('mf_'+path.name), rebuilt)
         progress.update(.60, 'Backing up original saves' if not create else 'Checking new slot')
         if not create:
@@ -99,7 +125,7 @@ def _commit(root, paths, expected, source, name, create, progress):
         progress.update(.76, 'Checking source saves again')
         if hashes(expected) != expected:
             raise ValueError('Save changed during preparation; nothing was written')
-        for index, (path, temp, original) in enumerate(prepared):
+        for index, (path, temp, original, stat) in enumerate(prepared):
             progress.update(.82 + .14 * index / max(1, len(prepared)),
                             f'Writing {path.name}')
             if create:
@@ -107,19 +133,21 @@ def _commit(root, paths, expected, source, name, create, progress):
                 os.link(temp, path)
             else:
                 replace_file(temp, path)
-            replaced.append((path, original))
+            replaced.append((path, original, stat))
         if generation is not None:
             backup_policy.finish(generation)
         progress.update(1.0, 'Save files verified')
         return backups
     except Exception:
-        for path, original in reversed(replaced):
+        for path, original, stat in reversed(replaced):
             if original is None:
                 path.unlink()
             else:
                 fd, filename = tempfile.mkstemp(prefix='.bbe-rollback-',dir=path.parent)
                 with os.fdopen(fd,'wb') as stream:
                     stream.write(original)
+                temps.append(Path(filename))
+                os.utime(filename, ns=(stat.st_atime_ns, stat.st_mtime_ns))
                 replace_file(Path(filename),path)
         raise
     finally:

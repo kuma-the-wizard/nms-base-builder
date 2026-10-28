@@ -96,6 +96,15 @@ def relink_texture_images(images=None):
     for image in images:
         if image.source != 'FILE' or image.packed_file:
             continue
+        native_texture = image.get('bbe_native_texture')
+        if isinstance(native_texture, str) and Path(native_texture).name == native_texture:
+            target = ADDON / 'resources' / 'hd_additions' / 'textures' / native_texture
+            if target.is_file():
+                if image.filepath != str(target):
+                    image.filepath = str(target)
+                    image.reload()
+                    changed += 1
+                continue
         path = '/' + image.filepath.replace('\\', '/').lstrip('/')
         lower_path = path.casefold()
         relative = None
