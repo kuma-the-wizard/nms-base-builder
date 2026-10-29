@@ -1,3 +1,15 @@
+# 18.2.37
+
+- Fix mini chat's horizontal scrollbar, long-message wrapping and image clipping when resizing. Keep vertical history scrolling and the full-width message field.
+
+# 18.2.36
+
+- Correct outdated Corvette models, names, categories and misleading icons. Thunderbird Landing Thrusters now appear under Access and Docking; distinct plating shapes have separate previews.
+- Keep original game icons by default, with clean transparent HD replacements for broken or missing artwork.
+- Improve detailed-proxy placement speed without reducing geometry or texture detail, and remove chat's polling delay when opening its window.
+- Add an advanced ownership/metadata editor beside the build name. Full build files preserve attribution; destination-save ownership changes require a separate explicit option.
+- Preserve NMScribe compatibility, with native generation and export tests on Blender 5.1 and 5.2.
+
 # 18.2.33
 
 - Correct Forsaken variant menus using each part's native game GroupID, keeping Hornet, Viper, Mantis and hull families separate.

@@ -1,0 +1,505 @@
+{
+  "gameBuild": 26271400,
+  "revision": "18.2.36",
+  "assets": [
+    {
+      "id": "B_GEN_4",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_GEN_1X1_4_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_GEN1X1_4",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/GENERATORS/GENERATOR_1X1_4.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_GEN_1X1_4_PLACEMENT\\ENTITIES\\GENERATOR1X14PLACEMENT.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 35468,
+      "proxyTriangles": 3499,
+      "files": {
+        "resources/hd_additions/assets": "1c537eb7f0f36f52537737571a8aae438ffb13c486c6163c58be7a0540fb27bc",
+        "models-simple": "d23a9cd3b37bf9f34d9462e7183332f620a2f4ee300769db8faff9358bd9cd1f"
+      }
+    },
+    {
+      "id": "B_GEN_5",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_GEN_1X1_5_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_GEN1X1_5",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/GENERATORS/GENERATOR_1X1_5.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_GEN_1X1_5_PLACEMENT\\ENTITIES\\GENERATOR1X15PLACEMENT.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 290053,
+      "proxyTriangles": 3827,
+      "files": {
+        "resources/hd_additions/assets": "1a80ce250a4aa4a04303d9be4bd26d1bc749c2adf985249b3f479082cda34e55",
+        "models-simple": "0eba442f8afd69e04fdc22d28e51760b0cde852a5932a8202c651382cc9c7792"
+      }
+    },
+    {
+      "id": "B_TUR_F",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_TURRET_1X1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTTUR1X1",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/GUN_F.SCENE.MBIN",
+          "locator": "",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_TURRET_1X1_PLACEMENT\\ENTITIES\\EXTTURRET1X1.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 25080,
+      "proxyTriangles": 3499,
+      "files": {
+        "resources/hd_additions/assets": "a3eee7ab25e4cfc89e6a7b357318de1fd48c252817debad5be6c71f954edc926",
+        "models-simple": "56a9888cb5a3fcfc3c3e29697066141c6f573f020fc05ec049e225784993f6bb"
+      }
+    },
+    {
+      "id": "B_STR_AB_E",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_E_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_19.SCENE.MBIN",
+          "locator": "EAST_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_E_PLACEMENT\\ENTITIES\\EXTSTR1X1E.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 10467,
+      "proxyTriangles": 3499,
+      "files": {
+        "resources/hd_additions/assets": "9e5370098535e0c630237615ce786bd0c64662d9d747bb8517c9b609cf1b73b6",
+        "models-simple": "619dc6f25e2981d0683d8cdae8615977031a311ac0659f54ee78218f784358cb"
+      }
+    },
+    {
+      "id": "B_STR_AB_N",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_N_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_19.SCENE.MBIN",
+          "locator": "NORTH_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_N_PLACEMENT\\ENTITIES\\EXTSTR1X1N.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 10467,
+      "proxyTriangles": 3499,
+      "files": {
+        "resources/hd_additions/assets": "2d95c4ec2f586865eef18d8110c6c259c36d325cd387d58d1a07957b0b17b13d",
+        "models-simple": "80816ac76358bb4252ca3641ce454267cf830a30666a4ae9f334a163bc4a33a4"
+      }
+    },
+    {
+      "id": "B_STR_AB_NE",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_20.SCENE.MBIN",
+          "locator": "NORTHEAST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE_PLACEMENT\\ENTITIES\\EXTSTR1X1NE.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 4646,
+      "proxyTriangles": 3495,
+      "files": {
+        "resources/hd_additions/assets": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+        "models-simple": "a14ce89cc2760ee3db828893efa5b29e654967c1c5e918bde8eef09221df8a2d"
+      }
+    },
+    {
+      "id": "B_STR_AB_NE1",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_20.SCENE.MBIN",
+          "locator": "NORTHEAST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE1_PLACEMENT\\ENTITIES\\EXTSTR1X1NE1.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 4646,
+      "proxyTriangles": 3495,
+      "files": {
+        "resources/hd_additions/assets": "b13705f13bde80a68cc1585c57484c39e34918fa56fa833e79388b2adf6c668d",
+        "models-simple": "ea83070e31eca5b2ea37d06cbfc51cef582d74bcd17260544ebf8b569840a9f4"
+      }
+    },
+    {
+      "id": "B_STR_AB_NE2",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_20.SCENE.MBIN",
+          "locator": "NORTHEAST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE2_PLACEMENT\\ENTITIES\\EXTSTR1X1NE2.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 4646,
+      "proxyTriangles": 3495,
+      "files": {
+        "resources/hd_additions/assets": "1f006e125d84c1938d68a9642315adb60c7c885fa57d164a21b8cb19d43d6f36",
+        "models-simple": "afde379ad72f8874ba64c8c573c6f4e5a075f3a3f67fe70ba58828ceaaadae55"
+      }
+    },
+    {
+      "id": "B_STR_AB_NE3",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NE3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_20.SCENE.MBIN",
+          "locator": "NORTHEAST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NE3_PLACEMENT\\ENTITIES\\EXTSTR1X1NE3.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 4646,
+      "proxyTriangles": 3495,
+      "files": {
+        "resources/hd_additions/assets": "700443e85b3c0f8293ab922b48ee21fa9156351c932c71a8f10c0c725461edde",
+        "models-simple": "53abeae4e96e67d2f2c92085c23b0957411e98026894199a2519f9614fbdc395"
+      }
+    },
+    {
+      "id": "B_STR_AB_NW",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_20.SCENE.MBIN",
+          "locator": "NORTHWEST0_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW_PLACEMENT\\ENTITIES\\EXTSTR1X1NW.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 4646,
+      "proxyTriangles": 3495,
+      "files": {
+        "resources/hd_additions/assets": "47033e55004c5baa55b6e4272f6af47447d950422524077470f1e619fa2bfdee",
+        "models-simple": "2b977976322e955ce25480116410f4cd1c4d18771beddd39436a79b89e555aea"
+      }
+    },
+    {
+      "id": "B_STR_AB_NW1",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_20.SCENE.MBIN",
+          "locator": "NORTHWEST1_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW1_PLACEMENT\\ENTITIES\\EXTSTR1X1NW1.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 4646,
+      "proxyTriangles": 3495,
+      "files": {
+        "resources/hd_additions/assets": "cfd6114e8a9d4baf2d31a7d72491d1005373a00b86cd4929b007a20afb24e893",
+        "models-simple": "23c9afc791e76d208abe2962fc6f63fd13e7833b2a5150fe20e096e782c94fb9"
+      }
+    },
+    {
+      "id": "B_STR_AB_NW2",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_20.SCENE.MBIN",
+          "locator": "NORTHWEST2_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW2_PLACEMENT\\ENTITIES\\EXTSTR1X1NW2.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 4646,
+      "proxyTriangles": 3495,
+      "files": {
+        "resources/hd_additions/assets": "12b4913621ba83d6edc5ccb9f7a36e379b451acf3b37c0e3eb7ab62773ef01b2",
+        "models-simple": "79d1a44d9148fa4dc7bd8e8623a83ac14245c7390145850ecbe797f895005860"
+      }
+    },
+    {
+      "id": "B_STR_AB_NW3",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_NW3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_20.SCENE.MBIN",
+          "locator": "NORTHWEST3_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_NW3_PLACEMENT\\ENTITIES\\EXTSTR1X1NW3.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 4646,
+      "proxyTriangles": 3495,
+      "files": {
+        "resources/hd_additions/assets": "5cfa52cf2393cc1a61cbc81337900da2add1454029a0e33da97762ef547660b3",
+        "models-simple": "bba5a7d4eb5c6bcc42e29b33c916cb1b036a5a2ec98295723ecec881deb77ca9"
+      }
+    },
+    {
+      "id": "B_STR_AB_S",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_S_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_19.SCENE.MBIN",
+          "locator": "SOUTH_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_S_PLACEMENT\\ENTITIES\\EXTSTR1X1S.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 10467,
+      "proxyTriangles": 3499,
+      "files": {
+        "resources/hd_additions/assets": "293bc692fda28c8be6971dfdb189cd641a8d88b3541fe123df1bc0d825d06ba3",
+        "models-simple": "ef7053e17a76c67501e41ab326194f14e3c5f7d4271799aa0bdfebf80c8de760"
+      }
+    },
+    {
+      "id": "B_STR_AB_W",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_W_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_19.SCENE.MBIN",
+          "locator": "WEST_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_W_PLACEMENT\\ENTITIES\\EXTSTR1X1W.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 10467,
+      "proxyTriangles": 3499,
+      "files": {
+        "resources/hd_additions/assets": "ca62a35dce0e04cf2259c04ecafe5078d43cae812b14303a7c5fe5a5c9296acd",
+        "models-simple": "1058c802a4543780aa0a1652bf1172b6682eb03fc27d8e5e2ab35b84b8062515"
+      }
+    },
+    {
+      "id": "B_STR_AB_Y_E",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_E_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_19.SCENE.MBIN",
+          "locator": "EASTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_E_PLACEMENT\\ENTITIES\\EXTSTR1X1YE.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 10467,
+      "proxyTriangles": 3499,
+      "files": {
+        "resources/hd_additions/assets": "d96b4469e368972109b202117b13519736582c55f57e27d2fa74bdc071b2bb70",
+        "models-simple": "3246f1addea2031cd6ac954db291d5dd4ecee94c1ed9471ec8517bbc0b5c1421"
+      }
+    },
+    {
+      "id": "B_STR_AB_Y_N",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_N_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_19.SCENE.MBIN",
+          "locator": "NORTHY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_N_PLACEMENT\\ENTITIES\\EXTSTR1X1YN.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 10467,
+      "proxyTriangles": 3499,
+      "files": {
+        "resources/hd_additions/assets": "f57428b299002418b47846ad79bb1d8a31fb5b7ffa51de1d0830a8ed7095e34e",
+        "models-simple": "7cf499ba794a5f96c977a3f648c0f26e51cd5359bddba0e72d3a8968ab770700"
+      }
+    },
+    {
+      "id": "B_STR_AB_Y_NE",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_20.SCENE.MBIN",
+          "locator": "NORTHEAST0Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 4646,
+      "proxyTriangles": 3495,
+      "files": {
+        "resources/hd_additions/assets": "9a0f490cd272789b5a35f4b10b4f170564e52b858b88e5d9f74f551e16f6abeb",
+        "models-simple": "362dbc507a294c36fc8b7797380c8e85ea5cef3f1d597d3cccb4a5693cd73b3c"
+      }
+    },
+    {
+      "id": "B_STR_AB_Y_NE1",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_20.SCENE.MBIN",
+          "locator": "NORTHEAST1Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE1_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE1.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 4646,
+      "proxyTriangles": 3495,
+      "files": {
+        "resources/hd_additions/assets": "7ef66662e890f8ac9dfa1134184264bb85d6bea89b00d4b130014bcec0552df7",
+        "models-simple": "7aa6430f24ce8ebfca604142fd7e9671446ffb297de2311843d2f9fe8ddcabab"
+      }
+    },
+    {
+      "id": "B_STR_AB_Y_NE2",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_20.SCENE.MBIN",
+          "locator": "NORTHEAST2Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE2_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE2.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 4646,
+      "proxyTriangles": 3495,
+      "files": {
+        "resources/hd_additions/assets": "3d69e3c2626e166f034ca8903dc2926e30079225f094f1e178e30b8a29a1ef44",
+        "models-simple": "a751d0afacaea1bebe4a287578a4e2b624af475e0eb6ad5cc4e219b54b37b827"
+      }
+    },
+    {
+      "id": "B_STR_AB_Y_NE3",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NE3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NW",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NW_20.SCENE.MBIN",
+          "locator": "NORTHEAST3Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NE3_PLACEMENT\\ENTITIES\\EXTSTR1X1YNE3.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 4646,
+      "proxyTriangles": 3495,
+      "files": {
+        "resources/hd_additions/assets": "c11f95b69f9df55343ee5d1dc68630e22ff80e18814cb310cfdc4e21be96d35a",
+        "models-simple": "dfb1ed5e864828630dbc438e2432d174376ac2c4ed86656c8c0e914b3a7b062b"
+      }
+    },
+    {
+      "id": "B_STR_AB_Y_NW",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_20.SCENE.MBIN",
+          "locator": "NORTHWESTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 4646,
+      "proxyTriangles": 3495,
+      "files": {
+        "resources/hd_additions/assets": "65e8c8175a34c4b026ce1c1f1866213739a7afc1335ffd4d6b31bb0c7bc9afed",
+        "models-simple": "88c3dbf8f6c3da9f40c3bb2c8c352fc18d23eec2d9f4a96bb3581c12b51dd7b0"
+      }
+    },
+    {
+      "id": "B_STR_AB_Y_NW1",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW1_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_20.SCENE.MBIN",
+          "locator": "NORTHWEST1Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW1_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW1.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 4646,
+      "proxyTriangles": 3495,
+      "files": {
+        "resources/hd_additions/assets": "acf4427e700e92ecb5170b8d4cf0d53ae6256e8f2f9901b95027292055be319c",
+        "models-simple": "7e7985d9e5eb56d444d6ffa8c84464110caa5cc3dc9ee3ef53c90a4174be45f9"
+      }
+    },
+    {
+      "id": "B_STR_AB_Y_NW2",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW2_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_20.SCENE.MBIN",
+          "locator": "NORTHWEST2Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW2_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW2.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 4646,
+      "proxyTriangles": 3495,
+      "files": {
+        "resources/hd_additions/assets": "6239a3a069c9c2bd5fa5d5291bdba52f66dcbe191c0a8296fac7e09bec29c663",
+        "models-simple": "6d4659a313cc21c2af04d46b397e53642f2df341a92255779ae888c4fd2adb4b"
+      }
+    },
+    {
+      "id": "B_STR_AB_Y_NW3",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_NW3_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_NE",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_NE_20.SCENE.MBIN",
+          "locator": "NORTHWEST3Y_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_NW3_PLACEMENT\\ENTITIES\\EXTSTR1X1YNW3.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 4646,
+      "proxyTriangles": 3495,
+      "files": {
+        "resources/hd_additions/assets": "da5880ad13cd819af2cd41d3e2f473240a24e5059b0a3d3b2a4d445758742319",
+        "models-simple": "d73f30b9bb6f0508ab4f12b964ad78bf485c7b37fd56c1ef3aae5871cfb1357a"
+      }
+    },
+    {
+      "id": "B_STR_AB_Y_S",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_S_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_19.SCENE.MBIN",
+          "locator": "SOUTHY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_S_PLACEMENT\\ENTITIES\\EXTSTR1X1YS.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 10467,
+      "proxyTriangles": 3499,
+      "files": {
+        "resources/hd_additions/assets": "09321089199f30476046de6863d81d9e5ad8eb2ad142b8aec53a39a853cfb074",
+        "models-simple": "64fc16c43d9825aea96204a214dfc31b7260672d2735ee41b743b1c0ad1c7eb2"
+      }
+    },
+    {
+      "id": "B_STR_AB_Y_W",
+      "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_STRUCTURAL_1X1_Y_W_PLACEMENT.SCENE.MBIN",
+      "nativeComponents": [
+        {
+          "partId": "_BIGGS_EXTSTR_1X1_N",
+          "scene": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/PARTS/STRUCTURAL/STRUCTURAL_1X1_N_19.SCENE.MBIN",
+          "locator": "WESTY_",
+          "entity": "MODELS\\COMMON\\SPACECRAFT\\BIGGS\\MODULES\\EXT_STRUCTURAL_1X1_Y_W_PLACEMENT\\ENTITIES\\EXTSTR1X1YW.ENTITY.MBIN"
+        }
+      ],
+      "triangles": 10467,
+      "proxyTriangles": 3499,
+      "files": {
+        "resources/hd_additions/assets": "254423ed36fc461adc9276f377dfda6aa7920357491b9599585a08c4a3bb7b29",
+        "models-simple": "177d71deaa08dc3cd85eae6119c60a86db514dec52896250719338fb8da229f2"
+      }
+    }
+  ],
+  "textures": [
+    "53ca39e97c8a_biggsatlasdetail.occlusion.png",
+    "5c48e38d9003_biggsatlasdetail.png",
+    "6c4023f67bd1_biggstrim.normal.png",
+    "6f317014c07d_interiorfreighterlights.png",
+    "7225e3a9e2cd_biggsatlasdetail.masks.png",
+    "729c0a74b9fb_biggstrim.png",
+    "8e3f32285a4f_biggsatlasdetail.normal.png",
+    "b34b24446cf4_biggsatlasglow.png",
+    "b4a8b27ff0a1_biggstrim.masks.png",
+    "d54058aeb03f_biggstrim.base.1.occlusion.png",
+    "ec1b84a2687c_biggstrim.colourisemask.png"
+  ]
+}

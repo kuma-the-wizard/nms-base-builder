@@ -15,11 +15,13 @@ import urllib.request
 
 API = 'https://furiousfurby.com/bbe-chat/api/'
 MAX_BYTES = 20 * 1024 * 1024
+MAX_BUILD_BYTES = 64 * 1024 * 1024
+BUILD_SUFFIXES = {'.json', '.nmsbase', '.nmsprefab', '.txt'}
 MAX_FILE_BYTES = 2 * 1024 * 1024 * 1024
 CHUNK_BYTES = 4 * 1024 * 1024
-LARGE_SUFFIXES = {".blend", ".zip", ".pdf"}
+LARGE_SUFFIXES = {".blend", ".zip", ".pdf", ".nmsship"}
 MEDIA_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".mp4", ".webm"}
-MIMES = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.webm', '.blend', '.zip', '.pdf', '.json', '.nmsbase', '.nmsship', '.txt', '.log'}
+MIMES = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.webm', '.blend', '.zip', '.pdf', '.json', '.nmsbase', '.nmsship', '.nmsprefab', '.txt', '.log'}
 
 
 class ChatError(RuntimeError):
@@ -29,7 +31,8 @@ class ChatError(RuntimeError):
 
 
 def file_limit(path):
-    return MAX_FILE_BYTES if Path(path).suffix.lower() in LARGE_SUFFIXES else MAX_BYTES
+    suffix = Path(path).suffix.lower()
+    return MAX_FILE_BYTES if suffix in LARGE_SUFFIXES else MAX_BUILD_BYTES if suffix in BUILD_SUFFIXES else MAX_BYTES
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -214,9 +217,9 @@ def run(action, detail):
         if detail['file']:
             file = Path(detail['file'])
             if not 0 < file.stat().st_size <= file_limit(file):
-                raise RuntimeError('Use BLEND, ZIP or PDF up to 2 GB; other supported files up to 20 MB')
+                raise RuntimeError('Use BLEND, ZIP, NMSSHIP or PDF up to 2 GB; build/text files up to 64 MB; media up to 20 MB')
             if file.suffix.lower() not in MIMES:
-                raise RuntimeError('Choose an image, video, BLEND, ZIP, PDF, JSON, NMSBASE, NMSSHIP, TXT or LOG')
+                raise RuntimeError('Choose an image, video, BLEND, ZIP, PDF, JSON, NMSBASE, NMSSHIP, NMSPREFAB, TXT or LOG')
             if file.suffix.lower() not in MEDIA_SUFFIXES and detail.get('_chunkedFiles', True):
                 return upload_file(file, detail)
             if file.stat().st_size > MAX_BYTES:

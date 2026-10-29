@@ -1,0 +1,1401 @@
+{
+  "gameBuild": 26271400,
+  "policy": "Use native game icons by default; explicitly reviewed replacements for missing, marked or incorrect artwork only.",
+  "renderStyle": "Native geometry and textures; neutral studio paint and lighting; transparent background.",
+  "icons": {
+    "B_WNG_Y": {
+      "kind": "native-model-render",
+      "reason": "Game icon has a red X over a usable part",
+      "renderRoot": "B_WNG_Y",
+      "sourceModelSha256": "2bea535949bec74d653ae65985a3ba4b9a26f9a9e259601e9096ac1d928cc16d",
+      "pngSha256": "2b92a4985276ae3177bd2ba92b9a70b7118ceb86f6d4780ac713f79da4f1c942",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_wng1x2_y.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_WNG_Y_B": {
+      "kind": "native-model-render",
+      "reason": "Game icon has a red X over a usable part",
+      "renderRoot": "B_WNG_Y",
+      "sourceModelSha256": "2bea535949bec74d653ae65985a3ba4b9a26f9a9e259601e9096ac1d928cc16d",
+      "pngSha256": "2b92a4985276ae3177bd2ba92b9a70b7118ceb86f6d4780ac713f79da4f1c942",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_wng1x2_y.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_WNG_Y_R": {
+      "kind": "native-model-render",
+      "reason": "Game icon has a red X over a usable part",
+      "renderRoot": "B_WNG_Y",
+      "sourceModelSha256": "2bea535949bec74d653ae65985a3ba4b9a26f9a9e259601e9096ac1d928cc16d",
+      "pngSha256": "2b92a4985276ae3177bd2ba92b9a70b7118ceb86f6d4780ac713f79da4f1c942",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_wng1x2_y.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_WNG_Y_T": {
+      "kind": "native-model-render",
+      "reason": "Game icon has a red X over a usable part",
+      "renderRoot": "B_WNG_Y",
+      "sourceModelSha256": "2bea535949bec74d653ae65985a3ba4b9a26f9a9e259601e9096ac1d928cc16d",
+      "pngSha256": "2b92a4985276ae3177bd2ba92b9a70b7118ceb86f6d4780ac713f79da4f1c942",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_wng1x2_y.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_GEN_4": {
+      "kind": "native-model-render",
+      "reason": "Game icon shows an obsolete model",
+      "renderRoot": "B_GEN_4",
+      "sourceModelSha256": "1c537eb7f0f36f52537737571a8aae438ffb13c486c6163c58be7a0540fb27bc",
+      "pngSha256": "f69f112ede35776a3aad0cffa48adb7e697c72fc0b5e198825e63a241263d7cd",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_gen1x1_4.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_GEN_5": {
+      "kind": "native-model-render",
+      "reason": "Game icon has a red X and shows an obsolete model",
+      "renderRoot": "B_GEN_5",
+      "sourceModelSha256": "1a80ce250a4aa4a04303d9be4bd26d1bc749c2adf985249b3f479082cda34e55",
+      "pngSha256": "be080987c9374d3572a20c1307505409042745716a6eb6e4d0f3e2949d54c077",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_gen1x1_5.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_TUR_F": {
+      "kind": "native-model-render",
+      "reason": "Game icon shows an obsolete model",
+      "renderRoot": "B_TUR_F",
+      "sourceModelSha256": "a3eee7ab25e4cfc89e6a7b357318de1fd48c252817debad5be6c71f954edc926",
+      "pngSha256": "5f7a2e1470bc0693cf9320b3b9aa8fbb8737b5187abacc8baec1e92014faff5f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_tur1x1_f.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AH_NETB": {
+      "kind": "native-model-render",
+      "reason": "Game icon is a marked opaque-background placeholder",
+      "renderRoot": "B_STR_AH_NETB",
+      "sourceModelSha256": "e1ad866b4617cdca9ed3311609c786a2484098bb1d594fe6ec6b0677f680838f",
+      "pngSha256": "3b8b71b813e4bccad1c0f5f3d739c7b2433360bc1bf6a49a69c332648f466039",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ah_netb.dds",
+      "cameraDirection": [
+        -0.5026090145111084,
+        0.7732446789741516,
+        0.3866223394870758
+      ]
+    },
+    "B_STR_AH_NETB1": {
+      "kind": "native-model-render",
+      "reason": "Game icon is a marked opaque-background placeholder",
+      "renderRoot": "B_STR_AH_NETB",
+      "sourceModelSha256": "e1ad866b4617cdca9ed3311609c786a2484098bb1d594fe6ec6b0677f680838f",
+      "pngSha256": "3b8b71b813e4bccad1c0f5f3d739c7b2433360bc1bf6a49a69c332648f466039",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ah_netb.dds",
+      "cameraDirection": [
+        -0.5026090145111084,
+        0.7732446789741516,
+        0.3866223394870758
+      ]
+    },
+    "B_STR_AH_NETB2": {
+      "kind": "native-model-render",
+      "reason": "Game icon is a marked opaque-background placeholder",
+      "renderRoot": "B_STR_AH_NETB",
+      "sourceModelSha256": "e1ad866b4617cdca9ed3311609c786a2484098bb1d594fe6ec6b0677f680838f",
+      "pngSha256": "3b8b71b813e4bccad1c0f5f3d739c7b2433360bc1bf6a49a69c332648f466039",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ah_netb.dds",
+      "cameraDirection": [
+        -0.5026090145111084,
+        0.7732446789741516,
+        0.3866223394870758
+      ]
+    },
+    "B_STR_AH_NETB3": {
+      "kind": "native-model-render",
+      "reason": "Game icon is a marked opaque-background placeholder",
+      "renderRoot": "B_STR_AH_NETB",
+      "sourceModelSha256": "e1ad866b4617cdca9ed3311609c786a2484098bb1d594fe6ec6b0677f680838f",
+      "pngSha256": "3b8b71b813e4bccad1c0f5f3d739c7b2433360bc1bf6a49a69c332648f466039",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ah_netb.dds",
+      "cameraDirection": [
+        -0.5026090145111084,
+        0.7732446789741516,
+        0.3866223394870758
+      ]
+    },
+    "B_STR_AH_NWTB": {
+      "kind": "native-model-render",
+      "reason": "Game icon is a marked opaque-background placeholder",
+      "renderRoot": "B_STR_AH_NETB",
+      "sourceModelSha256": "e1ad866b4617cdca9ed3311609c786a2484098bb1d594fe6ec6b0677f680838f",
+      "pngSha256": "3b8b71b813e4bccad1c0f5f3d739c7b2433360bc1bf6a49a69c332648f466039",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ah_netb.dds",
+      "cameraDirection": [
+        -0.5026090145111084,
+        0.7732446789741516,
+        0.3866223394870758
+      ]
+    },
+    "B_STR_AH_NWTB1": {
+      "kind": "native-model-render",
+      "reason": "Game icon is a marked opaque-background placeholder",
+      "renderRoot": "B_STR_AH_NETB",
+      "sourceModelSha256": "e1ad866b4617cdca9ed3311609c786a2484098bb1d594fe6ec6b0677f680838f",
+      "pngSha256": "3b8b71b813e4bccad1c0f5f3d739c7b2433360bc1bf6a49a69c332648f466039",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ah_netb.dds",
+      "cameraDirection": [
+        -0.5026090145111084,
+        0.7732446789741516,
+        0.3866223394870758
+      ]
+    },
+    "B_STR_AH_NWTB2": {
+      "kind": "native-model-render",
+      "reason": "Game icon is a marked opaque-background placeholder",
+      "renderRoot": "B_STR_AH_NETB",
+      "sourceModelSha256": "e1ad866b4617cdca9ed3311609c786a2484098bb1d594fe6ec6b0677f680838f",
+      "pngSha256": "3b8b71b813e4bccad1c0f5f3d739c7b2433360bc1bf6a49a69c332648f466039",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ah_netb.dds",
+      "cameraDirection": [
+        -0.5026090145111084,
+        0.7732446789741516,
+        0.3866223394870758
+      ]
+    },
+    "B_STR_AH_NWTB3": {
+      "kind": "native-model-render",
+      "reason": "Game icon is a marked opaque-background placeholder",
+      "renderRoot": "B_STR_AH_NETB",
+      "sourceModelSha256": "e1ad866b4617cdca9ed3311609c786a2484098bb1d594fe6ec6b0677f680838f",
+      "pngSha256": "3b8b71b813e4bccad1c0f5f3d739c7b2433360bc1bf6a49a69c332648f466039",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ah_netb.dds",
+      "cameraDirection": [
+        -0.5026090145111084,
+        0.7732446789741516,
+        0.3866223394870758
+      ]
+    },
+    "B_STR_AI_NETB": {
+      "kind": "native-model-render",
+      "reason": "Game icon is a marked opaque-background placeholder",
+      "renderRoot": "B_STR_AI_NETB",
+      "sourceModelSha256": "97e2a1382ec80d68c8b33e28596ffb720cd947fa8ca304c9a36ea74b412a862d",
+      "pngSha256": "e69d060d7d9258eae09ee0bca6e1bdbd040c207d2fda50355afba18de52a4962",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ai_netb.dds",
+      "cameraDirection": [
+        -0.5026090145111084,
+        0.7732446789741516,
+        0.3866223394870758
+      ]
+    },
+    "B_STR_AI_NETB1": {
+      "kind": "native-model-render",
+      "reason": "Game icon is a marked opaque-background placeholder",
+      "renderRoot": "B_STR_AI_NETB",
+      "sourceModelSha256": "97e2a1382ec80d68c8b33e28596ffb720cd947fa8ca304c9a36ea74b412a862d",
+      "pngSha256": "e69d060d7d9258eae09ee0bca6e1bdbd040c207d2fda50355afba18de52a4962",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ai_netb.dds",
+      "cameraDirection": [
+        -0.5026090145111084,
+        0.7732446789741516,
+        0.3866223394870758
+      ]
+    },
+    "B_STR_AI_NETB2": {
+      "kind": "native-model-render",
+      "reason": "Game icon is a marked opaque-background placeholder",
+      "renderRoot": "B_STR_AI_NETB",
+      "sourceModelSha256": "97e2a1382ec80d68c8b33e28596ffb720cd947fa8ca304c9a36ea74b412a862d",
+      "pngSha256": "e69d060d7d9258eae09ee0bca6e1bdbd040c207d2fda50355afba18de52a4962",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ai_netb.dds",
+      "cameraDirection": [
+        -0.5026090145111084,
+        0.7732446789741516,
+        0.3866223394870758
+      ]
+    },
+    "B_STR_AI_NETB3": {
+      "kind": "native-model-render",
+      "reason": "Game icon is a marked opaque-background placeholder",
+      "renderRoot": "B_STR_AI_NETB",
+      "sourceModelSha256": "97e2a1382ec80d68c8b33e28596ffb720cd947fa8ca304c9a36ea74b412a862d",
+      "pngSha256": "e69d060d7d9258eae09ee0bca6e1bdbd040c207d2fda50355afba18de52a4962",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ai_netb.dds",
+      "cameraDirection": [
+        -0.5026090145111084,
+        0.7732446789741516,
+        0.3866223394870758
+      ]
+    },
+    "B_STR_AI_NWTB": {
+      "kind": "native-model-render",
+      "reason": "Game icon is a marked opaque-background placeholder",
+      "renderRoot": "B_STR_AI_NETB",
+      "sourceModelSha256": "97e2a1382ec80d68c8b33e28596ffb720cd947fa8ca304c9a36ea74b412a862d",
+      "pngSha256": "e69d060d7d9258eae09ee0bca6e1bdbd040c207d2fda50355afba18de52a4962",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ai_netb.dds",
+      "cameraDirection": [
+        -0.5026090145111084,
+        0.7732446789741516,
+        0.3866223394870758
+      ]
+    },
+    "B_STR_AI_NWTB1": {
+      "kind": "native-model-render",
+      "reason": "Game icon is a marked opaque-background placeholder",
+      "renderRoot": "B_STR_AI_NETB",
+      "sourceModelSha256": "97e2a1382ec80d68c8b33e28596ffb720cd947fa8ca304c9a36ea74b412a862d",
+      "pngSha256": "e69d060d7d9258eae09ee0bca6e1bdbd040c207d2fda50355afba18de52a4962",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ai_netb.dds",
+      "cameraDirection": [
+        -0.5026090145111084,
+        0.7732446789741516,
+        0.3866223394870758
+      ]
+    },
+    "B_STR_AI_NWTB2": {
+      "kind": "native-model-render",
+      "reason": "Game icon is a marked opaque-background placeholder",
+      "renderRoot": "B_STR_AI_NETB",
+      "sourceModelSha256": "97e2a1382ec80d68c8b33e28596ffb720cd947fa8ca304c9a36ea74b412a862d",
+      "pngSha256": "e69d060d7d9258eae09ee0bca6e1bdbd040c207d2fda50355afba18de52a4962",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ai_netb.dds",
+      "cameraDirection": [
+        -0.5026090145111084,
+        0.7732446789741516,
+        0.3866223394870758
+      ]
+    },
+    "B_STR_AI_NWTB3": {
+      "kind": "native-model-render",
+      "reason": "Game icon is a marked opaque-background placeholder",
+      "renderRoot": "B_STR_AI_NETB",
+      "sourceModelSha256": "97e2a1382ec80d68c8b33e28596ffb720cd947fa8ca304c9a36ea74b412a862d",
+      "pngSha256": "e69d060d7d9258eae09ee0bca6e1bdbd040c207d2fda50355afba18de52a4962",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ai_netb.dds",
+      "cameraDirection": [
+        -0.5026090145111084,
+        0.7732446789741516,
+        0.3866223394870758
+      ]
+    },
+    "B_STR_AM_NE": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AM_NE",
+      "sourceModelSha256": "902389c6579e89fa769e4231b70dc0430c0f5b4c4d629490e756b83f6e47d7bb",
+      "pngSha256": "029cdbcc53909f783a6688c3bb741cd94961f27787d7d2fb1512cd89c6ff5f8e",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_am_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AM_NE1": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AM_NE",
+      "sourceModelSha256": "902389c6579e89fa769e4231b70dc0430c0f5b4c4d629490e756b83f6e47d7bb",
+      "pngSha256": "029cdbcc53909f783a6688c3bb741cd94961f27787d7d2fb1512cd89c6ff5f8e",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_am_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AM_NE2": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AM_NE",
+      "sourceModelSha256": "902389c6579e89fa769e4231b70dc0430c0f5b4c4d629490e756b83f6e47d7bb",
+      "pngSha256": "029cdbcc53909f783a6688c3bb741cd94961f27787d7d2fb1512cd89c6ff5f8e",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_am_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AM_NE3": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AM_NE",
+      "sourceModelSha256": "902389c6579e89fa769e4231b70dc0430c0f5b4c4d629490e756b83f6e47d7bb",
+      "pngSha256": "029cdbcc53909f783a6688c3bb741cd94961f27787d7d2fb1512cd89c6ff5f8e",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_am_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AM_NW": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AM_NE",
+      "sourceModelSha256": "902389c6579e89fa769e4231b70dc0430c0f5b4c4d629490e756b83f6e47d7bb",
+      "pngSha256": "029cdbcc53909f783a6688c3bb741cd94961f27787d7d2fb1512cd89c6ff5f8e",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_am_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AM_NW1": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AM_NE",
+      "sourceModelSha256": "902389c6579e89fa769e4231b70dc0430c0f5b4c4d629490e756b83f6e47d7bb",
+      "pngSha256": "029cdbcc53909f783a6688c3bb741cd94961f27787d7d2fb1512cd89c6ff5f8e",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_am_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AM_NW2": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AM_NE",
+      "sourceModelSha256": "902389c6579e89fa769e4231b70dc0430c0f5b4c4d629490e756b83f6e47d7bb",
+      "pngSha256": "029cdbcc53909f783a6688c3bb741cd94961f27787d7d2fb1512cd89c6ff5f8e",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_am_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AM_NW3": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AM_NE",
+      "sourceModelSha256": "902389c6579e89fa769e4231b70dc0430c0f5b4c4d629490e756b83f6e47d7bb",
+      "pngSha256": "029cdbcc53909f783a6688c3bb741cd94961f27787d7d2fb1512cd89c6ff5f8e",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_am_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AM_Y_NE": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AM_NE",
+      "sourceModelSha256": "902389c6579e89fa769e4231b70dc0430c0f5b4c4d629490e756b83f6e47d7bb",
+      "pngSha256": "029cdbcc53909f783a6688c3bb741cd94961f27787d7d2fb1512cd89c6ff5f8e",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_am_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AM_Y_NE1": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AM_NE",
+      "sourceModelSha256": "902389c6579e89fa769e4231b70dc0430c0f5b4c4d629490e756b83f6e47d7bb",
+      "pngSha256": "029cdbcc53909f783a6688c3bb741cd94961f27787d7d2fb1512cd89c6ff5f8e",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_am_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AM_Y_NE2": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AM_NE",
+      "sourceModelSha256": "902389c6579e89fa769e4231b70dc0430c0f5b4c4d629490e756b83f6e47d7bb",
+      "pngSha256": "029cdbcc53909f783a6688c3bb741cd94961f27787d7d2fb1512cd89c6ff5f8e",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_am_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AM_Y_NE3": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AM_NE",
+      "sourceModelSha256": "902389c6579e89fa769e4231b70dc0430c0f5b4c4d629490e756b83f6e47d7bb",
+      "pngSha256": "029cdbcc53909f783a6688c3bb741cd94961f27787d7d2fb1512cd89c6ff5f8e",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_am_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AM_Y_NW": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AM_NE",
+      "sourceModelSha256": "902389c6579e89fa769e4231b70dc0430c0f5b4c4d629490e756b83f6e47d7bb",
+      "pngSha256": "029cdbcc53909f783a6688c3bb741cd94961f27787d7d2fb1512cd89c6ff5f8e",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_am_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AM_Y_NW1": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AM_NE",
+      "sourceModelSha256": "902389c6579e89fa769e4231b70dc0430c0f5b4c4d629490e756b83f6e47d7bb",
+      "pngSha256": "029cdbcc53909f783a6688c3bb741cd94961f27787d7d2fb1512cd89c6ff5f8e",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_am_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AM_Y_NW2": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AM_NE",
+      "sourceModelSha256": "902389c6579e89fa769e4231b70dc0430c0f5b4c4d629490e756b83f6e47d7bb",
+      "pngSha256": "029cdbcc53909f783a6688c3bb741cd94961f27787d7d2fb1512cd89c6ff5f8e",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_am_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AM_Y_NW3": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AM_NE",
+      "sourceModelSha256": "902389c6579e89fa769e4231b70dc0430c0f5b4c4d629490e756b83f6e47d7bb",
+      "pngSha256": "029cdbcc53909f783a6688c3bb741cd94961f27787d7d2fb1512cd89c6ff5f8e",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_am_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AN_NE": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AN_NE",
+      "sourceModelSha256": "4d38a431b23309f8dfe949470da09e14b10f4b685c5b8b113d4b814204611e2c",
+      "pngSha256": "c6aea013a2cb1f10fd952903e94ac80f57548e7e84395d130b6e9ddda73bc305",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_an_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AN_NE1": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AN_NE",
+      "sourceModelSha256": "4d38a431b23309f8dfe949470da09e14b10f4b685c5b8b113d4b814204611e2c",
+      "pngSha256": "c6aea013a2cb1f10fd952903e94ac80f57548e7e84395d130b6e9ddda73bc305",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_an_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AN_NE2": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AN_NE",
+      "sourceModelSha256": "4d38a431b23309f8dfe949470da09e14b10f4b685c5b8b113d4b814204611e2c",
+      "pngSha256": "c6aea013a2cb1f10fd952903e94ac80f57548e7e84395d130b6e9ddda73bc305",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_an_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AN_NE3": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AN_NE",
+      "sourceModelSha256": "4d38a431b23309f8dfe949470da09e14b10f4b685c5b8b113d4b814204611e2c",
+      "pngSha256": "c6aea013a2cb1f10fd952903e94ac80f57548e7e84395d130b6e9ddda73bc305",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_an_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AN_NW": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AN_NE",
+      "sourceModelSha256": "4d38a431b23309f8dfe949470da09e14b10f4b685c5b8b113d4b814204611e2c",
+      "pngSha256": "c6aea013a2cb1f10fd952903e94ac80f57548e7e84395d130b6e9ddda73bc305",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_an_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AN_NW1": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AN_NE",
+      "sourceModelSha256": "4d38a431b23309f8dfe949470da09e14b10f4b685c5b8b113d4b814204611e2c",
+      "pngSha256": "c6aea013a2cb1f10fd952903e94ac80f57548e7e84395d130b6e9ddda73bc305",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_an_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AN_NW2": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AN_NE",
+      "sourceModelSha256": "4d38a431b23309f8dfe949470da09e14b10f4b685c5b8b113d4b814204611e2c",
+      "pngSha256": "c6aea013a2cb1f10fd952903e94ac80f57548e7e84395d130b6e9ddda73bc305",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_an_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AN_NW3": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AN_NE",
+      "sourceModelSha256": "4d38a431b23309f8dfe949470da09e14b10f4b685c5b8b113d4b814204611e2c",
+      "pngSha256": "c6aea013a2cb1f10fd952903e94ac80f57548e7e84395d130b6e9ddda73bc305",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_an_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AN_Y_NE": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AN_NE",
+      "sourceModelSha256": "4d38a431b23309f8dfe949470da09e14b10f4b685c5b8b113d4b814204611e2c",
+      "pngSha256": "c6aea013a2cb1f10fd952903e94ac80f57548e7e84395d130b6e9ddda73bc305",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_an_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AN_Y_NE1": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AN_NE",
+      "sourceModelSha256": "4d38a431b23309f8dfe949470da09e14b10f4b685c5b8b113d4b814204611e2c",
+      "pngSha256": "c6aea013a2cb1f10fd952903e94ac80f57548e7e84395d130b6e9ddda73bc305",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_an_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AN_Y_NE2": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AN_NE",
+      "sourceModelSha256": "4d38a431b23309f8dfe949470da09e14b10f4b685c5b8b113d4b814204611e2c",
+      "pngSha256": "c6aea013a2cb1f10fd952903e94ac80f57548e7e84395d130b6e9ddda73bc305",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_an_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AN_Y_NE3": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AN_NE",
+      "sourceModelSha256": "4d38a431b23309f8dfe949470da09e14b10f4b685c5b8b113d4b814204611e2c",
+      "pngSha256": "c6aea013a2cb1f10fd952903e94ac80f57548e7e84395d130b6e9ddda73bc305",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_an_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AN_Y_NW": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AN_NE",
+      "sourceModelSha256": "4d38a431b23309f8dfe949470da09e14b10f4b685c5b8b113d4b814204611e2c",
+      "pngSha256": "c6aea013a2cb1f10fd952903e94ac80f57548e7e84395d130b6e9ddda73bc305",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_an_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AN_Y_NW1": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AN_NE",
+      "sourceModelSha256": "4d38a431b23309f8dfe949470da09e14b10f4b685c5b8b113d4b814204611e2c",
+      "pngSha256": "c6aea013a2cb1f10fd952903e94ac80f57548e7e84395d130b6e9ddda73bc305",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_an_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AN_Y_NW2": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AN_NE",
+      "sourceModelSha256": "4d38a431b23309f8dfe949470da09e14b10f4b685c5b8b113d4b814204611e2c",
+      "pngSha256": "c6aea013a2cb1f10fd952903e94ac80f57548e7e84395d130b6e9ddda73bc305",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_an_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_STR_AN_Y_NW3": {
+      "kind": "native-model-render",
+      "reason": "Game icon is an opaque-background work-in-progress preview",
+      "renderRoot": "B_STR_AN_NE",
+      "sourceModelSha256": "4d38a431b23309f8dfe949470da09e14b10f4b685c5b8b113d4b814204611e2c",
+      "pngSha256": "c6aea013a2cb1f10fd952903e94ac80f57548e7e84395d130b6e9ddda73bc305",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_an_ne.dds",
+      "cameraDirection": [
+        -0.5491889715194702,
+        0.7322520017623901,
+        0.4027386009693146
+      ]
+    },
+    "B_LAN_B": {
+      "kind": "native-model-render",
+      "reason": "Game has no usable product icon",
+      "renderRoot": "B_LAN_B",
+      "sourceModelSha256": "684418f2a19b5a303cd355447f87cb34479a066e5446cf68f6ba5d309a001996",
+      "pngSha256": "9d6915a522a9f79c5c6fc2404f5eca925d834ede3e61b2987c3473853f9535d5",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_lan1x2_b.dds",
+      "cameraDirection": [
+        0.5235036611557007,
+        -0.6980048418045044,
+        0.4886033833026886
+      ]
+    },
+    "B_CON_4": {
+      "kind": "native-model-render",
+      "reason": "Game icon has an opaque gray background",
+      "renderRoot": "B_CON_4",
+      "sourceModelSha256": "3c8611cafde54ed37a210328a42c125a2a492dc2e937ea840f4ffbda2c4046b4",
+      "pngSha256": "7e901ecfa0326e941bd1d37a597ff24ab0ddb48a69f4de5ef97fcab708c91861",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_con1x1_4.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_DECO_U": {
+      "kind": "native-model-render",
+      "reason": "Game placeholder icon does not depict the assigned pyramid mesh",
+      "renderRoot": "B_DECO_U",
+      "sourceModelSha256": "d34d2938c2bdb271025b92057418433c199fa455e8bbb159d05a9622f7006598",
+      "pngSha256": "09695dd69e18120d9a96fe2da850c761927f408f016ee90017b95c3dcf929a09",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_deco1x1_u.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_NE": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_NE",
+      "sourceModelSha256": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+      "pngSha256": "528f16fe9343e13258b8fdb83376708acdb333df5f2a0a1150fc0ce57e6a642f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ab_ne.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_NE1": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_NE",
+      "sourceModelSha256": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+      "pngSha256": "528f16fe9343e13258b8fdb83376708acdb333df5f2a0a1150fc0ce57e6a642f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ab_ne.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_NE2": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_NE",
+      "sourceModelSha256": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+      "pngSha256": "528f16fe9343e13258b8fdb83376708acdb333df5f2a0a1150fc0ce57e6a642f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ab_ne.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_NE3": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_NE",
+      "sourceModelSha256": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+      "pngSha256": "528f16fe9343e13258b8fdb83376708acdb333df5f2a0a1150fc0ce57e6a642f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ab_ne.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_NW": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_NE",
+      "sourceModelSha256": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+      "pngSha256": "528f16fe9343e13258b8fdb83376708acdb333df5f2a0a1150fc0ce57e6a642f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ab_ne.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_NW1": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_NE",
+      "sourceModelSha256": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+      "pngSha256": "528f16fe9343e13258b8fdb83376708acdb333df5f2a0a1150fc0ce57e6a642f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ab_ne.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_NW2": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_NE",
+      "sourceModelSha256": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+      "pngSha256": "528f16fe9343e13258b8fdb83376708acdb333df5f2a0a1150fc0ce57e6a642f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ab_ne.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_NW3": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_NE",
+      "sourceModelSha256": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+      "pngSha256": "528f16fe9343e13258b8fdb83376708acdb333df5f2a0a1150fc0ce57e6a642f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ab_ne.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_Y_NE": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_NE",
+      "sourceModelSha256": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+      "pngSha256": "528f16fe9343e13258b8fdb83376708acdb333df5f2a0a1150fc0ce57e6a642f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_ab_ne.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_Y_NE1": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_NE",
+      "sourceModelSha256": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+      "pngSha256": "528f16fe9343e13258b8fdb83376708acdb333df5f2a0a1150fc0ce57e6a642f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_ab_ne.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_Y_NE2": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_NE",
+      "sourceModelSha256": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+      "pngSha256": "528f16fe9343e13258b8fdb83376708acdb333df5f2a0a1150fc0ce57e6a642f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_ab_ne.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_Y_NE3": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_NE",
+      "sourceModelSha256": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+      "pngSha256": "528f16fe9343e13258b8fdb83376708acdb333df5f2a0a1150fc0ce57e6a642f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_ab_ne.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_Y_NW": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_NE",
+      "sourceModelSha256": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+      "pngSha256": "528f16fe9343e13258b8fdb83376708acdb333df5f2a0a1150fc0ce57e6a642f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_ab_ne.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_Y_NW1": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_NE",
+      "sourceModelSha256": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+      "pngSha256": "528f16fe9343e13258b8fdb83376708acdb333df5f2a0a1150fc0ce57e6a642f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_ab_ne.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_Y_NW2": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_NE",
+      "sourceModelSha256": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+      "pngSha256": "528f16fe9343e13258b8fdb83376708acdb333df5f2a0a1150fc0ce57e6a642f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_ab_ne.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_Y_NW3": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_NE",
+      "sourceModelSha256": "efc5f1fee7a65a49e3ec2d2a9e1f04ba01e99808c21c353677a031fd6927e8cb",
+      "pngSha256": "528f16fe9343e13258b8fdb83376708acdb333df5f2a0a1150fc0ce57e6a642f",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_ab_ne.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_E": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_N",
+      "sourceModelSha256": "2d95c4ec2f586865eef18d8110c6c259c36d325cd387d58d1a07957b0b17b13d",
+      "pngSha256": "9120ffcfcbedfca36418001f22e4eb1a039b4311da1a89ab01a1c969199ef208",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ab_n.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_N": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_N",
+      "sourceModelSha256": "2d95c4ec2f586865eef18d8110c6c259c36d325cd387d58d1a07957b0b17b13d",
+      "pngSha256": "9120ffcfcbedfca36418001f22e4eb1a039b4311da1a89ab01a1c969199ef208",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ab_n.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_S": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_N",
+      "sourceModelSha256": "2d95c4ec2f586865eef18d8110c6c259c36d325cd387d58d1a07957b0b17b13d",
+      "pngSha256": "9120ffcfcbedfca36418001f22e4eb1a039b4311da1a89ab01a1c969199ef208",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ab_n.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_W": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_N",
+      "sourceModelSha256": "2d95c4ec2f586865eef18d8110c6c259c36d325cd387d58d1a07957b0b17b13d",
+      "pngSha256": "9120ffcfcbedfca36418001f22e4eb1a039b4311da1a89ab01a1c969199ef208",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_ab_n.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_Y_E": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_N",
+      "sourceModelSha256": "2d95c4ec2f586865eef18d8110c6c259c36d325cd387d58d1a07957b0b17b13d",
+      "pngSha256": "9120ffcfcbedfca36418001f22e4eb1a039b4311da1a89ab01a1c969199ef208",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_ab_n.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_Y_N": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_N",
+      "sourceModelSha256": "2d95c4ec2f586865eef18d8110c6c259c36d325cd387d58d1a07957b0b17b13d",
+      "pngSha256": "9120ffcfcbedfca36418001f22e4eb1a039b4311da1a89ab01a1c969199ef208",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_ab_n.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_Y_S": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_N",
+      "sourceModelSha256": "2d95c4ec2f586865eef18d8110c6c259c36d325cd387d58d1a07957b0b17b13d",
+      "pngSha256": "9120ffcfcbedfca36418001f22e4eb1a039b4311da1a89ab01a1c969199ef208",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_ab_n.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    },
+    "B_STR_AB_Y_W": {
+      "kind": "native-model-render",
+      "reason": "Game reuses Argonaut artwork for a different native part",
+      "renderRoot": "B_STR_AB_N",
+      "sourceModelSha256": "2d95c4ec2f586865eef18d8110c6c259c36d325cd387d58d1a07957b0b17b13d",
+      "pngSha256": "9120ffcfcbedfca36418001f22e4eb1a039b4311da1a89ab01a1c969199ef208",
+      "size": [
+        512,
+        512
+      ],
+      "nativeIcon": "textures/ui/frontend/icons/buildable/biggs/big_str1x1_y_ab_n.dds",
+      "cameraDirection": [
+        0.5246373414993286,
+        -0.7264209389686584,
+        0.4439239203929901
+      ]
+    }
+  }
+}

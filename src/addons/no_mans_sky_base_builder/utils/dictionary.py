@@ -29,6 +29,28 @@ PLACEMENT_HELP = {
         'the same native geometry as Aeron Pyramid. BBE keeps the correct '
         'Deathwrought part ID for export and shows the geometry the game supplies.'
     ),
+    'B_LAN_B': (
+        'Heavy Landing Gear is a hidden native landing-bay shell in NMS 7.10, '
+        'not the deployable landing legs. It is absent from the normal game build menu. '
+        'Use Landing Gear or Hydraulic Legs for the visible landing-leg parts.'
+    ),
+    'B_STR_AM_NE': (
+        'Marrow Cap is a native part hidden from the normal NMS 7.10 build menu. '
+        'It remains available in BBE and exports using its original game ID.'
+    ),
+    'B_STR_AN_NE': (
+        'Bonespur Cap is a native part hidden from the normal NMS 7.10 build menu. '
+        'It remains available in BBE and exports using its original game ID.'
+    ),
+    'B_STR_AB_NE': (
+        'Hidden Hull Plating AB: NMS 7.10 supplies this model but no localized name. '
+        'Its native thumbnail copies Argonaut Aerofoil; the actual model is different. '
+        'It is hidden from the normal game build menu and retains its original export ID.'
+    ),
+    'B_STR_AA_NE': (
+        'This hidden AA variant uses the same native geometry as Argonaut Aerofoil. '
+        'It is grouped with the Argonaut variants and retains its original export ID.'
+    ),
 }
 
 

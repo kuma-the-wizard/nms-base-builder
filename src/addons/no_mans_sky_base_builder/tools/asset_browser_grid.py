@@ -15,6 +15,7 @@ import gpu
 from bpy.app.handlers import persistent
 from gpu_extras.batch import batch_for_shader
 from .. import icons
+from ..utils import new_assets
 from ..utils.asset_browser_utils import get_grid_settings, resolve_sub_categories
 
 _sessions = {}
@@ -302,6 +303,8 @@ class BBE_OT_asset_grid(bpy.types.Operator):
                 pressed, self._pressed = self._pressed, None
                 if hit and pressed == (hover, event.type):
                     tile, action = hit
+                    if not tile[5].get('is_preset'):
+                        new_assets.mark_viewed(tile[4])
                     if event.type == 'RIGHTMOUSE' or action == 'options':
                         self.show_options(context, tile)
                     else:
@@ -347,6 +350,13 @@ class BBE_OT_asset_grid(bpy.types.Operator):
         shader.bind()
         shader.uniform_float('color', color)
         batch_for_shader(shader, 'TRI_FAN', {'pos': ((x, y), (x+w, y), (x+w, y+h), (x, y+h))}).draw(shader)
+
+    def new_border(self, x, y, w, h, scale):
+        color = (1.0, 0.78, 0.06, 1.0)
+        edge = max(2, 2 * scale)
+        for rect in ((x, y, w, edge), (x, y+h-edge, w, edge),
+                     (x, y, edge, h), (x+w-edge, y, edge, h)):
+            self.rectangle(*rect, color)
 
     def label(self, x, y, label, width, size=12, color=None):
         blf.size(0, size * self._scale)
@@ -430,6 +440,8 @@ class BBE_OT_asset_grid(bpy.types.Operator):
                     continue
                 hovered = self._hover and self._hover[0] == object_id
                 self.rectangle(x, y, w, h, palette['hover'] if hovered else palette['card'])
+                if not data.get('is_preset') and new_assets.is_new(object_id):
+                    self.new_border(x, y, w, h, scale)
                 text_color = palette['selected_text'] if hovered else palette['text']
                 size = min(w - 8 * scale, h - 48 * scale)
                 self.preview(object_id, x + (w-size)/2, y + 26 * scale, size)

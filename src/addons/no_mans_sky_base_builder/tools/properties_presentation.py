@@ -2,7 +2,7 @@ import bpy
 import os
 from bpy.types import Panel
 
-from .. import icons
+from .. import icons, build_metadata
 from ..utils import dictionary
 
 nice_name_dictionary = dictionary.get_nice_names_diictionary()
@@ -39,8 +39,8 @@ class NMS_PT_base_prop_panel(Panel):
         base_label_col.label(text = "Base Name :")
         base_label_col.label(text = "User Data :")
         base_field_col = base_prop_split.column(align = True)
-        base_field_col.prop(nms_tool, "string_base", text = "")
-        base_field_col.prop(nms_tool, "string_userdata", text = "")
+        build_metadata.draw_name(base_field_col, scene.nms_base_tool)
+        base_field_col.prop(scene.nms_base_tool, "string_userdata", text = "")
         
         #properties_col.separator()
         active_object = properties.active_object

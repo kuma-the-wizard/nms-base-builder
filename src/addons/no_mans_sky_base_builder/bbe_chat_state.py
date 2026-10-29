@@ -136,6 +136,22 @@ def answered(state, target, received):
                                 key=lambda room: state['dm_pending'][room].get('time', 0), default=None)
 
 
+def mark_read(state, target, received):
+    """Stop attention for the incoming message actually displayed to the user.
+
+    Keep the response queue so replying still advances to the next unanswered
+    DM. A later message must be allowed to request attention again.
+    """
+    if not target or target == 'main' or not received:
+        return
+    read = state.setdefault('dm_read', {})
+    read[target] = max(read.get(target, -1), received.get('time', 0))
+    latest = latest_received(state, target)
+    if latest and latest.get('time', 0) <= read[target]:
+        state.get('unread', {}).pop(target, None)
+        state.get('directed', {}).pop(target, None)
+
+
 def bar_message(state):
     _attention_state(state)
     room = state.get('bar_room')
@@ -175,11 +191,17 @@ def update(state, value, persona, names, viewed=None):
     if viewed:
         state['unread'].pop(viewed, None)
         state['directed'].pop(viewed, None)
+        displayed = [m for m in value.get('messages', [])
+                     if m.get('from') not in own and message_room(m) == viewed]
+        mark_read(state, viewed, max(displayed, key=lambda m: m.get('time', 0), default=None))
     state['content'] = dict(sorted(cache.items(), key=lambda pair: pair[1].get('time',0))[-200:])
     return state
 
 def toolbar(state, online, target=None):
     latest, room = bar_message(state)
-    attention = len(state['dm_pending']) if room else 0
+    read = state.get('dm_read', {})
+    unread = sum(m.get('time', 0) > read.get(key, -1)
+                 for key, m in state['dm_pending'].items())
+    attention = bool(latest and room and latest.get('time', 0) > read.get(room, -1))
     return dict(preview=(f"{latest.get('name', 'User')}: {preview(latest)}" if latest else 'Waiting for messages')[:512],
-                unread=attention, directed=attention, online=online, target=room)
+                unread=unread, directed=unread if attention else 0, online=online, target=room)

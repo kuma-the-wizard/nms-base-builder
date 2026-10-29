@@ -369,7 +369,7 @@ def import_paticular_base_from_save(base_identifier, save_slot, progress=None, w
     return (searched_base, package, source_error) if with_ship_source else searched_base
     
 #save a base to save file
-def save_base_to_save_file(objects_data, base_identifier, save_slot, base_name=None, progress=None):
+def save_base_to_save_file(objects_data, base_identifier, save_slot, base_name=None, progress=None, owner_override=None):
     from .save_file import SaveFile
     from . import ship_files
     save_slot = list(dict.fromkeys(Path(p).resolve() for p in save_slot if p))
@@ -395,6 +395,9 @@ def save_base_to_save_file(objects_data, base_identifier, save_slot, base_name=N
         # here update objects list with list provided
         in_base[SaveTranslation.objects] = save_translation.translate_to_obf_data(objects_data)
         
+        from ..build_metadata import apply_save_owner
+        apply_save_owner(in_base, owner_override)
+
         # update name of base if provided
         if base_name is not None:
             # update name in PersistentPlayerBases

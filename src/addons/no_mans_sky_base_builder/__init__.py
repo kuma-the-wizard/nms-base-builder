@@ -21,6 +21,7 @@ from bpy.types import Panel, PropertyGroup
 from pathlib import Path
 
 from . import builder, icons, part, preset, group, builder_v2, viewport_overlay, undo_guard, interchange, project_recovery, progress_ui, compatibility, wasd_navigation
+from . import build_metadata, build_metadata_ui
 from .base_properties import NMSBaseProperties
 from .addon_preferences import NMSAddonPreferences
 from .part_overrides import line
@@ -234,12 +235,16 @@ class NMSMain(PropertyGroup):
         if parts_only:
             scene = bpy.context.scene
             previous_metadata = scene.nms_base_tool.serialise()
+            previous_owner_save = scene.nms_base_tool.metadata_owner_to_save
+            previous_owner_reviewed = scene.nms_base_tool.metadata_owner_reviewed
             source_name = scene.get('bbe_build_source_text')
             source_suffix = scene.get('bbe_build_source_suffix')
             source_error = scene.get('bbe_ship_source_error')
         self.deserialise_from_data(nms_import_data)
         if parts_only:
             scene.nms_base_tool.deserialise_from_data(previous_metadata)
+            scene.nms_base_tool.metadata_owner_to_save = previous_owner_save
+            scene.nms_base_tool.metadata_owner_reviewed = previous_owner_reviewed
             source_block = bpy.data.texts.get(source_name) if source_name else None
             if source_block and source_suffix:
                 source_block.use_fake_user = True
@@ -324,7 +329,8 @@ class NMSMain(PropertyGroup):
                     warnings.append('Used new Corvette defaults for class, inventory, technology and appearance.')
         if source.kind != 'ship':
             raise ValueError('Ship template must be a complete .nmsship package')
-        payload = source.ship_bytes(data, bpy.context.scene.nms_base_tool.string_base)
+        payload = source.ship_bytes(data, bpy.context.scene.nms_base_tool.string_base,
+                                    metadata=bpy.context.scene.nms_base_tool.serialise())
         from .save_editor.ship_repair import cockpit_warning
         if warnings is not None and cockpit_warning(data):
             warnings.append(cockpit_warning(data))
@@ -759,7 +765,7 @@ class NMS_PT_file_buttons_panel(Panel):
         first_column.scale_x = 0.5 if base_props.string_base_type == "PlayerShipBase" else 1.0
         first_column.label(text="Metadata", **icons.ui_icon("PROPERTIES"))
         first_column.label(text="Ship Name" if base_props.string_base_type == "PlayerShipBase" else "Base Name")
-        first_column.prop(base_props, "string_base", text = "")
+        build_metadata.draw_name(first_column, base_props)
         first_row = first_column.row(align = True)
         first_row.enabled = False
         fc_1 = first_row.column(align = True)
@@ -2354,7 +2360,7 @@ classes = (
     UngroupObjects
 )
 
-classes = classes + asset_browser_presentation.classes + base_builder_menu.classes 
+classes = classes + build_metadata_ui.classes + asset_browser_presentation.classes + base_builder_menu.classes
 
 classes = classes  + save_editor_operators.classes + station_reference.classes + build_tool_operators.classes + batch_tool_operators.classes + prooperties_operators.classes + asset_browser_operators.classes + base_builder_menu_operators.classes
 
@@ -2405,6 +2411,7 @@ def register_core():
         bpy.utils.register_class(_class)
     bpy.types.Scene.nms_main = PointerProperty(type=NMSMain)
     bpy.types.Scene.nms_base_tool = PointerProperty(type = NMSBaseProperties)
+    build_metadata_ui.register_handlers()
     bpy.types.WindowManager.bbe_prefabs = bpy.props.CollectionProperty(type=PartCollection, options={'SKIP_SAVE'})
     bpy.types.WindowManager.bbe_prefab_index = bpy.props.IntProperty(default=0, options={'SKIP_SAVE'})
     if schedule_prefab_catalogue not in bpy.app.handlers.load_post:
@@ -2461,6 +2468,7 @@ def register_core():
     _core_registered = True
 
 def unregister():
+    build_metadata_ui.unregister_handlers()
     global _core_registered
     compatibility.unregister()
     if not _core_registered:

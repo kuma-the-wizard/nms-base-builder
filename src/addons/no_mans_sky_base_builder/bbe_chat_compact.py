@@ -102,6 +102,17 @@ class CompactMessengerMixin:
         self.compact_timer = QtCore.QTimer(self)
         self.compact_timer.timeout.connect(self._compact_tick)
         self.compact_timer.start(500)
+        # A toolbar click writes an atomic command file. React to the directory
+        # notification immediately instead of making every click wait up to
+        # half a second for the housekeeping timer. Keep that timer as fallback
+        # for filesystems which do not deliver change notifications reliably.
+        self.command_watcher = QtCore.QFileSystemWatcher(self)
+        self.command_watcher.addPath(str(self.snapshot_dir))
+        self.command_watcher.directoryChanged.connect(self._command_changed)
+
+    def _command_changed(self, _directory):
+        if not self._closing:
+            self._consume_blender_command()
 
     def _set_pin(self, enabled):
         self._pin_explicit = True
@@ -436,11 +447,17 @@ class CompactMessengerMixin:
         else:
             self._away_since = None
         if self.isActiveWindow() and not self.collapsed:
+            incoming = [m for m in self.messages if m.get('from') == self.target and m.get('to')]
+            chat_state.mark_read(self._notifications, self.target,
+                                 max(incoming, key=lambda m: m.get('time', 0), default=None))
             self.unread.pop(self.target or 'main', None)
             self._notifications.get('directed', {}).pop(self.target or 'main', None)
             self._update_badge()
 
     def eventFilter(self, watched, event):
+        if (hasattr(self, 'scroll') and watched is self.scroll.viewport()
+                and event.type() == QtCore.QEvent.Resize):
+            QtCore.QTimer.singleShot(0, self._fit_message_widths)
         if (hasattr(self, 'scroll') and watched is self.scroll.viewport()
                 and event.type() == QtCore.QEvent.Wheel):
             QtCore.QTimer.singleShot(0, self._user_scrolled)

@@ -6,7 +6,7 @@ import json
 import bpy
 from bpy.app.handlers import persistent
 from . import ship_core as core, ship_repair as repair, ship_files, ship_management, corvette_io as io
-from .. import progress_ui
+from .. import progress_ui, build_metadata
 from ..furby_errors import report_error
 from .function_help import help_button
 
@@ -89,7 +89,7 @@ def scene_parts(context, optimized, progress):
         objects, counts = corvette_optimizer.core.optimize(objects, config, name_for_part=BUILDER.get_nice_name)
     else:
         counts = dict(before=len(objects), after=len(objects), moved=0, removed=0)
-    return objects, name, counts, repair.fingerprint([objects, name, config])
+    return objects, name, counts, repair.fingerprint([objects, name, config, build_metadata.save_owner(context.scene.nms_base_tool)])
 
 
 def warning(layout, objects):
@@ -427,6 +427,7 @@ class BBE_OT_corvette_export(bpy.types.Operator):
         if len(self._records) > 1:
             l.label(text='Duplicate builds to replace: ' + ', '.join(str(n+1) for n in self._records), icon='ERROR')
             l.prop(self, 'confirm_duplicates')
+        build_metadata.draw_save_warning(l, context.scene.nms_base_tool)
         preservation(l, self._resets, new=self.destination == 'NEW')
         if self._resets:
             l.prop(self, 'confirm_resets')
@@ -446,6 +447,7 @@ class BBE_OT_corvette_export(bpy.types.Operator):
             if self._resets and not self.confirm_resets:
                 raise ValueError('Confirm the listed data resets before exporting.')
             check_snapshot(self._s, context)
+            self._payload['owner_override'] = build_metadata.save_owner(context.scene.nms_base_tool)
             plan = repair.make_plan(self._s['root'], self.context_name, self._index, self._payload, 'FULL',
                                     self._anchor, self.confirm_duplicates)
             self._s.update(plan=plan, signature=self._signature, optimized=self.optimized,

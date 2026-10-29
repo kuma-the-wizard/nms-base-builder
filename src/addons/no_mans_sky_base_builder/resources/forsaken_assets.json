@@ -3351,7 +3351,7 @@
       "visible": true,
       "parent": null,
       "category": "Corvette",
-      "subcategory": "Wings",
+      "subcategory": "Thrusters",
       "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_S_1X2_PLACEMENT.SCENE.MBIN",
       "nativeComponents": [
         {
@@ -3368,7 +3368,7 @@
       "visible": false,
       "parent": "B_WNG_S",
       "category": "Corvette",
-      "subcategory": "Wings",
+      "subcategory": "Thrusters",
       "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_S_1X2_R_PLACEMENT.SCENE.MBIN",
       "nativeComponents": [
         {
@@ -3487,7 +3487,7 @@
       "visible": true,
       "parent": null,
       "category": "Corvette",
-      "subcategory": "Wings",
+      "subcategory": "Thrusters",
       "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_W_1X2_PLACEMENT.SCENE.MBIN",
       "nativeComponents": [
         {
@@ -3504,7 +3504,7 @@
       "visible": false,
       "parent": "B_WNG_W",
       "category": "Corvette",
-      "subcategory": "Wings",
+      "subcategory": "Thrusters",
       "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_W_1X2_B_PLACEMENT.SCENE.MBIN",
       "nativeComponents": [
         {
@@ -3521,7 +3521,7 @@
       "visible": false,
       "parent": "B_WNG_W",
       "category": "Corvette",
-      "subcategory": "Wings",
+      "subcategory": "Thrusters",
       "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_W_1X2_R_PLACEMENT.SCENE.MBIN",
       "nativeComponents": [
         {
@@ -3538,7 +3538,7 @@
       "visible": false,
       "parent": "B_WNG_W",
       "category": "Corvette",
-      "subcategory": "Wings",
+      "subcategory": "Thrusters",
       "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_W_1X2_T_PLACEMENT.SCENE.MBIN",
       "nativeComponents": [
         {
@@ -3555,7 +3555,7 @@
       "visible": true,
       "parent": null,
       "category": "Corvette",
-      "subcategory": "Wings",
+      "subcategory": "Thrusters",
       "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_X_1X2_PLACEMENT.SCENE.MBIN",
       "nativeComponents": [
         {
@@ -3572,7 +3572,7 @@
       "visible": false,
       "parent": "B_WNG_X",
       "category": "Corvette",
-      "subcategory": "Wings",
+      "subcategory": "Thrusters",
       "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_X_1X2_B_PLACEMENT.SCENE.MBIN",
       "nativeComponents": [
         {
@@ -3589,7 +3589,7 @@
       "visible": false,
       "parent": "B_WNG_X",
       "category": "Corvette",
-      "subcategory": "Wings",
+      "subcategory": "Thrusters",
       "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_X_1X2_R_PLACEMENT.SCENE.MBIN",
       "nativeComponents": [
         {
@@ -3606,7 +3606,7 @@
       "visible": false,
       "parent": "B_WNG_X",
       "category": "Corvette",
-      "subcategory": "Wings",
+      "subcategory": "Thrusters",
       "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_X_1X2_T_PLACEMENT.SCENE.MBIN",
       "nativeComponents": [
         {
@@ -3623,7 +3623,7 @@
       "visible": true,
       "parent": null,
       "category": "Corvette",
-      "subcategory": "Wings",
+      "subcategory": "Thrusters",
       "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_Y_1X2_PLACEMENT.SCENE.MBIN",
       "nativeComponents": [
         {
@@ -3640,7 +3640,7 @@
       "visible": false,
       "parent": "B_WNG_Y",
       "category": "Corvette",
-      "subcategory": "Wings",
+      "subcategory": "Thrusters",
       "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_Y_1X2_B_PLACEMENT.SCENE.MBIN",
       "nativeComponents": [
         {
@@ -3657,7 +3657,7 @@
       "visible": false,
       "parent": "B_WNG_Y",
       "category": "Corvette",
-      "subcategory": "Wings",
+      "subcategory": "Thrusters",
       "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_Y_1X2_R_PLACEMENT.SCENE.MBIN",
       "nativeComponents": [
         {
@@ -3674,7 +3674,7 @@
       "visible": false,
       "parent": "B_WNG_Y",
       "category": "Corvette",
-      "subcategory": "Wings",
+      "subcategory": "Thrusters",
       "nativePlacement": "MODELS/COMMON/SPACECRAFT/BIGGS/MODULES/EXT_WING_Y_1X2_T_PLACEMENT.SCENE.MBIN",
       "nativeComponents": [
         {

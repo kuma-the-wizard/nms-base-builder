@@ -4,6 +4,7 @@ from functools import partial
 from .icons import icons
 from .utils.qt import QtCore, QtGui, QtWidgets
 from ..utils.dictionary import PLACEMENT_HELP
+from ..utils import new_assets
 
 THUMB_SIZE = 64
 ITEM_SIZE_X = 100
@@ -19,8 +20,8 @@ class Thumb(QtWidgets.QLabel):
         super(Thumb, self).__init__(*args, **kwargs)
         part_id = part_id or ""
         custom_icon_path = os.path.join(ICON_PATH, "{}.png".format(part_id))
-        generated_icon_path = os.path.join(FILE_DIR, "..", "images", "asset_icons", "{}.png".format(part_id))
-        icon_path = next((path for path in (custom_icon_path, generated_icon_path)
+        catalog_icon_path = os.path.join(FILE_DIR, "..", "images", "asset_icons", "{}.png".format(part_id))
+        icon_path = next((path for path in (catalog_icon_path, custom_icon_path)
                           if os.path.isfile(path)), ":{}".format(part_id))
         if QtCore.QFile.exists(icon_path):
             pixmap = QtGui.QPixmap(icon_path)
@@ -57,6 +58,8 @@ class Item(QtWidgets.QFrame):
         self._build_ui()
         self._layout()
         self._setup()
+        self.setObjectName("AssetTile")
+        self._refresh_new_border()
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
     def _build_ui(self):
@@ -90,7 +93,16 @@ class Item(QtWidgets.QFrame):
     def _setup(self):
         self.variants_button.clicked.connect(self.open_context_menu)
 
+    def _refresh_new_border(self):
+        color = '#ffcc10' if new_assets.is_new(self.item_id) else 'transparent'
+        self.setStyleSheet(f'QFrame#AssetTile {{ border: 2px solid {color}; }}')
+
+    def _mark_viewed(self):
+        new_assets.mark_viewed(self.item_id)
+        self._refresh_new_border()
+
     def open_context_menu(self):
+        self._mark_viewed()
         variants_menu = QtWidgets.QMenu(self.variants_button)
         action = variants_menu.addAction(self.label)
         action.triggered.connect(partial(self.add_part, self.item_id))
@@ -100,6 +112,7 @@ class Item(QtWidgets.QFrame):
         variants_menu.exec(QtGui.QCursor.pos())
 
     def mousePressEvent(self, event):
+        self._mark_viewed()
         if event.button() == QtCore.Qt.LeftButton:
             self.clicked.emit()
         elif event.button() == QtCore.Qt.RightButton:

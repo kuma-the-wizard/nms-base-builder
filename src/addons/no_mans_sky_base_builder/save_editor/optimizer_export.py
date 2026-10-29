@@ -18,7 +18,7 @@ def replace_file(source, target):
     source.replace(target)
 
 
-def export(objects, identifier, links, base_name=None, progress=None):
+def export(objects, identifier, links, base_name=None, progress=None, owner_override=None):
     from .save_file import SaveFile
     from . import ship_files
     if identifier.base_type != BaseType.CORVETTE:
@@ -45,6 +45,8 @@ def export(objects, identifier, links, base_name=None, progress=None):
         if base is None:
             raise ValueError(f'Corvette not found in {path.name}; reselect or repin it')
         base[K.objects] = translate_to_obf_data(copy.deepcopy(objects))
+        from ..build_metadata import apply_save_owner
+        apply_save_owner(base, owner_override)
         if base_name:
             ownership = save.get_ship_ownsership_element(int(identifier.user_data))
             if ownership is None:

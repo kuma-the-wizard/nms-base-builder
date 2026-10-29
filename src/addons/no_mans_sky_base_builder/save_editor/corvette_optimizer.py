@@ -364,7 +364,9 @@ def prepare(context, pinned, progress=None):
     from .. import BUILDER
     ordered, counts = core.optimize(objects, config, name_for_part=BUILDER.get_nice_name)
     name = context.scene.nms_base_tool.string_base.strip() or None
-    signature = core.fingerprint([objects, config, links, identifier.base_index,
+    from ..build_metadata import save_owner
+    owner_override = save_owner(context.scene.nms_base_tool)
+    signature = core.fingerprint([owner_override, objects, config, links, identifier.base_index,
                                   identifier.base_name, identifier.base_type,
                                   identifier.user_data, identifier.galactic_address, getattr(identifier, 'save_context', None), name])
     return identifier, links, name, ordered, counts, signature
@@ -401,6 +403,8 @@ class BBE_OT_optimizer_export(bpy.types.Operator):
         layout.separator()
         layout.label(text=f"Objects: {counts['before']} → {counts['after']}   •   Reordered: {counts['moved']}")
         layout.label(text=f"Identical objects to remove from export: {counts['removed']}")
+        from ..build_metadata import draw_save_warning
+        draw_save_warning(layout, context.scene.nms_base_tool)
         layout.label(text='Verified backups will be created before saving.', **icons.ui_icon('INFO'))
         layout.label(text='Your Blender objects stay in the scene.')
         from .corvette_actions import warning
@@ -451,8 +455,9 @@ class BBE_OT_optimizer_export(bpy.types.Operator):
                     raise ValueError('Scene, settings or destination changed. Review the export again.')
                 identifier, links, name, ordered, counts, signature = current
                 progress.update(.15, 'Optimization complete')
+                from ..build_metadata import save_owner
                 backups = optimizer_export.export(ordered, identifier, links, name,
-                                                  progress=progress)
+                                                  progress=progress, owner_override=save_owner(context.scene.nms_base_tool))
                 progress.update(.98, 'Refreshing save list')
                 try:
                     context.scene.nms_save_data.refresh_bases_list()

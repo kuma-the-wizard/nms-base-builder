@@ -1,4 +1,6 @@
 import bpy
+import json
+from . import build_metadata
 from .utils import python as python_utils
 
 from bpy.props import (BoolProperty, EnumProperty, FloatProperty, IntProperty,
@@ -11,6 +13,11 @@ class NMSBaseProperties(PropertyGroup):
     
     """
     
+    metadata_source_json: StringProperty(default='', options={'HIDDEN'})
+    metadata_baseline_json: StringProperty(default='', options={'HIDDEN'})
+    metadata_owner_to_save: BoolProperty(default=False, options={'HIDDEN', 'SKIP_SAVE'})
+    metadata_owner_reviewed: StringProperty(default='', options={'HIDDEN', 'SKIP_SAVE'})
+
     string_base: StringProperty(
         name="Base Name",
         description=("Name for the current Blender ship or base, saved with the project and applied when exporting. "
@@ -211,13 +218,13 @@ class NMSBaseProperties(PropertyGroup):
             self.string_base = str(nms_data["Name"])
         if "LastUpdateTimestamp" in nms_data:
             self.string_last_ts = str(nms_data["LastUpdateTimestamp"])
-        if "Owner" in nms_data:
+        if isinstance(nms_data.get("Owner"), dict):
             Owner_details = nms_data["Owner"]
             self.string_uid = str(Owner_details.get("UID", ""))
             self.string_ts = str(Owner_details.get("TS", ""))
             self.string_lid = str(Owner_details.get("LID", ""))
-            self.string_usn = str(Owner_details.get("USN"))
-            self.string_ptk = str(Owner_details.get("PTK"))
+            self.string_usn = str(Owner_details.get("USN", ""))
+            self.string_ptk = str(Owner_details.get("PTK", ""))
         # Extras/Unimportant
         if "LastEditedById" in nms_data:
             self.LastEditedById = str(nms_data["LastEditedById"])
@@ -256,8 +263,21 @@ class NMSBaseProperties(PropertyGroup):
                 "PersistentBaseDifficultyFlags", 0
             )
     
-    # Convert all the metadata into a dict
+        # Preserve fields this version cannot display, including Owner types.
+        self.metadata_source_json = build_metadata.encode(build_metadata.wrapper(nms_data))
+        self.metadata_baseline_json = build_metadata.encode(self._serialise_fields())
+        self.metadata_owner_to_save = False
+        self.metadata_owner_reviewed = ''
+
     def serialise(self):
+        current = self._serialise_fields()
+        if not self.metadata_source_json:
+            return current
+        return build_metadata.merge_preserved(json.loads(self.metadata_source_json),
+            json.loads(self.metadata_baseline_json), current)
+
+    # Convert all the visible metadata into a dict.
+    def _serialise_fields(self):
         # Try making the address an int, if not it should be a string.
         data = {
             "BaseVersion": 5,
@@ -304,6 +324,10 @@ class NMSBaseProperties(PropertyGroup):
     
     # Reset all fields
     def new_file(self):
+        self.metadata_source_json = ''
+        self.metadata_baseline_json = ''
+        self.metadata_owner_to_save = False
+        self.metadata_owner_reviewed = ''
         self.string_address = ""
         self.string_userdata = ""
         self.string_base = ""

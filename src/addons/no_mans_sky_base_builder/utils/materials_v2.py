@@ -505,7 +505,7 @@ def recolour(objects, colour_index=None, material_index=None, tag=True):
     # nodes in them, so the offsets below would land on nothing. Cheap to call
     # again - materials that already have them carry a marker - so the first
     # recolour after opening such a file quietly brings it up to date.
-    ensure_finish_nodes()
+    ensure_finish_nodes(_object_materials(obj for obj, _ in pairs))
 
     return apply_many(pairs, tag=tag)
 
@@ -541,7 +541,7 @@ def recolour_from_user_data(objects, user_data_value, tag=True):
     value = str(user_data_value)
 
     # see recolour() - keeps an older file working the moment it is touched
-    ensure_finish_nodes()
+    ensure_finish_nodes(_object_materials(objects))
 
     for bpy_object in objects:
         bpy_object["UserData"] = value
@@ -937,6 +937,12 @@ def note_appended_data():
     _defer()
 
 
+def _object_materials(objects):
+    """Only touched objects need finish upgrades; preserve object slot overrides."""
+    return {slot.material for obj in objects for slot in obj.material_slots
+            if slot.material is not None}
+
+
 def ensure_finish_nodes(materials=None):
     """Give materials the nodes that let a finish change their surface.
 
@@ -1070,7 +1076,7 @@ def _repair_building_roughness(mat):
     return True
 
 
-def dedupe_appended_data():
+def dedupe_appended_data(*, only_if_pending=False):
     """Collapse the datablocks the appends duplicated.
 
     Call this once, after a whole batch of assets is appended, never per asset
@@ -1080,22 +1086,114 @@ def dedupe_appended_data():
     Returns:
         tuple: (images removed, node groups removed)
     """
+    if only_if_pending and not _relink_pending:
+        return 0, 0
     if _defer():
         return 0, 0
 
     image_map = _plan_image_dedupe()
     group_map = _plan_node_group_dedupe()
 
-    if not image_map and not group_map:
-        return 0, 0
-
-    _repoint_nodes(image_map, group_map)
+    if image_map or group_map:
+        _repoint_nodes(image_map, group_map)
 
     # one batch_remove for both - see _remove_dead
     dead_images = _collect_dead(image_map)
     dead_groups = _collect_dead(group_map)
-    bpy.data.batch_remove(dead_images + dead_groups)
+    if dead_images or dead_groups:
+        bpy.data.batch_remove(dead_images + dead_groups)
+    dedupe_native_materials()
     return len(dead_images), len(dead_groups)
+# Compare actual shader state, never only its native filename: builders may
+# have edited a material, and two native parts can use different parameters.
+_SIGNATURE_UI = {'name', 'name_full', 'label', 'location', 'width', 'height',
+                 'dimensions', 'select', 'show_options', 'show_preview',
+                 'show_texture', 'hide', 'use_custom_color', 'color'}
+
+
+def _shader_settings(value):
+    result = []
+    for prop in value.bl_rna.properties:
+        name = prop.identifier
+        if name in _SIGNATURE_UI or prop.is_readonly:
+            continue
+        if prop.type in {'BOOLEAN', 'INT', 'FLOAT', 'STRING', 'ENUM'}:
+            setting = getattr(value, name)
+            if getattr(prop, 'is_array', False):
+                setting = tuple(setting)
+            elif isinstance(setting, set):
+                setting = frozenset(setting)
+            result.append((name, setting))
+    return tuple(result)
+
+
+def _native_material_signature(mat):
+    tree = mat.node_tree
+    if not tree or mat.animation_data or tree.animation_data:
+        return None
+    # Keep unsupported/custom graph features separate instead of guessing.
+    nodes = list(tree.nodes)
+    indices = {node: i for i, node in enumerate(nodes)}
+    description = []
+    for node in nodes:
+        pointers = []
+        for prop in node.bl_rna.properties:
+            if prop.type != 'POINTER' or prop.identifier in {'rna_type', 'parent'}:
+                continue
+            value = getattr(node, prop.identifier)
+            if value is None:
+                pointers.append((prop.identifier, None))
+            elif isinstance(value, bpy.types.ID):
+                pointers.append((prop.identifier, value.as_pointer()))
+            elif prop.identifier in {'texture_mapping', 'image_user'}:
+                pointers.append((prop.identifier, _shader_settings(value)))
+            elif prop.identifier == 'color_mapping' and not value.use_color_ramp:
+                pointers.append((prop.identifier, _shader_settings(value)))
+            else:
+                return None
+        defaults = []
+        for socket in list(node.inputs) + list(node.outputs):
+            value = getattr(socket, 'default_value', None)
+            if value is not None and not isinstance(value, (bool, int, float, str)):
+                try:
+                    value = tuple(value)
+                except TypeError:
+                    return None
+            defaults.append((socket.identifier, value))
+        description.append((node.bl_idname, _shader_settings(node), tuple(pointers),
+                            tuple(defaults), repr(sorted(node.id_properties_ensure().to_dict().items()))))
+    links = tuple(sorted((indices[x.from_node], x.from_socket.identifier,
+                          indices[x.to_node], x.to_socket.identifier)
+                         for x in tree.links))
+    return (_shader_settings(mat), repr(sorted(mat.id_properties_ensure().to_dict().items())),
+            repr(sorted(tree.id_properties_ensure().to_dict().items())),
+            tuple(description), links)
+
+
+def dedupe_native_materials():
+    """Share byte-equivalent shader settings; keep geometry and textures intact."""
+    families = {}
+    for mat in bpy.data.materials:
+        path = mat.get('nms_material_path')
+        if path and mat.use_nodes and not mat.library:
+            families.setdefault(path, []).append(mat)
+    duplicates = {}
+    for candidates in families.values():
+        if len(candidates) < 2:
+            continue
+        # Normalize older/newly appended finish nodes before comparing graphs.
+        ensure_finish_nodes(candidates)
+        by_signature = {}
+        for mat in candidates:
+            key = _native_material_signature(mat)
+            if key is None:
+                continue
+            canonical = by_signature.get(key)
+            if canonical is None:
+                by_signature[key] = mat
+            else:
+                duplicates[mat] = canonical
+    return _remove_dead(duplicates)
 
 
 def dedupe_images():

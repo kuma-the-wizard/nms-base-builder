@@ -2,6 +2,7 @@ from ..furby_errors import report_error
 import bpy
 
 from . import save_editor_utils
+from .. import build_metadata
 ADDON_ID = __package__.rsplit(".", 1)[0]
 _pending_save_imports = {}
 
@@ -144,9 +145,20 @@ class ExportBaseToSave(bpy.types.Operator):
         selected = data.get_current_base_identifiers()
         if selected and selected.base_type == save_editor_utils.BaseType.CORVETTE:
             return bpy.ops.bbe.corvette_export('INVOKE_DEFAULT')
+        if build_metadata.save_owner(context.scene.nms_base_tool) is not None:
+            self._metadata_signature = build_metadata.save_target_signature(context)
+            return context.window_manager.invoke_props_dialog(self, width=570, confirm_text='Export to Save')
         return self.execute(context)
 
+    def draw(self, context):
+        build_metadata.draw_save_warning(self.layout, context.scene.nms_base_tool)
+        self.layout.label(text='Updates the selected base with your scene parts and name.')
+
     def execute(self, context):
+        if (hasattr(self, '_metadata_signature') and self._metadata_signature !=
+                build_metadata.save_target_signature(context)):
+            self.report({'ERROR'}, 'Ownership changed. Review the export again.')
+            return {'CANCELLED'}
         scene = context.scene
         save_data = scene.nms_save_data
         result = save_data.export_base_to_save_file(context)
@@ -217,7 +229,21 @@ class ExoprtPinnedBase(bpy.types.Operator):
     )
     
         
+    def invoke(self, context, event):
+        if build_metadata.save_owner(context.scene.nms_base_tool) is not None:
+            self._metadata_signature = build_metadata.save_target_signature(context, pinned=True)
+            return context.window_manager.invoke_props_dialog(self, width=570, confirm_text='Export to Pinned Save')
+        return self.execute(context)
+
+    def draw(self, context):
+        build_metadata.draw_save_warning(self.layout, context.scene.nms_base_tool)
+        self.layout.label(text='Updates the pinned base with your scene parts and name.')
+
     def execute(self, context):
+        if (hasattr(self, '_metadata_signature') and self._metadata_signature !=
+                build_metadata.save_target_signature(context, pinned=True)):
+            self.report({'ERROR'}, 'Ownership changed. Review the export again.')
+            return {'CANCELLED'}
         scene = context.scene
         save_data = scene.nms_save_data
         result = save_data.export_pinned_base(context)

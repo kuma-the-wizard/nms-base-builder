@@ -251,6 +251,9 @@ def apply_plan(root, plan):
     else:
         base = copy.deepcopy(bases[plan['anchor']])
     core.put(base, 'Objects', encoded(payload['objects']))
+    if payload.get('owner_override') is not None:
+        from ..build_metadata import apply_save_owner
+        apply_save_owner(base, payload['owner_override'])
     core.put(base, 'UserData', index)
     core.put(base, 'BaseType', encoded({'PersistentBaseTypes': 'PlayerShipBase'}))
     if plan['mode'] == 'FULL':

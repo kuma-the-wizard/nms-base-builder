@@ -4,6 +4,7 @@ import json
 import zipfile
 from . import ship_core as core, ship_repair
 from ..interchange import BuildFile, _encode
+from .. import build_metadata
 
 
 def new_corvette_source():
@@ -42,7 +43,8 @@ def from_save(root, context, base_index):
     ship_repair.validate_payload(dict(ship=ship, objects=objects, custom=appearance), 'FULL')
     stream = io.BytesIO()
     with zipfile.ZipFile(stream, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
-        for name, value in (('objects.json', objects), ('so.json', ship), ('ccd.json', appearance)):
+        for name, value in (('objects.json', objects), ('so.json', ship), ('ccd.json', appearance),
+                            (build_metadata.PACKAGE_ENTRY, build_metadata.package_metadata(core.translate(base)))):
             archive.writestr(name, _encode(value))
     return BuildFile.from_bytes(stream.getvalue(), '.nmsship')
 

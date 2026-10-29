@@ -6,6 +6,7 @@ recovery key is read from the existing profile file, never put on a command line
 
 import json
 import hashlib
+import math
 import os
 from pathlib import Path
 import secrets
@@ -31,7 +32,7 @@ from bbe_chat_compact import CompactMessengerMixin
 from bbe_chat_lifetime import BlenderLifetime
 
 IMAGE_MIMES = {'image/png', 'image/jpeg', 'image/gif', 'image/webp'}
-FILE_TYPES = 'Supported files (*.png *.jpg *.jpeg *.gif *.webp *.mp4 *.webm *.blend *.zip *.pdf *.json *.nmsbase *.nmsship *.txt *.log);;Images and video (*.png *.jpg *.jpeg *.gif *.webp *.mp4 *.webm);;Project files (*.blend *.zip *.json *.nmsbase *.nmsship);;Documents (*.pdf *.txt *.log)'
+FILE_TYPES = 'Supported files (*.png *.jpg *.jpeg *.gif *.webp *.mp4 *.webm *.blend *.zip *.pdf *.json *.nmsbase *.nmsship *.nmsprefab *.txt *.log);;Images and video (*.png *.jpg *.jpeg *.gif *.webp *.mp4 *.webm);;Project files (*.blend *.zip *.json *.nmsbase *.nmsship *.nmsprefab);;Documents (*.pdf *.txt *.log)'
 MEDIA_SUFFIXES = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.webm'}
 
 
@@ -70,6 +71,84 @@ class StatusLabel(QtWidgets.QLabel):
     def setText(self, text):
         super().setText(text)
         self.changed.emit()
+
+
+class MessageLabel(QtWidgets.QLabel):
+    """Use lightweight labels for ordinary text that can wrap between words."""
+    def __init__(self, text, **kwargs):
+        super().__init__(text, **kwargs)
+        self.setTextFormat(QtCore.Qt.PlainText)
+        self.setWordWrap(True)
+
+    def minimumSizeHint(self):
+        hint = super().minimumSizeHint()
+        hint.setWidth(0)
+        return hint
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        height = self.heightForWidth(event.size().width())
+        if height >= 0 and self.minimumHeight() != height:
+            self.setMinimumHeight(height)
+
+
+class UnbrokenMessageText(QtWidgets.QTextBrowser):
+    """Read-only text that wraps unbroken names/URLs without changing their text."""
+    def __init__(self, text, **kwargs):
+        super().__init__(**kwargs)
+        self.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.setStyleSheet('QTextBrowser { background: transparent; border: 0; padding: 0; margin: 0; }')
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        for bar in (self.horizontalScrollBar(), self.verticalScrollBar()):
+            bar.rangeChanged.connect(lambda low, high, bar=bar: bar.setRange(0, 0) if low or high else None)
+        self.setWordWrapMode(QtGui.QTextOption.WrapAtWordBoundaryOrAnywhere)
+        self.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+        self.setOpenLinks(False)
+        self.document().setDocumentMargin(0)
+        self.setPlainText(text)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+
+    def sizeHint(self):
+        width = min(480, max((self.fontMetrics().horizontalAdvance(line)
+                             for line in self.toPlainText().splitlines()), default=0))
+        return QtCore.QSize(width, max(self.fontMetrics().height(), self.minimumHeight()))
+
+    def minimumSizeHint(self):
+        return QtCore.QSize(0, self.minimumHeight())
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.document().setTextWidth(max(1, self.viewport().width()))
+        height = math.ceil(self.document().documentLayout().documentSize().height())
+        height += self.height() - self.viewport().height()
+        if self.height() != height or self.minimumHeight() != height:
+            self.setFixedHeight(height)
+
+    def wheelEvent(self, event):
+        event.ignore()  # Scroll the outer history, never inside an individual bubble.
+
+
+def message_label(text, **kwargs):
+    metrics = QtGui.QFontMetrics(QtWidgets.QApplication.font())
+    # Reserve space for the reply button and padding even at the narrowest mini size.
+    kind = UnbrokenMessageText if any(metrics.horizontalAdvance(word) > 120 for word in text.split()) else MessageLabel
+    return kind(text, **kwargs)
+
+
+class ElidedButton(QtWidgets.QPushButton):
+    """Keep long attachment/reply captions from widening a compact window."""
+    def __init__(self, text='', **kwargs):
+        super().__init__(text, **kwargs)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Fixed)
+
+    def paintEvent(self, event):
+        option = QtWidgets.QStyleOptionButton()
+        self.initStyleOption(option)
+        rect = self.style().subElementRect(QtWidgets.QStyle.SE_PushButtonContents, option, self)
+        option.text = self.fontMetrics().elidedText(self.text(), QtCore.Qt.ElideMiddle, max(0, rect.width()-12))
+        painter = QtWidgets.QStylePainter(self)
+        painter.drawControl(QtWidgets.QStyle.CE_PushButton, option)
 
 
 class ConversationDelegate(QtWidgets.QStyledItemDelegate):
@@ -134,6 +213,7 @@ class Messenger(CompactMessengerMixin, QtWidgets.QMainWindow):
         self.media_loading = set()
         self.media_labels = {}
         self.media_buttons = {}
+        self.message_frames = []
         self.expanded_media = set()
         self.active_file = None
         self.capabilities = {}
@@ -310,6 +390,7 @@ class Messenger(CompactMessengerMixin, QtWidgets.QMainWindow):
         m.addLayout(header)
         self.scroll = QtWidgets.QScrollArea()
         self.scroll.setWidgetResizable(True)
+        self.scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.message_container = QtWidgets.QWidget()
         self.message_layout = QtWidgets.QVBoxLayout(self.message_container)
         self.message_layout.setAlignment(QtCore.Qt.AlignTop)
@@ -376,7 +457,7 @@ class Messenger(CompactMessengerMixin, QtWidgets.QMainWindow):
         self.emoji_menu.addAction(emoji_action)
         self.emoji_button.setMenu(self.emoji_menu)
         composer_layout.addWidget(self.emoji_button)
-        self.reply_banner = QtWidgets.QPushButton()
+        self.reply_banner = ElidedButton()
         self.reply_banner.setToolTip('Click to cancel this reply')
         self.reply_banner.clicked.connect(self.cancel_reply)
         self.reply_banner.hide()
@@ -474,7 +555,7 @@ class Messenger(CompactMessengerMixin, QtWidgets.QMainWindow):
                                                      font-weight: bold; }}
             QPushButton:disabled {{ color: {outline}; }}
             QFrame#message {{ background: {surface}; border: 1px solid {outline}; border-radius: 8px; }}
-            QLabel#sender {{ font-weight: bold; color: {accent}; }}
+            QLabel#sender, QTextBrowser#sender {{ font-weight: bold; color: {accent}; }}
             QLabel#attachment {{ background: {raised}; border: 1px solid {outline}; border-radius: 5px; }}
             QScrollArea {{ border: 0; background: {bg}; }}
             QFrame#message QLabel {{ background: transparent; }}
@@ -877,6 +958,7 @@ class Messenger(CompactMessengerMixin, QtWidgets.QMainWindow):
         clear(self.message_layout)
         self.media_labels.clear()
         self.media_buttons.clear()
+        self.message_frames.clear()
 
     def _draw_messages(self):
         self._remember_received(self.messages)
@@ -884,7 +966,7 @@ class Messenger(CompactMessengerMixin, QtWidgets.QMainWindow):
         self._follow_latest = True
         self._clear_messages()
         if not self.messages:
-            empty = QtWidgets.QLabel('No messages yet. Say hello!')
+            empty = message_label('No messages yet. Say hello!')
             self.message_layout.addWidget(empty)
         for index, message in enumerate(self.messages):
             frame = QtWidgets.QFrame(objectName='message')
@@ -893,7 +975,7 @@ class Messenger(CompactMessengerMixin, QtWidgets.QMainWindow):
             stamp = time.strftime('%I:%M %p', time.localtime(message['time'] / 1000))
             sender = 'You' if message['from'] == self.persona else message.get('name', 'User')
             header = QtWidgets.QHBoxLayout()
-            header.addWidget(QtWidgets.QLabel(f'{sender}  ·  {stamp}', objectName='sender'))
+            header.addWidget(message_label(f'{sender}  ·  {stamp}', objectName='sender'), 1)
             reply_button = QtWidgets.QToolButton()
             reply_button.setText('↪'); reply_button.setToolTip('Reply to ' + message.get('name','User'))
             reply_button.clicked.connect(lambda _=False, m=message: self.begin_reply(m))
@@ -902,16 +984,13 @@ class Messenger(CompactMessengerMixin, QtWidgets.QMainWindow):
             body = message.get('text', '')
             reply = chat_state.reply_parts(body)
             if reply:
-                quote = QtWidgets.QLabel(f'↪ @{reply[0]}: {reply[1]}')
-                quote.setTextFormat(QtCore.Qt.PlainText); quote.setWordWrap(True)
+                quote = message_label(f'↪ @{reply[0]}: {reply[1]}')
                 if reply[0].casefold() in {n['name'].casefold() for n in self.names}:
                     quote.setStyleSheet('color: #ffbd66; border-left: 3px solid #ffbd66; padding-left: 5px;')
                 block.addWidget(quote)
                 body = reply[2]
             if body:
-                label = QtWidgets.QLabel(body)
-                label.setTextFormat(QtCore.Qt.PlainText)
-                label.setWordWrap(True)
+                label = message_label(body)
                 label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
                 block.addWidget(label)
             attachment = message.get('attachment')
@@ -919,10 +998,10 @@ class Messenger(CompactMessengerMixin, QtWidgets.QMainWindow):
                 expired = attachment.get('expired') or (attachment.get('expiresAt', float('inf')) <= time.time() * 1000)
                 image = attachment.get('mime') in IMAGE_MIMES
                 if expired:
-                    block.addWidget(QtWidgets.QLabel('Expired · ' + attachment.get('name', 'attachment')))
+                    block.addWidget(message_label('Expired · ' + attachment.get('name', 'attachment')))
                 elif image:
                     ident = attachment['id']
-                    show = QtWidgets.QPushButton(('Hide image' if ident in self.expanded_media else 'View image') + ' · ' + attachment.get('name', 'image'))
+                    show = ElidedButton(('Hide image' if ident in self.expanded_media else 'View image') + ' · ' + attachment.get('name', 'image'))
                     show.setToolTip(attachment.get('name', 'image'))
                     if self.mini:
                         show.setText('Hide image' if ident in self.expanded_media else 'View image')
@@ -945,15 +1024,15 @@ class Messenger(CompactMessengerMixin, QtWidgets.QMainWindow):
                             self.media_buttons.setdefault(ident, []).append(show)
                 elif not expired:
                     label = ('Video' if attachment.get('mime', '').startswith('video/') else 'File')
-                    file_label = QtWidgets.QLabel(label + ' · ' + attachment.get('name', 'file'))
-                    file_label.setWordWrap(True)
+                    file_label = message_label(label + ' · ' + attachment.get('name', 'file'))
                     block.addWidget(file_label)
                 if not expired:
                     if attachment.get('kind') == 'file':
                         minutes = max(0, int((attachment.get('expiresAt', 0)/1000-time.time())/60))
-                        block.addWidget(QtWidgets.QLabel(f'Expires in {minutes} min · save before expiry'))
+                        block.addWidget(message_label(f'Expires in {minutes} min · save before expiry'))
                     if not self.mini or not image or attachment['id'] in self.expanded_media:
-                        save = QtWidgets.QPushButton('Save attachment' if self.mini else 'Save ' + attachment.get('name', 'file'))
+                        save = ElidedButton('Save attachment' if self.mini else 'Save ' + attachment.get('name', 'file'))
+                        save.setToolTip(attachment.get('name', 'file'))
                         save.clicked.connect(lambda _checked=False, a=attachment: self.save_attachment(a))
                         block.addWidget(save)
             row = QtWidgets.QHBoxLayout()
@@ -963,7 +1042,25 @@ class Messenger(CompactMessengerMixin, QtWidgets.QMainWindow):
             if message['from'] != self.persona:
                 row.addStretch()
             self.message_layout.addLayout(row)
+            frame.setProperty('naturalWidth', 520 if frame.findChildren(QtWidgets.QLabel, 'attachment')
+                              else frame.sizeHint().width())
+            self.message_frames.append(frame)
+        self._fit_message_widths()
+        QtCore.QTimer.singleShot(0, self._fit_message_widths)
         QtCore.QTimer.singleShot(0, self._scroll_to_latest)
+
+    def _fit_message_widths(self):
+        if not hasattr(self, 'scroll'):
+            return
+        margins = self.message_layout.contentsMargins()
+        available = max(60, self.scroll.viewport().width()-margins.left()-margins.right())
+        for frame in self.message_frames:
+            width = min(520, available, max(100, frame.property('naturalWidth') or 520))
+            if frame.width() != width or frame.minimumWidth() != width:
+                frame.setFixedWidth(width)
+        for ident in self.media_labels:
+            if ident in self.media_cache:
+                self._paint_media(ident)
 
     def _scroll_to_latest(self):
         if getattr(self, '_follow_latest', True):
@@ -1030,10 +1127,10 @@ class Messenger(CompactMessengerMixin, QtWidgets.QMainWindow):
         self._paint_media(media_id)
 
     def _paint_media(self, media_id):
-        pixmap = self.media_cache[media_id]
-        width = max(80, min(320, self.scroll.viewport().width() - 48))
-        pixmap = pixmap.scaled(width, 100 if self.mini else 240, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
         for label in self.media_labels.get(media_id, []):
+            width = max(1, min(320, label.contentsRect().width(), self.scroll.viewport().width()-48))
+            pixmap = self.media_cache[media_id].scaled(width, 100 if self.mini else 240,
+                                                      QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
             label.setPixmap(pixmap)
             label.setMinimumSize(0, 0)
             label.setFixedHeight(pixmap.height()+2)
@@ -1082,7 +1179,7 @@ class Messenger(CompactMessengerMixin, QtWidgets.QMainWindow):
             return
         filters = {'image': 'Images (*.png *.jpg *.jpeg *.gif *.webp)',
                    'video': 'Videos (*.mp4 *.webm)',
-                   'file': 'Files (*.blend *.zip *.pdf *.json *.nmsbase *.nmsship *.txt *.log)'}
+                   'file': 'Files (*.blend *.zip *.pdf *.json *.nmsbase *.nmsship *.nmsprefab *.txt *.log)'}
         path, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Choose a file to share', str(Path.home()), filters.get(kind, FILE_TYPES))
         if path:
             self._stage(Path(path), owned=False)

@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import tempfile
 import zipfile
+from . import build_metadata
 
 MAX_FILE = 64 * 1024 * 1024
 MAX_ENTRY = 32 * 1024 * 1024
@@ -92,9 +93,16 @@ class BuildFile:
                 raise ValueError('ccd.json must contain an appearance record')
             objects = _decode(entries['objects.json'], 'objects.json')
             _objects(objects)
-            document = {'BaseType': {'PersistentBaseTypes': 'PlayerShipBase'},
+            metadata = (build_metadata.read_package_metadata(_decode(entries[build_metadata.PACKAGE_ENTRY], build_metadata.PACKAGE_ENTRY))
+                        if build_metadata.PACKAGE_ENTRY in entries else {})
+            document = dict(metadata)
+            base_type = copy.deepcopy(metadata.get('BaseType', {}))
+            if not isinstance(base_type, dict):
+                base_type = {}
+            base_type['PersistentBaseTypes'] = 'PlayerShipBase'
+            document.update({'BaseType': base_type,
                         'Name': str(ownership.get('Name') or 'Corvette'),
-                        'Objects': _objects(objects)}
+                        'Objects': _objects(objects)})
             return cls(document, 'ship', raw, entries)
         if suffix not in ('.json', '.txt', '.nmsbase', '.nmsprefab'):
             raise ValueError('Supported build files: .nmsship, .nmsbase, .nmsprefab, .json, .txt')
@@ -143,11 +151,13 @@ class BuildFile:
             data['Name'] = fallback_name
         return data
 
-    def ship_bytes(self, objects, name=None):
+    def ship_bytes(self, objects, name=None, metadata=None):
         if self.kind != 'ship':
             raise ValueError('A full .nmsship export needs an imported ship package or a template')
         _objects(objects)
         entries = dict(self.entries)
+        if metadata is not None:
+            entries[build_metadata.PACKAGE_ENTRY] = _encode(build_metadata.package_metadata(metadata))
         old_doc = _decode(entries['objects.json'], 'objects.json')
         if isinstance(old_doc, list):
             new_doc = objects

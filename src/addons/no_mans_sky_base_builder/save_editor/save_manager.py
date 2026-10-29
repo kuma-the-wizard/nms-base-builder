@@ -505,10 +505,12 @@ class SaveManager(bpy.types.PropertyGroup):
             if not new_base_name or not new_base_name.strip():
                 new_base_name = None
 
+            from ..build_metadata import save_owner
+            owner_override = save_owner(prefs)
             progress.update(.15, 'Preparing save points')
             result = save_editor_utils.save_base_to_save_file(
                 serialised_base_objects_data, base_identifiers, save_links,
-                base_name=new_base_name, progress=progress)
+                base_name=new_base_name, progress=progress, owner_override=owner_override)
 
             progress.update(.95, 'Refreshing base list')
             self.refresh_bases_list()

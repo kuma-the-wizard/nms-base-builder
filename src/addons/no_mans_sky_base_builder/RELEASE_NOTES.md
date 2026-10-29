@@ -1,3 +1,33 @@
+# 18.2.37
+
+- Fix unwanted horizontal scrolling in mini chat. Fit message bubbles to the window, wrap long names, filenames and URLs, and shorten attachment/reply button captions without changing the text being copied or sent.
+- Keep expanded images within the message bubble when resizing. Preserve vertical history scrolling, automatic scrolling to new messages and the full-width composer.
+
+# 18.2.36
+
+- Correct Venom Spitter, Limos-Class Generator, Vile Proboscis Generator and 24 plating proxies using their current game models. Refresh outdated previews while preserving part IDs, placement and colours.
+- Make Thunderbird Landing Thrusters easier to find under Access and Docking. Correct native names and categories, consolidate redundant Argonaut variants, and keep distinct plating shapes separate. Identify hidden and unfinished native parts in their hover descriptions.
+- Replace 82 missing, marked or misleading icons with clean, transparent 512-pixel previews of the verified game models. Keep original game artwork everywhere else and retain yellow new-part borders.
+- Speed up repeated detailed-part placement and share identical materials without reducing geometry, textures, UVs or smooth normals. Preserve individually coloured parts and edited shaders.
+- Open warm chat windows immediately on request instead of waiting for the polling timer, with a fallback for missed file notifications.
+- Add Advanced Build Metadata beside the build-name field for Owner and last-editor details. Preserve extra metadata in full build files and clipboard exports. Changing destination-save ownership is a separate explicit option shown on export confirmation; opening a project or importing a build never enables it.
+- Validate native exports, Undo recovery and NMScribe shape generation in Blender 5.1 and 5.2. NMScribe requires no changes.
+
+# 18.2.35
+
+- Restore 2,347 original game-provided asset icons, including all 214 Forsaken additions. Preserve their native colors, camera angles and full 256-pixel source resolution; remove the pink/orange rendered replacements.
+- Use the same catalog icons in the main browser, sidebar and legacy browser. Preserve yellow first-click borders.
+- Record native icon provenance and pixel checks. Keep game-supplied placeholder artwork intact; Deathwrought's pyramid model and unfinished icon are present in the original NMS 7.10 files.
+
+# 18.2.34
+
+- Highlight new Forsaken parts with a yellow border until first clicked. Remember viewed parts per user across restarts, in the main browser and sidebar.
+- Restore native smooth normals on all 214 Forsaken detailed proxies. Refresh older saved display meshes without changing part IDs, colors or placement.
+- Replace Forsaken thumbnails with consistently framed, transparent 512-pixel previews of the textured native models. Correct the older Cell Joint, Cargo Box and two placeholder hull thumbnails.
+- Stop DM flashing when the incoming message is read; keep the unanswered-message queue and alert again for later DMs.
+- Allow .nmsprefab sharing and recognize .nmsship as a packaged build. Support build/text files up to BBE's 64 MB interchange limit. Requires chat server 18.2.34; existing expiry, account quota and shared storage limits remain in effect.
+- Verified against installed NMS 7.10 assets. Deathwrought Amplifier currently shares Aeron Pyramid geometry in the game files; its preview and tooltip reflect that native assignment without substituting its export ID.
+
 # 18.2.32
 
 - Add 214 supported Forsaken part IDs and variants, including the new Corvette cockpits, hull sections, wings, reactors, decorations and gravity floor/ramp/wall. Include native icons, lightweight proxies, detailed meshes and portable textures.

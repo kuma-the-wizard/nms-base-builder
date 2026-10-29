@@ -15,6 +15,7 @@ from bpy.app.handlers import persistent
 from .asset_browser_grid import (
     BBE_OT_asset_grid, _contains, _groups, grid_geometry, tile_action, browser_palette,
 )
+from ..utils import new_assets
 from ..utils.asset_browser_utils import get_grid_settings
 
 _sessions = {}
@@ -77,6 +78,7 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
 
     # Both browser surfaces must draw the same full-size preview and menus.
     rectangle = BBE_OT_asset_grid.rectangle
+    new_border = BBE_OT_asset_grid.new_border
     label = BBE_OT_asset_grid.label
     preview = BBE_OT_asset_grid.preview
     show_options = BBE_OT_asset_grid.show_options
@@ -196,6 +198,8 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
                 pressed, self._pressed = self._pressed, None
                 if hit and pressed == (hover, event.type):
                     tile, action = hit
+                    if not tile[5].get('is_preset'):
+                        new_assets.mark_viewed(tile[4])
                     if event.type == 'RIGHTMOUSE' or action == 'options':
                         self.show_options(context, tile)
                     else:
@@ -252,6 +256,8 @@ class BBE_OT_sidebar_asset_grid(bpy.types.Operator):
                     continue
                 hovered = self._hover and self._hover[0] == object_id
                 self.rectangle(x, y, w, h, palette['hover'] if hovered else palette['card'])
+                if not data.get('is_preset') and new_assets.is_new(object_id):
+                    self.new_border(x, y, w, h, scale)
                 text_color = palette['selected_text'] if hovered else palette['text']
                 size = min(w - 8 * scale, h - 48 * scale)
                 self.preview(object_id, x + (w-size)/2, y + 26 * scale, size)

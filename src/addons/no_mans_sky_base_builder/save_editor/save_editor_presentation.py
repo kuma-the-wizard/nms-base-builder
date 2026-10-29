@@ -351,7 +351,8 @@ def draw_base_picker(container, save_data):
         # Edit the existing scene metadata used by both export paths. The saved
         # name is only a placeholder; choosing a destination must not rename
         # the current Blender design or write anything into the game save.
-        se_column.prop(bpy.context.scene.nms_base_tool, 'string_base', text='Ship Name',
+        from .. import build_metadata
+        build_metadata.draw_name(se_column, bpy.context.scene.nms_base_tool, text='Ship Name',
                        placeholder=selected_data.base_name if selected_data else 'Name for exported Corvette')
     elif selected_data is not None:
         se_column.label(text=f"Selected {base_type} in save: {selected_data.parts_count} parts")

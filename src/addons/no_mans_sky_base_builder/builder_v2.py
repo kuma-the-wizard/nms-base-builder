@@ -1,5 +1,6 @@
 import bpy
 import os
+import json
 import time
 import mathutils
 import math
@@ -75,6 +76,10 @@ MESH_REVISIONS.update(dict.fromkeys(CABLE_CORRECTIONS, '18.1.20'))
 # The game routes a terminal snapped to a wall to BASETERMINAL. The normal
 # BUILDTERMINAL asset remains the freestanding model.
 MESH_REVISIONS['BUILDTERMINAL_WALL'] = '18.1.52-wall'
+FORSAKEN_PARTS = {r['id'] for r in json.loads((Path(FILE_PATH) / 'resources/forsaken_assets.json').read_text())['assets']}
+MESH_REVISIONS.update(dict.fromkeys(FORSAKEN_PARTS, '18.2.34'))
+CORRECTED_LEGACY_PARTS = {r['id'] for r in json.loads((Path(FILE_PATH) / 'resources/native_asset_corrections.json').read_text())['assets']}
+MESH_REVISIONS.update(dict.fromkeys(CORRECTED_LEGACY_PARTS, '18.2.36'))
 BYTEBEAT_PARTS = {'BYTEBEAT', 'BYTEBEATSWITCH', 'HOLO_DISCO_0', 'U_BYTEBEATLINE'}
 
 # Set once per session by get_asset_index().
@@ -292,13 +297,10 @@ def add_part(
     # colour by object property, so this placement goes on sharing the mesh
     if user_data is None:
         user_data = Part.DEFAULT_USER_DATA
+    # Only a new library append can duplicate shared shader data. Repeated
+    # placements reuse the same mesh and need no whole-scene cleanup pass.
+    materials_v2.dedupe_appended_data(only_if_pending=True)
     materials_v2.recolour_from_user_data([bpy_object], user_data)
-
-    # if the asset was appended just now it brought its own copies of textures
-    # and of the colourise node group with it. Cheap to call either way - with
-    # nothing to collapse this is a scan of bpy.data.images and no more
-    materials_v2.dedupe_appended_data()
-    materials_v2.ensure_finish_nodes()
 
     # wrap it so callers get the interface they expect from builder.add_part
     use_class = classes_dict.get(object_id, Part)
@@ -398,6 +400,24 @@ def new_high_res_object(object_id, asset_index=None):
     bpy_object = bpy.data.objects.new(object_id, mesh)
     blend_utils.add_to_scene(bpy_object)
     return bpy_object
+
+
+def refresh_forsaken_proxies(scene):
+    """Replace known flat-shaded display caches, retaining part transforms/data."""
+    if not getattr(scene, 'bbe_detailed_proxies', True):
+        return
+    for obj in list(scene.objects):
+        pid = obj.get('ObjectID')
+        if (obj.type != 'MESH' or pid not in FORSAKEN_PARTS | CORRECTED_LEGACY_PARTS
+                or obj.data.get(MESH_TAG) != pid
+                or obj.data.get(MESH_REVISION_TAG) == MESH_REVISIONS[pid]):
+            continue
+        old = obj.data
+        mesh = load_high_res_mesh(pid)
+        if mesh is not None:
+            obj.data = mesh
+            if old.users == 0:
+                bpy.data.meshes.remove(old)
 
 
 def refresh_bytebeat_proxies(scene):
@@ -553,8 +573,6 @@ def _relink_mesh_textures(mesh):
 def load_high_res_mesh(object_id, asset_index=None, *, force=False):
     if not force and not getattr(bpy.context.scene, "bbe_detailed_proxies", True):
         return None
-    asset_index = asset_index if asset_index is not None else get_asset_index()
-
     # the cache lives in bpy.data rather than in a module level dict, so it
     # survives a new file, a module reload and a scene the user already saved
     mesh_name = MESH_PREFIX + object_id
@@ -567,6 +585,8 @@ def load_high_res_mesh(object_id, asset_index=None, *, force=False):
             correct_hd_display(cached, object_id)
             return cached if _relink_mesh_textures(cached) else None
         cached.name = mesh_name + "_legacy"
+
+    asset_index = asset_index if asset_index is not None else get_asset_index()
 
     # A reproducible variant is built out of the mesh it is a variant of rather
     # than out of its own asset - most of the corvette variants ship the wrong
